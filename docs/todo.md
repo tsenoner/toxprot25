@@ -8,7 +8,7 @@
 - [ ] table comparison (2017 to 2025)
   - [ ] number protein entries
   - [ ] unique species
-  - [ ] number taxa - aka higher ranke (order / family / genus)
+  - [ ] number taxa - aka higher rank (order / family / genus)
   - [ ] protein families (regex to improve)
   - [ ] fragments
   - [ ] PTM annotation
@@ -33,7 +33,7 @@
   - [ ] create plots (protein length distribution + protein family)
 - TS
   - [ ] Parse kim excel file to CSV into processed
-  - [ ] taxa extraction (order, famiy genus) -> taxaiq?
-  - [ ] distinguishe between marine and terrestrial taxa family
+  - [ ] taxa extraction (order, family genus) -> taxaiq?
+  - [ ] distinguish between marine and terrestrial taxa family
   - [ ] create plots (tax dist + taxa new + terra vs marin)
   - [ ] ProtSpace plot
