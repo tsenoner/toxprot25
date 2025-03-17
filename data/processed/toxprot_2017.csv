@@ -1,4 +1,4 @@
-Entry,Organism,Protein families,Length,Fragments,Toxic dose,PTM
+Entry,Organism,Protein families,Length,Fragment,Toxic dose,PTM
 Q26292,Leiurus quinquestriatus hebraeus (Yellow scorpion),"Long (4 C-C) scorpion toxin superfamily, Sodium channel inhibitor family, Beta subfamily",85,,,
 P30431,Bothrops jararaca (Jararaca) (Bothrops jajaraca),"Venom metalloproteinase (M12B) family, P-III subfamily, P-IIIb sub-subfamily",571,fragment,,The N-terminus of Jararhagin is blocked.
 P60266,Centruroides suffusus suffusus (Mexican scorpion),"Long (4 C-C) scorpion toxin superfamily, Sodium channel inhibitor family, Beta subfamily",66,,LD(50) is 0.12 ug/kg in mouse by intracerebroventricular injection and LD(50) is 115 ug/kg in mouse by subcutaneous injection. {ECO:0000269|PubMed:2435711}.; LD(100) is 3 ug/kg by intracranial injection into mice. {ECO:0000269|PubMed:21329715}.,
