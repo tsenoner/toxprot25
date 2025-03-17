@@ -30,7 +30,7 @@
 - ST
   - [ ] protein families clustering
   - [ ] createtable comparison - matplotlib?
-  - [ ] create plots (protein length distribution + protein family)
+  - [x] create plots (protein length distribution + protein family)
 - TS
   - [ ] Parse kim excel file to CSV into processed
   - [ ] taxa extraction (order, family genus) -> taxaiq?
