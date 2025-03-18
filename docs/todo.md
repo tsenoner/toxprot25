@@ -6,16 +6,16 @@
 
 ## figures
 - [ ] table comparison (2017 to 2025)
-  - [ ] number protein entries
+  - [x] number protein entries
   - [ ] unique species
   - [ ] number taxa - aka higher rank (order / family / genus)
-  - [ ] protein families (regex to improve)
-  - [ ] fragments
-  - [ ] PTM annotation
-  - [ ] toxic dose
+  - [x] protein families (regex to improve)
+  - [x] fragments
+  - [x] PTM annotation
+  - [x] toxic dose
 - comparison (2017 - 2025)
-  - [ ] protein family of top 10 + other + NaN  - stackedbar plot
-  - [ ] protein length distribution (25 steps and final is 300+) - overlayed histogram
+  - [x] protein family of top 10 + other + NaN  - stackedbar plot
+  - [x] protein length distribution (25 steps and final is 300+) - overlayed histogram
   - [ ] taxa distribution of top 5 + other - stacked bar plot
   - [ ] taxa newcomer (optional)
   - [ ] terrestrial vs marine protein family 17 vs 25 - grouped bar plot
@@ -28,8 +28,8 @@
 
 ## Task distribution
 - ST
-  - [ ] protein families clustering
-  - [ ] createtable comparison - matplotlib?
+  - [x] protein families clustering
+  - [x] createtable comparison - matplotlib?
   - [x] create plots (protein length distribution + protein family)
 - TS
   - [x] Parse kim excel file to CSV into processed
