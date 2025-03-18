@@ -82,14 +82,14 @@ def parse_entry(entry_lines):
                         entry_data["Protein names"] += "; " + name.group(1)
                     else:
                         entry_data["Protein names"] = name.group(1)
-            # Look for protein family information
-            if "Protein families:" in content:
-                family = content.split("Protein families:")[1].strip()
-                entry_data["Protein families"] = family
 
-        # Extract comments for function, tissue specificity, etc.
+        # Extract comments for function, tissue specificity, similarity, etc.
         elif line.startswith("CC"):
-            if "-!- FUNCTION:" in content:
+            # If we hit a CAUTION section, reset current_section to stop adding content
+            if "-!- CAUTION:" in content:
+                current_section = None
+            # Process other sections
+            elif "-!- FUNCTION:" in content:
                 current_section = "Function [CC]"
                 function_text = content.replace("-!- FUNCTION:", "").strip()
                 entry_data[current_section] = function_text
@@ -109,6 +109,13 @@ def parse_entry(entry_lines):
                 current_section = "Mass spectrometry"
                 mass_spec_text = content.replace("-!- MASS SPECTROMETRY:", "").strip()
                 entry_data[current_section] = mass_spec_text
+            elif "-!- SIMILARITY:" in content:
+                current_section = "Protein families"
+                similarity_text = content.replace("-!- SIMILARITY:", "").strip()
+                # Remove "Belongs to the" prefix if present
+                similarity_text = re.sub(r"^Belongs to the ", "", similarity_text)
+                similarity_text = similarity_text[0].upper() + similarity_text[1:]
+                entry_data[current_section] = similarity_text
             elif line.startswith("CC       ") and current_section:
                 # Continuation of a previous comment section
                 entry_data[current_section] += " " + content
@@ -196,6 +203,12 @@ def parse_entry(entry_lines):
     if go_terms["F"]:
         entry_data["Gene Ontology (molecular function)"] = "; ".join(go_terms["F"])
 
+    # Clean up protein families field - remove ECO codes and similar annotations
+    if entry_data["Protein families"]:
+        # Remove ECO codes and similar annotations
+        family_text = re.sub(r'\s*\{ECO:[^\}]+\}\.?', '', entry_data["Protein families"]).strip()
+        entry_data["Protein families"] = family_text
+
     # Check for "venom" in the complete tissue specificity text
     has_venom_tissue = "venom" in entry_data["Tissue specificity"].lower()
 
@@ -265,7 +278,7 @@ def parse_arguments():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
         description="Parse SwissProt data file to extract animal venom/toxin proteins.",
-        epilog="Example: python swissprot_parser.py data/raw/201711_sprot.dat data/processed/2017_toxprot.tsv"
+        epilog="Example: python parse_sprot_dat.py data/raw/201711_sprot.dat data/interim/toxprot_2017.tsv"
     )
 
     parser.add_argument(
