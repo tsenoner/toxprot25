@@ -1,4 +1,5 @@
 docs/manuscript
+data/raw/201711_sprot.dat
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

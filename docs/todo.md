@@ -32,7 +32,8 @@
   - [ ] createtable comparison - matplotlib?
   - [x] create plots (protein length distribution + protein family)
 - TS
-  - [ ] Parse kim excel file to CSV into processed
+  - [x] Parse kim excel file to CSV into processed
+  - [x] Parse original 2017.11 swissprot data
   - [ ] taxa extraction (order, family genus) -> taxaiq?
   - [ ] distinguish between marine and terrestrial taxa family
   - [ ] create plots (tax dist + taxa new + terra vs marin)
