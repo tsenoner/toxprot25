@@ -1,0 +1,170 @@
+{
+  "clear_orders": {
+    "terrestrial": {
+      "Anura": "Frogs and toads",
+      "Araneae": "Spiders",
+      "Architaenioglossa": "Apple snails and allies",
+      "Chiroptera": "Bats",
+      "Coleoptera": "Beetles",
+      "Crassiclitellata": "Earthworms",
+      "Diptera": "Flies",
+      "Eulipotyphla": "Shrews, moles, and hedgehogs",
+      "Hemiptera": "True bugs",
+      "Hirudinida": "Leeches",
+      "Hymenoptera": "Ants, bees, and wasps",
+      "Ixodida": "Ticks",
+      "Lepidoptera": "Butterflies and moths",
+      "Monotremata": "Platypus and echidnas",
+      "Nectiopoda": "Cave-dwelling crustaceans",
+      "Rhabditida": "Roundworms",
+      "Rhynchobdellida": "Freshwater leeches",
+      "Scolopendromorpha": "Centipedes",
+      "Scorpiones": "Scorpions",
+      "Scutigeromorpha": "House centipedes",
+      "Trombidiformes": "Mites",
+      "Amiiformes": "Bowfin (freshwater fish)",
+      "Semionotiformes": "Gar fish (freshwater fish)"
+    },
+    "marine": {
+      "Actiniaria": "Sea anemones",
+      "Aplysiida": "Sea hares",
+      "Batrachoidiformes": "Toadfish",
+      "Blenniiformes": "Blennies",
+      "Carybdeida": "Box jellyfish",
+      "Chirodropida": "Box jellyfish",
+      "Clionaida": "Boring sponges",
+      "Euphausiacea": "Krill",
+      "Littorinimorpha": "Conchs and allies",
+      "Myliobatiformes": "Stingrays",
+      "Neogastropoda": "Predatory sea snails",
+      "Perciformes": "Perch-like fish",
+      "Phyllodocida": "Ragworms and scale worms",
+      "Pleuronectiformes": "Flatfish",
+      "Rhizostomeae": "True jellyfish",
+      "Scleractinia": "Stony corals",
+      "Semaeostomeae": "Jellyfish",
+      "Sepiida": "Cuttlefish",
+      "Suberitida": "Demosponges",
+      "Valvatida": "Starfish",
+      "Xiphosura": "Horseshoe crabs",
+      "Zoantharia": "Colonial anemones"
+    }
+  },
+
+  "ambiguous_orders": {
+    "Anthoathecata": {
+      "terrestrial": {
+        "Hydra": "Freshwater hydras"
+      }
+    },
+
+    "Heteronemertea": {
+      "terrestrial": {
+        "Riseriellus": "Terrestrial ribbon worms"
+      },
+      "marine": {
+        "Cerebratulus": "Marine ribbon worms",
+        "Lineus": "Marine ribbon worms",
+        "Parborlasia": "Marine ribbon worms",
+        "Ramphogordius": "Marine ribbon worms"
+      }
+    },
+
+    "Salmoniformes": {
+      "terrestrial": {
+        "Oncorhynchus": "Pacific salmon (anadromous/freshwater)"
+      }
+    },
+
+    "Testudines": {
+      "terrestrial": {
+        "Trachemys": "Slider turtles (freshwater)"
+      }
+    },
+
+    "Squamata": {
+      "terrestrial": {
+        "Acanthophis": "Death adders",
+        "Agkistrodon": "Copperheads and cottonmouths",
+        "Aspidelaps": "Shield-nosed cobras",
+        "Atheris": "Bush vipers",
+        "Atractaspis": "Stiletto snakes",
+        "Austrelaps": "Copperhead snakes",
+        "Azemiops": "Fea's viper",
+        "Bitis": "Puff adders",
+        "Boiga": "Cat snakes",
+        "Borikenophis": "Puerto Rican racer",
+        "Bothriechis": "Palm-pitvipers",
+        "Bothrocophias": "Andean lancehead",
+        "Bothrops": "Lancehead vipers",
+        "Bungarus": "Kraits",
+        "Calloselasma": "Malayan pit viper",
+        "Calliophis": "Oriental coral snakes",
+        "Caribicus": "Haitian giant galliwasp",
+        "Causus": "Night adders",
+        "Cerastes": "Horned vipers",
+        "Cerrophidion": "Montane pitvipers",
+        "Coelognathus": "Rat snakes",
+        "Craspedocephalus": "Asian pit vipers",
+        "Crotalus": "Rattlesnakes",
+        "Cryptophis": "Small-eyed snakes",
+        "Daboia": "Russell's viper",
+        "Deinagkistrodon": "Hundred-pace vipers",
+        "Demansia": "Whip snakes",
+        "Dendroaspis": "Mambas",
+        "Dispholidus": "Boomslang",
+        "Drysdalia": "Australian snakes",
+        "Echis": "Saw-scaled vipers",
+        "Eristicophis": "McMahon's viper",
+        "Erythrolamprus": "False coral snakes",
+        "Gloydius": "Asian pit vipers",
+        "Helicops": "Freshwater snakes",
+        "Heloderma": "Gila monsters",
+        "Hemachatus": "Rinkhals",
+        "Hoplocephalus": "Broad-headed snakes",
+        "Lachesis": "Bushmasters",
+        "Lamprophiidae": "African snakes",
+        "Leioheterodon": "Malagasy hognose snakes",
+        "Macrovipera": "Levantine vipers",
+        "Metlapilcoatlus": "Montane pitvipers",
+        "Micropechis": "Small-eyed snakes",
+        "Micrurus": "Coral snakes",
+        "Naja": "Cobras",
+        "Notechis": "Tiger snakes",
+        "Ophiophagus": "King cobras",
+        "Ophryacus": "Mexican horned pitvipers",
+        "Ovophis": "Mountain pit vipers",
+        "Oxybelis": "Vine snakes",
+        "Oxyuranus": "Taipans",
+        "Philodryas": "Green racers",
+        "Pogona": "Eastern bearded dragon",
+        "Porthidium": "Hognose pitvipers",
+        "Proatheris": "Lowland viper",
+        "Protobothrops": "Asian pit vipers",
+        "Psammophis": "Sand snakes",
+        "Pseudechis": "Black snakes",
+        "Pseudocerastes": "False horned vipers",
+        "Pseudonaja": "Brown snakes",
+        "Rhabdophis": "Keelback snakes",
+        "Sistrurus": "Pygmy rattlesnakes",
+        "Spilotes": "Rat snakes",
+        "Telescopus": "Cat snakes",
+        "Thrasops": "Black tree snakes",
+        "Trimorphodon": "Lyre snakes",
+        "Trimeresurus": "Asian pit vipers",
+        "Tropidechis": "Rough-scaled snakes",
+        "Tropidolaemus": "Temple vipers",
+        "Varanus": "Monitor lizards",
+        "Vipera": "True vipers",
+        "Walterinnesia": "Black desert cobras",
+        "Pseudoferania": "Mud snakes (freshwater/semi-aquatic)"
+      },
+      "marine": {
+        "Aipysurus": "Olive sea snakes",
+        "Cerberus": "Dog-faced water snakes (estuarine)",
+        "Hydrophis": "Sea snakes",
+        "Laticauda": "Sea kraits"
+      }
+    }
+  }
+}
