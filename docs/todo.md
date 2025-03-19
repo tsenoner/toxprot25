@@ -1,8 +1,8 @@
 # Tasks ToDo
 - [x] download ToxProt 03.2025 (aka `Release 2025_01`)
 - differentiate between marine and terrestrial (inc. freshwater)
-  - [ ] get family level taxonomy
-  - [ ] Ivan manually classifies them
+  - [x] get family level taxonomy
+  - [x] Ivan manually classifies them
 
 ## figures
 - [ ] table comparison (2017 to 2025)
@@ -31,10 +31,11 @@
   - [x] protein families clustering
   - [x] createtable comparison - matplotlib?
   - [x] create plots (protein length distribution + protein family)
+  - [ ] apply new regex/method to compress/summarize taxa
 - TS
   - [x] Parse kim excel file to CSV into processed
   - [x] Parse original 2017.11 swissprot data
-  - [ ] taxa extraction (order, family genus) -> taxaiq?
-  - [ ] distinguish between marine and terrestrial taxa family
+  - [x] taxa extraction (order, family genus) -> taxaiq?
+  - [x] distinguish between marine and terrestrial taxa family
   - [ ] create plots (tax dist + taxa new + terra vs marin)
   - [ ] ProtSpace plot
