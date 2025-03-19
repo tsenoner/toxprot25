@@ -16,14 +16,33 @@ from tqdm import tqdm
 
 # Define header fields
 headers = [
-    "Entry", "Entry Name", "Organism", "Organism (ID)", "Protein names",
-    "Protein families", "Length", "Mass", "Mass spectrometry", "Fragment",
-    "Function [CC]", "Tissue specificity", "Toxic dose", "Disulfide bond",
-    "Glycosylation", "Post-translational modification", "Signal peptide",
-    "Propeptide", "InterPro", "Pfam", "KEGG", "Gene Ontology (GO)",
-    "Gene Ontology (biological process)", "Gene Ontology (cellular component)",
-    "Gene Ontology (molecular function)"
+    "Entry",
+    "Entry Name",
+    "Organism",
+    "Organism (ID)",
+    "Protein names",
+    "Protein families",
+    "Length",
+    "Mass",
+    "Mass spectrometry",
+    "Fragment",
+    "Function [CC]",
+    "Tissue specificity",
+    "Toxic dose",
+    "Disulfide bond",
+    "Glycosylation",
+    "Post-translational modification",
+    "Signal peptide",
+    "Propeptide",
+    "InterPro",
+    "Pfam",
+    "KEGG",
+    "Gene Ontology (GO)",
+    "Gene Ontology (biological process)",
+    "Gene Ontology (cellular component)",
+    "Gene Ontology (molecular function)",
 ]
+
 
 def parse_entry(entry_lines):
     """Parse a SwissProt entry and extract the required fields."""
@@ -34,6 +53,7 @@ def parse_entry(entry_lines):
     is_metazoa = False
     has_toxin_keyword = False
     go_terms = {"P": [], "C": [], "F": []}
+    processing_de_flags = False
 
     # Process each line in the entry
     for line in entry_lines:
@@ -73,9 +93,27 @@ def parse_entry(entry_lines):
             if match:
                 entry_data["Organism (ID)"] = match.group(1)
 
-        # Extract protein names
+        # Extract protein names and check for fragment flags
         elif line.startswith("DE"):
-            if "RecName: Full=" in content or "AltName: Full=" in content or "SubName: Full=" in content:
+            # Check for Fragment in DE Flags section
+            if "Flags:" in content:
+                processing_de_flags = True
+                if "Fragment" in content:
+                    entry_data["Fragment"] = "fragment"
+            elif processing_de_flags and line.startswith("DE   "):
+                # Continue processing DE Flags on subsequent lines
+                if "Fragment" in content:
+                    entry_data["Fragment"] = "fragment"
+                # Stop processing if we hit a line that doesn't continue the flags
+                if not content.endswith(";"):
+                    processing_de_flags = False
+            elif (
+                "RecName: Full=" in content
+                or "AltName: Full=" in content
+                or "SubName: Full=" in content
+            ):
+                # No longer processing flags
+                processing_de_flags = False
                 name = re.search(r"(?:RecName|AltName|SubName): Full=([^;]+)", content)
                 if name:
                     if entry_data["Protein names"]:
@@ -145,9 +183,9 @@ def parse_entry(entry_lines):
             if match:
                 entry_data["Mass"] = match.group(1)
 
-            # Check for fragment
-            if "Fragment" in content:
-                entry_data["Fragment"] = "Yes"
+            # Also check for fragment in SQ line as a backup
+            if "Fragment" in content and not entry_data["Fragment"]:
+                entry_data["Fragment"] = "fragment"
 
         # Extract database cross-references
         elif line.startswith("DR"):
@@ -206,7 +244,9 @@ def parse_entry(entry_lines):
     # Clean up protein families field - remove ECO codes and similar annotations
     if entry_data["Protein families"]:
         # Remove ECO codes and similar annotations
-        family_text = re.sub(r'\s*\{ECO:[^\}]+\}\.?', '', entry_data["Protein families"]).strip()
+        family_text = re.sub(
+            r"\s*\{ECO:[^\}]+\}\.?", "", entry_data["Protein families"]
+        ).strip()
         entry_data["Protein families"] = family_text
 
     # Check for "venom" in the complete tissue specificity text
@@ -216,6 +256,7 @@ def parse_entry(entry_lines):
     meets_criteria = is_metazoa and (has_venom_tissue or has_toxin_keyword)
 
     return entry_data, meets_criteria
+
 
 def process_swissprot_file(input_file, output_file):
     """Process the SwissProt file and extract matching entries to a TSV file."""
@@ -229,14 +270,14 @@ def process_swissprot_file(input_file, output_file):
         # First count total entries for tqdm
         print("Counting total entries in the file...")
         total_entries = 0
-        with open(input_file, 'r', encoding='utf-8') as f:
+        with open(input_file, "r", encoding="utf-8") as f:
             for line in f:
                 if line.startswith("//"):
                     total_entries += 1
         print("Found {} entries in the file.".format(total_entries))
 
         # Process the file with tqdm progress bar
-        with open(input_file, 'r', encoding='utf-8') as f:
+        with open(input_file, "r", encoding="utf-8") as f:
             current_entry = []
 
             # Initialize tqdm progress bar
@@ -258,8 +299,12 @@ def process_swissprot_file(input_file, output_file):
             pbar.close()
 
         # Write results to TSV file
-        print("Writing {} matching entries to {}...".format(len(entries_found), output_file))
-        with open(output_file, 'w', encoding='utf-8') as out:
+        print(
+            "Writing {} matching entries to {}...".format(
+                len(entries_found), output_file
+            )
+        )
+        with open(output_file, "w", encoding="utf-8") as out:
             # Write header
             out.write("\t".join(headers) + "\n")
 
@@ -268,32 +313,30 @@ def process_swissprot_file(input_file, output_file):
                 row = [entry.get(field, "") for field in headers]
                 out.write("\t".join(row) + "\n")
 
-        print("Processing complete. Found {} matching entries.".format(len(entries_found)))
+        print(
+            "Processing complete. Found {} matching entries.".format(len(entries_found))
+        )
         print("Results saved to {}".format(output_file))
 
     except Exception as e:
         print("Error processing file: {}".format(str(e)))
 
+
 def parse_arguments():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
         description="Parse SwissProt data file to extract animal venom/toxin proteins.",
-        epilog="Example: python parse_sprot_dat.py data/raw/201711_sprot.dat data/interim/toxprot_2017.tsv"
+        epilog="Example: python parse_sprot_dat.py data/raw/201711_sprot.dat data/interim/toxprot_2017.tsv",
     )
 
-    parser.add_argument(
-        "input_file",
-        type=str,
-        help="Path to the SwissProt data file"
-    )
+    parser.add_argument("input_file", type=str, help="Path to the SwissProt data file")
 
     parser.add_argument(
-        "output_file",
-        type=str,
-        help="Path where the output TSV file will be saved"
+        "output_file", type=str, help="Path where the output TSV file will be saved"
     )
 
     return parser.parse_args()
+
 
 if __name__ == "__main__":
     args = parse_arguments()
@@ -303,7 +346,9 @@ if __name__ == "__main__":
 
     # Print information
     print("Processing SwissProt data file: {}".format(input_path))
-    print("Query: (taxonomy_id:33208) AND ((cc_tissue_specificity:venom) OR (keyword:KW-0800))")
+    print(
+        "Query: (taxonomy_id:33208) AND ((cc_tissue_specificity:venom) OR (keyword:KW-0800))"
+    )
     print("Output will be saved to: {}".format(output_path))
 
     # Process the file
