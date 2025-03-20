@@ -16,9 +16,9 @@
 - comparison (2017 - 2025)
   - [x] protein family of top 10 + other + NaN  - stackedbar plot
   - [x] protein length distribution (25 steps and final is 300+) - overlayed histogram
-  - [ ] taxa distribution of top 5 + other - stacked bar plot
-  - [ ] taxa newcomer (optional)
-  - [ ] terrestrial vs marine protein family 17 vs 25 - grouped bar plot
+  - [x] taxa distribution of top 5 + other - stacked bar plot
+  - [x] taxa newcomer (optional)
+  - [x] terrestrial vs marine protein family 17 vs 25 - grouped bar plot
 - protspace plot of final dataset
   - [ ] new regex
   - [ ] remove fragments + SP
@@ -37,5 +37,5 @@
   - [x] Parse original 2017.11 swissprot data
   - [x] taxa extraction (order, family genus) -> taxaiq?
   - [x] distinguish between marine and terrestrial taxa family
-  - [ ] create plots (tax dist + taxa new + terra vs marin)
+  - [x] create plots (tax dist + taxa new + terra vs marine)
   - [ ] ProtSpace plot
