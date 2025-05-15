@@ -7,8 +7,8 @@
 ## figures
 - [ ] table comparison (2017 to 2025)
   - [x] number protein entries
-  - [ ] unique species
-  - [ ] number taxa - aka higher rank (order / family / genus)
+  - [x] unique species
+  - [x] number taxa - aka higher rank (order / family / genus)
   - [x] protein families (regex to improve)
   - [x] fragments
   - [x] PTM annotation
@@ -32,6 +32,7 @@
   - [x] createtable comparison - matplotlib?
   - [x] create plots (protein length distribution + protein family)
   - [ ] apply new regex/method to compress/summarize taxa
+  - [ ] Count by spiecies instead of scientific name
 - TS
   - [x] Parse kim excel file to CSV into processed
   - [x] Parse original 2017.11 swissprot data
@@ -39,3 +40,24 @@
   - [x] distinguish between marine and terrestrial taxa family
   - [x] create plots (tax dist + taxa new + terra vs marine)
   - [ ] ProtSpace plot
+  - [ ] Add column "species" instead of "scientific name"
+
+
+
+## ToDo
+- [ ] fix x-axis on histogram 1-25, 26-50, ... 300+ [ST]
+- [ ] fix protein family plot [ST]
+  - [ ] Huwenotoxin - neurotoxin 10
+  - [ ] sort by abundancy
+  - [ ] sankey diagram would be great (pySankey)
+- [ ] double check the protein family count -> give me an explanation of how you did it. [ST]
+- [ ] Marine/Terrestrial protein families improve plot [TS]
+- [ ] stacked bar (top 5 taxa) -> dots in background [TS]
+- [ ] write methods [TS]
+- [ ] supplements/appendix the download version UniProt [TS]
+- [ ] Gigascience
+- [ ] Send Selin IDs [TS]
+  - [ ] https://orcid.org/0009-0002-2296-994X
+  - [ ] Selin Tuerkoglu
+  - [ ] Affiliation: just the chair (tum)
+- [ ] Compute protein family estimations, optional [TS]
