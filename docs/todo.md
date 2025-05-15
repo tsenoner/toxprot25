@@ -60,4 +60,5 @@
   - [ ] https://orcid.org/0009-0002-2296-994X
   - [ ] Selin Tuerkoglu
   - [ ] Affiliation: just the chair (tum)
+- [ ] create ProtSpace with the same colors as the families [TS]
 - [ ] Compute protein family estimations, optional [TS]

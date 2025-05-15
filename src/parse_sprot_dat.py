@@ -152,8 +152,15 @@ def parse_entry(entry_lines):
                 similarity_text = content.replace("-!- SIMILARITY:", "").strip()
                 # Remove "Belongs to the" prefix if present
                 similarity_text = re.sub(r"^Belongs to the ", "", similarity_text)
-                similarity_text = similarity_text[0].upper() + similarity_text[1:]
+                if similarity_text:  # Ensure not empty before indexing
+                    similarity_text = similarity_text[0].upper() + similarity_text[1:]
+                else:
+                    similarity_text = ""
                 entry_data[current_section] = similarity_text
+            # If it's a new CC -!- section header that we don't explicitly handle,
+            # reset current_section to prevent appending its content to the previous section.
+            elif content.startswith("-!-"):
+                current_section = None
             elif line.startswith("CC       ") and current_section:
                 # Continuation of a previous comment section
                 entry_data[current_section] += " " + content
