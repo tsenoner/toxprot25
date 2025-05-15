@@ -45,10 +45,10 @@
 
 
 ## ToDo
-- [ ] fix x-axis on histogram 1-25, 26-50, ... 300+ [ST]
-- [ ] fix protein family plot [ST]
-  - [ ] Huwenotoxin - neurotoxin 10
-  - [ ] sort by abundancy
+- [x] fix x-axis on histogram 1-25, 26-50, ... 300+ [ST]
+- [-] fix protein family plot [ST]
+  - [x] Huwenotoxin - neurotoxin 10
+  - [x] sort by abundancy
   - [ ] sankey diagram would be great (pySankey)
 - [ ] double check the protein family count -> give me an explanation of how you did it. [ST]
 - [ ] Marine/Terrestrial protein families improve plot [TS]
