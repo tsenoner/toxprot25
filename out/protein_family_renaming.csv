@@ -12,7 +12,7 @@ Spider toxin Tx2 family,Neurotoxin 03 (Tx2) family,28,28,42
 U8-lycotoxin family,Neurotoxin 19 (CSTX) family,28,28,185
 Beta/delta-agatoxin family,Neurotoxin 07 (Beta/delta-agtx) family,27,27,32
 U2-agatoxin family,Neurotoxin 01 (U2-agtx) family,24,24,28
-Contryphan family,O2 superfamily,22,22,46
+Contryphan family,Conotoxin O2 superfamily,22,22,105
 Cytoinsectotoxin family,Cationic peptide 06 (cytoinsectotoxin) family,20,20,20
 Spider wap-1 family,Venom protein 11 family,18,18,23
 Phrixotoxin family,Neurotoxin 30 (phrixotoxin) family,13,13,18
@@ -49,7 +49,6 @@ JZTX-72 family,Neurotoxin 27 (Jztx-72) family,3,3,8
 Litx family,Neurotoxin 28 (Litx) family,3,3,3
 Magi-5 family,Neurotoxin 15 family,3,3,9
 Spider toxin CSTX superfamily,Spider toxin CSTX family,3,128,3
-Conotoxin M family,Conotoxin M superfamily,2,2,180
 HWTX-LSTX family,Neurotoxin 25 family,2,2,18
 Spider LiTx3-related peptide family,Neurotoxin 39 family,2,2,2
 Spider toxin CSTX superfamily,Neurotoxin 02 (plectoxin) family,2,128,42

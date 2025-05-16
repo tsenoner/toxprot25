@@ -1,9 +1,6 @@
 import pandas as pd
 from pathlib import Path
 
-# --- Configuration ---
-SPLIT_CHAR_2017_REGEX = r"\."  # Regex for literal dot
-SPLIT_CHAR_2025_REGEX = r"[,;]"  # Regex for comma or semicolon
 
 # --- Path Definitions ---
 try:
@@ -17,7 +14,7 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)  # Ensure 'out' directory exists
 
 
 # --- Helper Function ---
-def get_all_protein_families_global(df, protein_family_col_name, split_pattern):
+def get_all_protein_families_global(df, protein_family_col_name):
     """Extract global protein family counts from a given DataFrame."""
     if protein_family_col_name not in df.columns:
         print(
@@ -29,21 +26,15 @@ def get_all_protein_families_global(df, protein_family_col_name, split_pattern):
     temp_df[protein_family_col_name] = (
         temp_df[protein_family_col_name].fillna("").astype(str)
     )
-    # Use regex split, n=1 to get the first part before the first delimiter
-    first_families = (
-        temp_df[protein_family_col_name]
-        .str.split(split_pattern, n=1, regex=True)
-        .str[0]
-    )
-    valid_families = first_families[first_families != ""]
+    valid_families = temp_df[protein_family_col_name][
+        temp_df[protein_family_col_name] != ""
+    ]
     family_counts = valid_families.value_counts()
     return family_counts.sort_index()
 
 
 # --- Main Analysis Function ---
-def generate_renaming_report(
-    df_2017_orig, df_2025_orig, split_pattern_2017, split_pattern_2025
-):
+def generate_renaming_report(df_2017_orig, df_2025_orig):
     """
     Analyzes potential protein family renamings by tracking changes in the primary protein family
     assigned to the same "Entry" identifier between the 2017 and 2025 datasets.
@@ -59,11 +50,7 @@ def generate_renaming_report(
     # Prepare 2017 data: Entry and its primary Protein Family
     df_2017_entry_family = df_2017_orig[[entry_col_name, protein_col_name]].copy()
     df_2017_entry_family[protein_col_name] = (
-        df_2017_entry_family[protein_col_name]
-        .fillna("")
-        .astype(str)
-        .str.split(split_pattern_2017, n=1, regex=True)  # Use regex split
-        .str[0]
+        df_2017_entry_family[protein_col_name].fillna("").astype(str)
     )
     df_2017_entry_family = df_2017_entry_family[
         df_2017_entry_family[protein_col_name] != ""
@@ -72,11 +59,7 @@ def generate_renaming_report(
     # Prepare 2025 data: Entry and its primary Protein Family
     df_2025_entry_family = df_2025_orig[[entry_col_name, protein_col_name]].copy()
     df_2025_entry_family[protein_col_name] = (
-        df_2025_entry_family[protein_col_name]
-        .fillna("")
-        .astype(str)
-        .str.split(split_pattern_2025, n=1, regex=True)  # Use regex split
-        .str[0]
+        df_2025_entry_family[protein_col_name].fillna("").astype(str)
     )
     df_2025_entry_family = df_2025_entry_family[
         df_2025_entry_family[protein_col_name] != ""
@@ -113,12 +96,8 @@ def generate_renaming_report(
     )
 
     # Get global counts for context (using the original full dataframes)
-    counts_2017_global = get_all_protein_families_global(
-        df_2017_orig, protein_col_name, split_pattern_2017
-    )
-    counts_2025_global = get_all_protein_families_global(
-        df_2025_orig, protein_col_name, split_pattern_2025
-    )
+    counts_2017_global = get_all_protein_families_global(df_2017_orig, protein_col_name)
+    counts_2025_global = get_all_protein_families_global(df_2025_orig, protein_col_name)
 
     renaming_counts["Old_Family_Global_Count_2017"] = renaming_counts[
         "Family_2017"
@@ -172,7 +151,5 @@ if __name__ == "__main__":
     generate_renaming_report(
         toxprot_2017_df_orig,
         toxprot_2025_df_orig,
-        SPLIT_CHAR_2017_REGEX,
-        SPLIT_CHAR_2025_REGEX,
     )
     print("\nFamily renaming report generation complete.")
