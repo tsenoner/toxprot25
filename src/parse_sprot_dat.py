@@ -267,7 +267,15 @@ def parse_entry(entry_lines):
         if processed_family_text.endswith("."):
             processed_family_text = processed_family_text[:-1]
 
-        entry_data["Protein families"] = processed_family_text.strip()
+        stripped_text = processed_family_text.strip()
+        if stripped_text:
+            entry_data["Protein families"] = (
+                stripped_text[0].upper() + stripped_text[1:]
+            )
+        else:
+            entry_data["Protein families"] = (
+                stripped_text  # Assigns empty string if stripped_text is empty
+            )
 
     # Check for "venom" in the complete tissue specificity text
     has_venom_tissue = "venom" in entry_data["Tissue specificity"].lower()
