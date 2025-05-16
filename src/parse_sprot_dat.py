@@ -150,12 +150,7 @@ def parse_entry(entry_lines):
             elif "-!- SIMILARITY:" in content:
                 current_section = "Protein families"
                 similarity_text = content.replace("-!- SIMILARITY:", "").strip()
-                # Remove "Belongs to the" prefix if present
-                similarity_text = re.sub(r"^Belongs to the ", "", similarity_text)
-                if similarity_text:  # Ensure not empty before indexing
-                    similarity_text = similarity_text[0].upper() + similarity_text[1:]
-                else:
-                    similarity_text = ""
+                # Store the relatively raw text; detailed parsing is deferred.
                 entry_data[current_section] = similarity_text
             # If it's a new CC -!- section header that we don't explicitly handle,
             # reset current_section to prevent appending its content to the previous section.
@@ -254,7 +249,25 @@ def parse_entry(entry_lines):
         family_text = re.sub(
             r"\s*\{ECO:[^\}]+\}\.?", "", entry_data["Protein families"]
         ).strip()
-        entry_data["Protein families"] = family_text
+
+        # Attempt to extract the family name after "belongs to the"
+        # This handles cases like "Some prefix; belongs to the X family."
+        match_belongs = re.search(r"belongs to the\s+(.+)", family_text, re.IGNORECASE)
+        if match_belongs:
+            # Take the part after "belongs to the"
+            processed_family_text = match_belongs.group(1)
+        else:
+            # If "belongs to the" is not found, try removing "Belongs to the " from the start
+            # This handles cases like "Belongs to the X family."
+            processed_family_text = re.sub(
+                r"^Belongs to the\s+", "", family_text, flags=re.IGNORECASE
+            )
+
+        # Remove trailing period if any, and strip whitespace
+        if processed_family_text.endswith("."):
+            processed_family_text = processed_family_text[:-1]
+
+        entry_data["Protein families"] = processed_family_text.strip()
 
     # Check for "venom" in the complete tissue specificity text
     has_venom_tissue = "venom" in entry_data["Tissue specificity"].lower()
