@@ -18,7 +18,7 @@ except NameError:  # Fallback for interactive environments
     BASE_PATH = (Path.cwd()) if Path.cwd().name == "toxprot25" else Path.cwd() / ".."
 
 DATA_PATH = BASE_PATH / "data" / "processed"
-FIGURE_OUTPUT_PATH = BASE_PATH / "figures" / "taxa" / "habitat_analysis_exploration"
+FIGURE_OUTPUT_PATH = BASE_PATH / "figures" / "taxa" / "habitat"
 FIGURE_OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
 
 print(f"Project BASE_PATH resolved to: {BASE_PATH}")
@@ -499,13 +499,13 @@ def plot_diverging_bar_charts_protein_family_mpl():
     fig_abs, ax_abs = plt.subplots(figsize=(12, max(6, len(y_labels_abs) * 0.4)))
     y_pos_abs = np.arange(len(y_labels_abs))
 
-    bars_t_abs = ax_abs.barh(
+    ax_abs.barh(
         y_pos_abs,
         terrestrial_values_abs,
         color="forestgreen",
         label="Terrestrial",
     )
-    bars_m_abs = ax_abs.barh(
+    ax_abs.barh(
         y_pos_abs,
         -marine_values_abs,
         color="steelblue",
@@ -591,13 +591,13 @@ def plot_diverging_bar_charts_protein_family_mpl():
     fig_perc, ax_perc = plt.subplots(figsize=(12, max(6, len(y_labels_perc) * 0.4)))
     y_pos_perc = np.arange(len(y_labels_perc))
 
-    bars_t_perc = ax_perc.barh(
+    ax_perc.barh(
         y_pos_perc,
         terrestrial_values_perc,
         color="forestgreen",
         label="Terrestrial",
     )
-    bars_m_perc = ax_perc.barh(
+    ax_perc.barh(
         y_pos_perc,
         -marine_values_perc,
         color="steelblue",
