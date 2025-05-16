@@ -50,12 +50,12 @@
   - [x] Huwenotoxin - neurotoxin 10
   - [x] sort by abundancy
   - [ ] sankey diagram would be great (pySankey)
-- [ ] double check the protein family count -> give me an explanation of how you did it. [ST]
-- [ ] Marine/Terrestrial protein families improve plot [TS]
-- [ ] stacked bar (top 5 taxa) -> dots in background [TS]
+- [x] double check the protein family count -> give me an explanation of how you did it. [ST]
+- [x] Marine/Terrestrial protein families improve plot [TS]
+- [x] stacked bar (top 5 taxa) -> dots in background [TS]
 - [ ] write methods [TS]
 - [ ] supplements/appendix the download version UniProt [TS]
-- [ ] Gigascience
+- [x] Gigascience
 - [ ] Send Selin IDs [TS]
   - [ ] https://orcid.org/0009-0002-2296-994X
   - [ ] Selin Tuerkoglu

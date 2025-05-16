@@ -18,7 +18,7 @@ except NameError:  # Fallback for interactive environments
     BASE_PATH = (Path.cwd()) if Path.cwd().name == "toxprot25" else Path.cwd() / ".."
 
 DATA_PATH = BASE_PATH / "data" / "processed"
-FIGURE_OUTPUT_PATH = BASE_PATH / "figures" / "taxa" / "habitat"
+FIGURE_OUTPUT_PATH = BASE_PATH / "figures" / "habitat"
 FIGURE_OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
 
 print(f"Project BASE_PATH resolved to: {BASE_PATH}")
