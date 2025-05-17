@@ -49,7 +49,7 @@
 - [-] fix protein family plot [ST]
   - [x] Huwenotoxin - neurotoxin 10
   - [x] sort by abundancy
-  - [ ] sankey diagram would be great (pySankey)
+  - [ ] sankey diagram (optional) (pySankey)
 - [x] double check the protein family count -> give me an explanation of how you did it. [ST]
 - [x] Marine/Terrestrial protein families improve plot [TS]
 - [x] stacked bar (top 5 taxa) -> dots in background [TS]
