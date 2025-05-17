@@ -41,6 +41,7 @@ headers = [
     "Gene Ontology (biological process)",
     "Gene Ontology (cellular component)",
     "Gene Ontology (molecular function)",
+    "Sequence",
 ]
 
 
@@ -54,6 +55,7 @@ def parse_entry(entry_lines):
     has_toxin_keyword = False
     go_terms = {"P": [], "C": [], "F": []}
     processing_de_flags = False
+    in_sequence_block = False  # Flag to indicate if we are processing sequence lines
 
     # Process each line in the entry
     for line in entry_lines:
@@ -61,6 +63,7 @@ def parse_entry(entry_lines):
 
         # Extract the entry ID
         if line.startswith("ID"):
+            in_sequence_block = False  # End sequence block
             match = re.search(r"^(\S+)", content)
             if match:
                 entry_data["Entry Name"] = match.group(1)
@@ -71,12 +74,14 @@ def parse_entry(entry_lines):
 
         # Extract accession
         elif line.startswith("AC"):
+            in_sequence_block = False  # End sequence block
             if not entry_data["Entry"]:  # Only take the first accession
                 primary_acc = content.split(";")[0].strip()
                 entry_data["Entry"] = primary_acc
 
         # Extract organism information
         elif line.startswith("OS"):
+            in_sequence_block = False  # End sequence block
             if not entry_data["Organism"]:
                 entry_data["Organism"] = content.rstrip(".")
             else:
@@ -84,17 +89,20 @@ def parse_entry(entry_lines):
 
         # Check if organism is Metazoa
         elif line.startswith("OC"):
+            in_sequence_block = False  # End sequence block
             if "Metazoa" in content:
                 is_metazoa = True
 
         # Extract taxonomy ID
         elif line.startswith("OX"):
+            in_sequence_block = False  # End sequence block
             match = re.search(r"NCBI_TaxID=(\d+)", content)
             if match:
                 entry_data["Organism (ID)"] = match.group(1)
 
         # Extract protein names and check for fragment flags
         elif line.startswith("DE"):
+            in_sequence_block = False  # End sequence block
             # Check for Fragment in DE Flags section
             if "Flags:" in content:
                 processing_de_flags = True
@@ -123,6 +131,7 @@ def parse_entry(entry_lines):
 
         # Extract comments for function, tissue specificity, similarity, etc.
         elif line.startswith("CC"):
+            in_sequence_block = False  # End sequence block
             # If we hit a CAUTION section, reset current_section to stop adding content
             if "-!- CAUTION:" in content:
                 current_section = None
@@ -162,6 +171,7 @@ def parse_entry(entry_lines):
 
         # Extract feature information for signal peptide, propeptide, disulfide bonds
         elif line.startswith("FT"):
+            in_sequence_block = False  # End sequence block
             feature_key = content.split()[0] if content else ""
 
             if feature_key == "SIGNAL":
@@ -181,6 +191,10 @@ def parse_entry(entry_lines):
 
         # Extract sequence information for mass
         elif line.startswith("SQ"):
+            in_sequence_block = True  # Start of sequence block
+            entry_data["Sequence"] = ""  # Initialize sequence string for this entry
+
+            # Existing logic to parse Mass and Fragment from SQ line content
             match = re.search(r"(\d+) MW", content)
             if match:
                 entry_data["Mass"] = match.group(1)
@@ -191,6 +205,7 @@ def parse_entry(entry_lines):
 
         # Extract database cross-references
         elif line.startswith("DR"):
+            in_sequence_block = False  # End sequence block
             if "InterPro" in content:
                 ipr_id = content.split(";")[1].strip()
                 if entry_data["InterPro"]:
@@ -232,8 +247,16 @@ def parse_entry(entry_lines):
 
         # Extract keywords
         elif line.startswith("KW"):
+            in_sequence_block = False  # End sequence block
             if "Toxin" in content:
                 has_toxin_keyword = True
+
+        # Handle sequence data lines if in sequence block
+        # These lines start with spaces and follow an SQ line.
+        elif in_sequence_block and line.startswith("  "):
+            # For sequence data lines, process the raw line content directly
+            sequence_part = line.strip().replace(" ", "")
+            entry_data["Sequence"] += sequence_part
 
     # Process GO terms
     if go_terms["P"]:

@@ -1,5 +1,7 @@
 docs/manuscript
 data/raw/201711_sprot.dat
+data/raw/202501_sprot.dat
+data/processed/toxprot_2025.h5
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
