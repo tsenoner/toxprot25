@@ -31,8 +31,8 @@
   - [x] protein families clustering
   - [x] createtable comparison - matplotlib?
   - [x] create plots (protein length distribution + protein family)
-  - [ ] apply new regex/method to compress/summarize taxa
-  - [ ] Count by spiecies instead of scientific name
+  - [ ] ~~apply new regex/method to compress/summarize taxa~~
+  - [x] Count by spiecies instead of scientific name
 - TS
   - [x] Parse kim excel file to CSV into processed
   - [x] Parse original 2017.11 swissprot data
@@ -40,7 +40,7 @@
   - [x] distinguish between marine and terrestrial taxa family
   - [x] create plots (tax dist + taxa new + terra vs marine)
   - [ ] ProtSpace plot
-  - [ ] Add column "species" instead of "scientific name"
+  - [x] Add column "species" instead of "scientific name"
 
 
 
