@@ -33,6 +33,7 @@ headers = [
     "Glycosylation",
     "Post-translational modification",
     "Signal peptide",
+    "Signal peptide (range)",
     "Propeptide",
     "InterPro",
     "Pfam",
@@ -176,6 +177,17 @@ def parse_entry(entry_lines):
 
             if feature_key == "SIGNAL":
                 entry_data["Signal peptide"] = "Yes"
+                # Try to parse new format first (e.g., "1..21")
+                range_match_new = re.search(r"(\d+)\.\.(\d+)", content)
+                if range_match_new:
+                    entry_data["Signal peptide (range)"] = (
+                        f"{range_match_new.group(1)}-{range_match_new.group(2)}"
+                    )
+                else:
+                    # Try to parse old format (e.g., "1     21")
+                    parts = content.split()
+                    if len(parts) >= 3 and parts[1].isdigit() and parts[2].isdigit():
+                        entry_data["Signal peptide (range)"] = f"{parts[1]}-{parts[2]}"
             elif feature_key == "PROPEP":
                 entry_data["Propeptide"] = "Yes"
             elif feature_key == "DISULFID":
