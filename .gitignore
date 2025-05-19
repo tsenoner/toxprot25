@@ -1,6 +1,9 @@
 docs/manuscript
 data/raw/201711_sprot.dat
 data/raw/202501_sprot.dat
+data/processed/protspace/protspace_2025_mature.json
+data/processed/protspace/protspace_2025.json
+data/processed/protspace/protspace_2025_style.json
 *.h5
 
 # Byte-compiled / optimized / DLL files
