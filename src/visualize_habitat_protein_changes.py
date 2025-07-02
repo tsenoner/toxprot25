@@ -710,19 +710,54 @@ def plot_diverging_bar_charts_protein_family_mpl():
     fig_c, ax_c = plt.subplots(figsize=(12, max(6, len(y_labels_c) * 0.4)))
     y_pos_c = np.arange(len(y_labels_c))
 
-    # Terrestrial 2025 (right side)
-    ax_c.barh(
-        y_pos_c,
-        terrestrial_values_2025,
-        color="forestgreen",
-        label="Terrestrial (2025)",
+    # Define bright colors for added portions
+    bright_green = "#31c42f"  # A bright green
+    bright_blue = "#56a0dd"  # A bright blue
+
+    # Terrestrial bars (right side)
+    # Portion of 2025 bar that was effectively present in 2017 (or full 2025 bar if count decreased)
+    t_existing_or_total_if_decrease = np.minimum(
+        terrestrial_values_2017, terrestrial_values_2025
     )
-    # Marine 2025 (left side)
+    # Portion of 2025 bar that is new/added since 2017 (will be 0 if count decreased)
+    t_added_since_2017 = np.maximum(
+        0, terrestrial_values_2025 - terrestrial_values_2017
+    )
+
     ax_c.barh(
         y_pos_c,
-        -marine_values_2025,  # Negative for left plotting
+        t_existing_or_total_if_decrease,
+        color="forestgreen",
+        label="Terrestrial (2025)",  # Main label for terrestrial
+    )
+    ax_c.barh(
+        y_pos_c,
+        t_added_since_2017,
+        left=t_existing_or_total_if_decrease,  # Stack on top of the existing part
+        color=bright_green,
+        # No label for this part to keep legend clean
+    )
+
+    # Marine bars (left side, plotted with negative values)
+    # Portion of 2025 bar that was effectively present in 2017 (or full 2025 bar if count decreased) - positive value
+    m_existing_or_total_if_decrease_positive = np.minimum(
+        marine_values_2017, marine_values_2025
+    )
+    # Portion of 2025 bar that is new/added since 2017 - positive value
+    m_added_since_2017_positive = np.maximum(0, marine_values_2025 - marine_values_2017)
+
+    ax_c.barh(
+        y_pos_c,
+        -m_existing_or_total_if_decrease_positive,  # Plot as negative
         color="steelblue",
-        label="Marine (2025)",
+        label="Marine (2025)",  # Main label for marine
+    )
+    ax_c.barh(
+        y_pos_c,
+        -m_added_since_2017_positive,  # Plot as negative
+        left=-m_existing_or_total_if_decrease_positive,  # Stack on the 'left' end of the existing part
+        color=bright_blue,
+        # No label for this part
     )
 
     ax_c.set_yticks(y_pos_c)
@@ -758,6 +793,7 @@ def plot_diverging_bar_charts_protein_family_mpl():
             va="center",
             ha="left" if t_2025 >= 0 else "right",
             fontsize=8,
+            # Ensure no specific color is set here, to use default
         )
         # Marine text (left)
         ax_c.text(
@@ -770,6 +806,7 @@ def plot_diverging_bar_charts_protein_family_mpl():
             va="center",
             ha="right" if m_2025 >= 0 else "left",
             fontsize=8,
+            # Ensure no specific color is set here, to use default
         )
 
     # Adjust x-limits to ensure text is visible
