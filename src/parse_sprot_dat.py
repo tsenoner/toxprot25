@@ -42,6 +42,7 @@ headers = [
     "Gene Ontology (biological process)",
     "Gene Ontology (cellular component)",
     "Gene Ontology (molecular function)",
+    "Protein existence",
     "Sequence",
 ]
 
@@ -262,6 +263,11 @@ def parse_entry(entry_lines):
             in_sequence_block = False  # End sequence block
             if "Toxin" in content:
                 has_toxin_keyword = True
+
+        # Extract protein existence
+        elif line.startswith("PE"):
+            in_sequence_block = False  # End sequence block
+            entry_data["Protein existence"] = content
 
         # Handle sequence data lines if in sequence block
         # These lines start with spaces and follow an SQ line.
