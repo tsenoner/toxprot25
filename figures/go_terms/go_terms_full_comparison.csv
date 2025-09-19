@@ -1,0 +1,486 @@
+GO_Term,2017_count,2025_count,absolute_change,percentage_change,2017_percentage,2025_percentage
+GO:0005576 (extracellular region),6635,7556,921,13.880934438583271,33.13689257354043,26.752584619742247
+GO:0090729 (toxin activity),5840,7037,1197,20.496575342465754,29.166458572641464,24.91502620025492
+GO:0099106 (ion channel regulator activity),0,778,778,inf,0.0,2.754567341736298
+GO:0031640 (killing of cells of another organism),0,687,687,inf,0.0,2.432375017702875
+GO:0016042 (lipid catabolic process),432,672,240,55.55555555555556,2.1575188533186833,2.379266392862201
+GO:0015459 (potassium channel regulator activity),0,633,633,inf,0.0,2.241183968276448
+GO:0046872 (metal ion binding),562,611,49,8.718861209964412,2.8067722119562504,2.163291318510126
+GO:0047498 (calcium-dependent phospholipase A2 activity),3,526,523,17433.333333333336,0.01498276981471308,1.8623424444129726
+GO:0030550 (acetylcholine receptor inhibitor activity),13,505,492,3784.6153846153848,0.06492533586375668,1.7879903696360289
+GO:0006508 (proteolysis),6,446,440,7333.333333333333,0.02996553962942616,1.5790964452627108
+GO:0047499 (calcium-independent phospholipase A2 activity),0,434,434,inf,0.0,1.5366095453901714
+GO:0042742 (defense response to bacterium),345,430,85,24.637681159420293,1.7230185286920041,1.5224472454326583
+GO:0005543 (phospholipid binding),0,425,425,inf,0.0,1.504744370485767
+GO:0017080 (sodium channel regulator activity),3,415,412,13733.333333333334,0.01498276981471308,1.469338620591984
+GO:0005615 (extracellular space),24,415,391,1629.1666666666667,0.11986215851770464,1.469338620591984
+GO:0044218 (other organism cell membrane),257,391,134,52.14007782101168,1.2835239474604205,1.3843648208469055
+GO:0016020 (membrane),144,340,196,136.11111111111111,0.7191729511062278,1.2037954963886135
+GO:0004867 (serine-type endopeptidase inhibitor activity),223,314,91,40.80717488789238,1.1137192228936723,1.1117405466647783
+GO:0005246 (calcium channel regulator activity),2,311,309,15450.0,0.00998851320980872,1.1011188216966437
+GO:0035792 (host cell postsynaptic membrane),0,308,308,inf,0.0,1.0904970967285088
+GO:0042151 (nematocyst),251,307,56,22.31075697211155,1.2535584078309945,1.0869565217391304
+GO:0005886 (plasma membrane),2,226,224,11200.0,0.00998851320980872,0.8001699475994901
+GO:0016829 (lyase activity),0,220,220,inf,0.0,0.7789264976632205
+GO:0042130 (negative regulation of T cell proliferation),0,218,218,inf,0.0,0.7718453476844639
+GO:0008217 (regulation of blood pressure),158,175,17,10.759493670886076,0.7890925435748888,0.6196006231411981
+GO:0044231 (host cell presynaptic membrane),0,171,171,inf,0.0,0.605438323183685
+GO:0030141 (secretory granule),0,163,163,inf,0.0,0.5771137232686588
+GO:0050832 (defense response to fungus),92,158,66,71.73913043478261,0.45947160765120115,0.5594108483217675
+GO:0042311 (vasodilation),117,129,12,10.256410256410255,0.5843280227738101,0.45673417362979746
+GO:0045087 (innate immune response),3,115,112,3733.3333333333335,0.01498276981471308,0.40716612377850164
+GO:0030414 (peptidase inhibitor activity),1,88,87,8700.0,0.00499425660490436,0.3115705990652882
+GO:0006952 (defense response),73,74,1,1.36986301369863,0.3645807321580183,0.26200254921399235
+GO:0006915 (apoptotic process),72,73,1,1.3888888888888888,0.3595864755531139,0.2584619742246141
+GO:0044562 (envenomation resulting in negative regulation of voltage-gated potassium channel activity in another organism),0,67,67,inf,0.0,0.23721852428834445
+GO:0008083 (growth factor activity),58,64,6,10.344827586206897,0.2896668830844529,0.2265967993202096
+GO:0030246 (carbohydrate binding),62,64,2,3.225806451612903,0.3096439095040703,0.2265967993202096
+GO:0006811 (monoatomic ion transport),0,56,56,inf,0.0,0.19827219940518342
+GO:0008237 (metallopeptidase activity),45,50,5,11.11111111111111,0.2247415472206962,0.17702874946891375
+GO:0008289 (lipid binding),0,48,48,inf,0.0,0.1699475994901572
+GO:0008236 (serine-type peptidase activity),40,48,8,20.0,0.19977026419617439,0.1699475994901572
+GO:0005102 (signaling receptor binding),0,46,46,inf,0.0,0.16286644951140067
+GO:0048146 (positive regulation of fibroblast proliferation),0,40,40,inf,0.0,0.141622999575131
+GO:0006633 (fatty acid biosynthetic process),0,40,40,inf,0.0,0.141622999575131
+GO:0030425 (dendrite),0,38,38,inf,0.0,0.13454184959637447
+GO:0030424 (axon),0,38,38,inf,0.0,0.13454184959637447
+GO:0050804 (modulation of chemical synaptic transmission),0,37,37,inf,0.0,0.13100127460699618
+GO:0005163 (nerve growth factor receptor binding),0,37,37,inf,0.0,0.13100127460699618
+GO:0038180 (nerve growth factor signaling pathway),0,37,37,inf,0.0,0.13100127460699618
+GO:0008021 (synaptic vesicle),0,37,37,inf,0.0,0.13100127460699618
+GO:0048812 (neuron projection morphogenesis),0,37,37,inf,0.0,0.13100127460699618
+GO:0007169 (cell surface receptor protein tyrosine kinase signaling pathway),0,37,37,inf,0.0,0.13100127460699618
+GO:0021675 (nerve development),0,37,37,inf,0.0,0.13100127460699618
+GO:0043524 (negative regulation of neuron apoptotic process),0,37,37,inf,0.0,0.13100127460699618
+GO:0001716 (L-amino-acid oxidase activity),53,36,-17,-32.075471698113205,0.2646956000599311,0.1274606996176179
+GO:0016504 (peptidase activator activity),35,36,1,2.857142857142857,0.1747989811716526,0.1274606996176179
+GO:0044278 (disruption of cell wall in another organism),0,35,35,inf,0.0,0.12392012462823963
+GO:0008191 (metalloendopeptidase inhibitor activity),120,35,-85,-70.83333333333334,0.5993107925885233,0.12392012462823963
+GO:0005179 (hormone activity),27,33,6,22.22222222222222,0.1348449283324177,0.11683897464948308
+GO:0009063 (amino acid catabolic process),0,32,32,inf,0.0,0.1132983996601048
+GO:0019871 (sodium channel inhibitor activity),23,29,6,26.08695652173913,0.11486790191280029,0.10267667469196998
+GO:0019731 (antibacterial humoral response),0,27,27,inf,0.0,0.09559552471321343
+GO:0019870 (potassium channel inhibitor activity),25,27,2,8.0,0.124856415122609,0.09559552471321343
+GO:0050830 (defense response to Gram-positive bacterium),19,26,7,36.84210526315789,0.09489087549318284,0.09205494972383516
+GO:0106329 (L-phenylalaine oxidase activity),0,26,26,inf,0.0,0.09205494972383516
+GO:0006006 (glucose metabolic process),22,25,3,13.636363636363635,0.10987364530789592,0.08851437473445688
+GO:0006935 (chemotaxis),24,25,1,4.166666666666666,0.11986215851770464,0.08851437473445688
+GO:0052739 (phosphatidylserine 1-acylhydrolase activity),20,25,5,25.0,0.09988513209808719,0.08851437473445688
+GO:0008970 (phospholipase A1 activity),0,25,25,inf,0.0,0.08851437473445688
+GO:0004415 (hyalurononglucosaminidase activity),23,25,2,8.695652173913043,0.11486790191280029,0.08851437473445688
+GO:0005172 (vascular endothelial growth factor receptor binding),1,24,23,2300.0,0.00499425660490436,0.0849737997450786
+GO:0042056 (chemoattractant activity),0,24,24,inf,0.0,0.0849737997450786
+GO:0001938 (positive regulation of endothelial cell proliferation),4,23,19,475.0,0.01997702641961744,0.08143322475570033
+GO:0060754 (positive regulation of mast cell chemotaxis),0,23,23,inf,0.0,0.08143322475570033
+GO:0030214 (hyaluronan catabolic process),0,23,23,inf,0.0,0.08143322475570033
+GO:0050930 (induction of positive chemotaxis),0,23,23,inf,0.0,0.08143322475570033
+GO:0045766 (positive regulation of angiogenesis),0,23,23,inf,0.0,0.08143322475570033
+GO:0048010 (vascular endothelial growth factor receptor signaling pathway),0,23,23,inf,0.0,0.08143322475570033
+GO:0001666 (response to hypoxia),0,23,23,inf,0.0,0.08143322475570033
+GO:0038084 (vascular endothelial growth factor signaling pathway),0,23,23,inf,0.0,0.08143322475570033
+GO:0050829 (defense response to Gram-negative bacterium),20,23,3,15.0,0.09988513209808719,0.08143322475570033
+GO:0002040 (sprouting angiogenesis),0,23,23,inf,0.0,0.08143322475570033
+GO:0004869 (cysteine-type endopeptidase inhibitor activity),20,22,2,10.0,0.09988513209808719,0.07789264976632206
+GO:0004623 (phospholipase A2 activity),425,22,-403,-94.82352941176471,2.122559057084353,0.07789264976632206
+GO:0004252 (serine-type endopeptidase activity),19,22,3,15.789473684210526,0.09489087549318284,0.07789264976632206
+GO:0005737 (cytoplasm),9,22,13,144.44444444444443,0.04494830944413924,0.07789264976632206
+GO:0050688 (regulation of defense response to virus),19,20,1,5.263157894736842,0.09489087549318284,0.0708114997875655
+GO:0005509 (calcium ion binding),15,20,5,33.33333333333333,0.07491384907356541,0.0708114997875655
+GO:0017081 (chloride channel regulator activity),0,19,19,inf,0.0,0.06727092479818723
+GO:0008270 (zinc ion binding),17,19,2,11.76470588235294,0.08490236228337411,0.06727092479818723
+GO:0030154 (cell differentiation),10,18,8,80.0,0.049942566049043596,0.06373034980880896
+GO:0044564 (envenomation resulting in occlusion of the pore of voltage-gated potassium channel in another organism),0,18,18,inf,0.0,0.06373034980880896
+GO:0035807 (induction of blood coagulation in another organism),0,18,18,inf,0.0,0.06373034980880896
+GO:0007168 (receptor guanylyl cyclase signaling pathway),0,17,17,inf,0.0,0.06018977481943068
+GO:0006182 (cGMP biosynthetic process),0,17,17,inf,0.0,0.06018977481943068
+GO:0070062 (extracellular exosome),0,17,17,inf,0.0,0.06018977481943068
+GO:0035821 (modulation of process of another organism),0,17,17,inf,0.0,0.06018977481943068
+GO:0044469 (envenomation resulting in positive regulation of blood coagulation in another organism),0,16,16,inf,0.0,0.0566491998300524
+GO:0044361 (negative regulation of voltage-gated potassium channel activity in another organism),0,16,16,inf,0.0,0.0566491998300524
+GO:0097746 (blood vessel diameter maintenance),0,16,16,inf,0.0,0.0566491998300524
+GO:0004222 (metalloendopeptidase activity),11,15,4,36.36363636363637,0.05493682265394796,0.05310862484067413
+GO:0043655 (host extracellular space),0,14,14,inf,0.0,0.049568049851295856
+GO:0044477 (envenomation resulting in negative regulation of platelet aggregation in another organism),0,14,14,inf,0.0,0.049568049851295856
+GO:0006887 (exocytosis),10,13,3,30.0,0.049942566049043596,0.04602747486191758
+GO:0035899 (suppression of blood coagulation in another organism),0,13,13,inf,0.0,0.04602747486191758
+GO:0044398 (envenomation resulting in induction of edema in another organism),0,13,13,inf,0.0,0.04602747486191758
+GO:0044493 (envenomation resulting in negative regulation of voltage-gated sodium channel activity in another organism),0,12,12,inf,0.0,0.0424868998725393
+GO:0044358 (envenomation resulting in hemorrhagic damage in another organism),0,12,12,inf,0.0,0.0424868998725393
+GO:0035893 (suppression of platelet aggregation in another organism),0,12,12,inf,0.0,0.0424868998725393
+GO:0044485 (envenomation resulting in fibrinogenolysis in another organism),0,12,12,inf,0.0,0.0424868998725393
+GO:0001935 (endothelial cell proliferation),0,12,12,inf,0.0,0.0424868998725393
+GO:0006509 (membrane protein ectodomain proteolysis),0,11,11,inf,0.0,0.03894632488316103
+GO:0008201 (heparin binding),6,11,5,83.33333333333334,0.02996553962942616,0.03894632488316103
+GO:0035738 (envenomation resulting in modulation of process in another organism),0,11,11,inf,0.0,0.03894632488316103
+GO:0019855 (calcium channel inhibitor activity),9,11,2,22.22222222222222,0.04494830944413924,0.03894632488316103
+GO:0044504 (modulation of receptor activity in another organism),0,11,11,inf,0.0,0.03894632488316103
+GO:0015288 (porin activity),0,10,10,inf,0.0,0.03540574989378275
+GO:0046930 (pore complex),0,10,10,inf,0.0,0.03540574989378275
+GO:0008200 (ion channel inhibitor activity),9,9,0,0.0,0.04494830944413924,0.03186517490440448
+GO:0000166 (nucleotide binding),3,9,6,200.0,0.01498276981471308,0.03186517490440448
+GO:0042310 (vasoconstriction),10,9,-1,-10.0,0.049942566049043596,0.03186517490440448
+GO:0007155 (cell adhesion),9,9,0,0.0,0.04494830944413924,0.03186517490440448
+GO:0044179 (hemolysis in another organism),0,9,9,inf,0.0,0.03186517490440448
+GO:0006196 (AMP catabolic process),0,9,9,inf,0.0,0.03186517490440448
+GO:0031410 (cytoplasmic vesicle),0,9,9,inf,0.0,0.03186517490440448
+GO:0016460 (myosin II complex),0,9,9,inf,0.0,0.03186517490440448
+GO:0016787 (hydrolase activity),10,9,-1,-10.0,0.049942566049043596,0.03186517490440448
+GO:0044478 (envenomation resulting in positive regulation of platelet aggregation in another organism),0,8,8,inf,0.0,0.0283245999150262
+GO:0002376 (immune system process),0,8,8,inf,0.0,0.0283245999150262
+GO:0044616 (modulation of relaxation of muscle in another organism),0,8,8,inf,0.0,0.0283245999150262
+GO:0044522 (envenomation resulting in myocyte killing in another organism),0,8,8,inf,0.0,0.0283245999150262
+GO:0044489 (negative regulation of voltage-gated sodium channel activity in another organism),0,8,8,inf,0.0,0.0283245999150262
+GO:0007608 (sensory perception of smell),0,8,8,inf,0.0,0.0283245999150262
+GO:0001525 (angiogenesis),12,8,-4,-33.33333333333333,0.05993107925885232,0.0283245999150262
+GO:0009395 (phospholipid catabolic process),4,7,3,75.0,0.01997702641961744,0.024784024925647928
+GO:0032991 (protein-containing complex),0,7,7,inf,0.0,0.024784024925647928
+GO:0045987 (positive regulation of smooth muscle contraction),7,7,0,0.0,0.03495979623433052,0.024784024925647928
+GO:0005524 (ATP binding),0,7,7,inf,0.0,0.024784024925647928
+GO:0030133 (transport vesicle),0,7,7,inf,0.0,0.024784024925647928
+GO:0006644 (phospholipid metabolic process),7,7,0,0.0,0.03495979623433052,0.024784024925647928
+GO:0004050 (apyrase activity),0,6,6,inf,0.0,0.02124344993626965
+GO:0044521 (envenomation resulting in muscle damage in another organism),0,6,6,inf,0.0,0.02124344993626965
+GO:0019863 (IgE binding),0,6,6,inf,0.0,0.02124344993626965
+GO:0062023 (collagen-containing extracellular matrix),0,6,6,inf,0.0,0.02124344993626965
+GO:0008233 (peptidase activity),6,6,0,0.0,0.02996553962942616,0.02124344993626965
+GO:0030195 (negative regulation of blood coagulation),7,6,-1,-14.285714285714285,0.03495979623433052,0.02124344993626965
+GO:0033644 (host cell membrane),6,6,0,0.0,0.02996553962942616,0.02124344993626965
+GO:0006954 (inflammatory response),5,5,0,0.0,0.024971283024521798,0.017702874946891375
+GO:0097367 (carbohydrate derivative binding),0,5,5,inf,0.0,0.017702874946891375
+GO:0045776 (negative regulation of blood pressure),6,5,-1,-16.666666666666664,0.02996553962942616,0.017702874946891375
+GO:0098552 (side of membrane),0,5,5,inf,0.0,0.017702874946891375
+GO:0030574 (collagen catabolic process),4,5,1,25.0,0.01997702641961744,0.017702874946891375
+GO:0003823 (antigen binding),0,5,5,inf,0.0,0.017702874946891375
+GO:0016603 (glutaminyl-peptide cyclotransferase activity),5,5,0,0.0,0.024971283024521798,0.017702874946891375
+GO:0106411 (XMP 5'-nucleosidase activity),0,5,5,inf,0.0,0.017702874946891375
+"GO:0017186 (peptidyl-pyroglutamic acid biosynthetic process, using glutaminyl-peptide cyclotransferase)",5,5,0,0.0,0.024971283024521798,0.017702874946891375
+GO:0019834 (phospholipase A2 inhibitor activity),5,5,0,0.0,0.024971283024521798,0.017702874946891375
+GO:0047429 (nucleoside triphosphate diphosphatase activity),0,5,5,inf,0.0,0.017702874946891375
+GO:0051715 (cytolysis in another organism),0,5,5,inf,0.0,0.017702874946891375
+"GO:0001867 (complement activation, lectin pathway)",0,5,5,inf,0.0,0.017702874946891375
+GO:0043262 (ADP phosphatase activity),0,5,5,inf,0.0,0.017702874946891375
+GO:0009143 (nucleoside triphosphate catabolic process),0,5,5,inf,0.0,0.017702874946891375
+GO:0005829 (cytosol),4,5,1,25.0,0.01997702641961744,0.017702874946891375
+GO:0007596 (blood coagulation),9,5,-4,-44.44444444444444,0.04494830944413924,0.017702874946891375
+GO:0008253 (5'-nucleotidase activity),3,5,2,66.66666666666666,0.01498276981471308,0.017702874946891375
+GO:0042802 (identical protein binding),4,5,1,25.0,0.01997702641961744,0.017702874946891375
+GO:0007218 (neuropeptide signaling pathway),5,5,0,0.0,0.024971283024521798,0.017702874946891375
+GO:0002213 (defense response to insect),0,4,4,inf,0.0,0.0141622999575131
+GO:0051781 (positive regulation of cell division),4,4,0,0.0,0.01997702641961744,0.0141622999575131
+GO:0045986 (negative regulation of smooth muscle contraction),4,4,0,0.0,0.01997702641961744,0.0141622999575131
+GO:0051838 (cytolysis by host of symbiont cells),0,4,4,inf,0.0,0.0141622999575131
+GO:0003677 (DNA binding),3,4,1,33.33333333333333,0.01498276981471308,0.0141622999575131
+GO:0051894 (positive regulation of focal adhesion assembly),4,4,0,0.0,0.01997702641961744,0.0141622999575131
+GO:0044468 (envenomation resulting in modulation of blood coagulation in another organism),0,4,4,inf,0.0,0.0141622999575131
+GO:0001664 (G protein-coupled receptor binding),0,4,4,inf,0.0,0.0141622999575131
+GO:0038023 (signaling receptor activity),0,4,4,inf,0.0,0.0141622999575131
+GO:0004622 (lysophospholipase activity),1,4,3,300.0,0.00499425660490436,0.0141622999575131
+GO:0031334 (positive regulation of protein-containing complex assembly),0,4,4,inf,0.0,0.0141622999575131
+GO:0044488 (modulation of voltage-gated sodium channel activity in another organism),0,4,4,inf,0.0,0.0141622999575131
+GO:0051427 (hormone receptor binding),0,4,4,inf,0.0,0.0141622999575131
+GO:0045735 (nutrient reservoir activity),2,4,2,100.0,0.00998851320980872,0.0141622999575131
+GO:0050731 (positive regulation of peptidyl-tyrosine phosphorylation),4,4,0,0.0,0.01997702641961744,0.0141622999575131
+GO:0044496 (negative regulation of blood pressure in another organism),0,3,3,inf,0.0,0.010621724968134825
+GO:0043306 (positive regulation of mast cell degranulation),5,3,-2,-40.0,0.024971283024521798,0.010621724968134825
+GO:0031982 (vesicle),0,3,3,inf,0.0,0.010621724968134825
+GO:0044523 (envenomation resulting in damage of muscle extracellular matrix in another organism),0,3,3,inf,0.0,0.010621724968134825
+GO:0030166 (proteoglycan biosynthetic process),0,3,3,inf,0.0,0.010621724968134825
+GO:0045134 (UDP phosphatase activity),0,3,3,inf,0.0,0.010621724968134825
+GO:1903817 (negative regulation of voltage-gated potassium channel activity),0,3,3,inf,0.0,0.010621724968134825
+GO:0003990 (acetylcholinesterase activity),3,3,0,0.0,0.01498276981471308,0.010621724968134825
+GO:0044470 (envenomation resulting in negative regulation of blood coagulation in another organism),0,3,3,inf,0.0,0.010621724968134825
+GO:0042803 (protein homodimerization activity),1,3,2,200.0,0.00499425660490436,0.010621724968134825
+GO:0004177 (aminopeptidase activity),2,3,1,50.0,0.00998851320980872,0.010621724968134825
+GO:0000287 (magnesium ion binding),2,3,1,50.0,0.00998851320980872,0.010621724968134825
+GO:0140678 (molecular function inhibitor activity),0,3,3,inf,0.0,0.010621724968134825
+GO:0045907 (positive regulation of vasoconstriction),0,3,3,inf,0.0,0.010621724968134825
+GO:0045777 (positive regulation of blood pressure),4,3,-1,-25.0,0.01997702641961744,0.010621724968134825
+GO:0043245 (extraorganismal space),0,3,3,inf,0.0,0.010621724968134825
+GO:0044484 (envenomation resulting in fibrinolysis in another organism),0,3,3,inf,0.0,0.010621724968134825
+GO:2000272 (negative regulation of signaling receptor activity),0,3,3,inf,0.0,0.010621724968134825
+GO:0008061 (chitin binding),0,3,3,inf,0.0,0.010621724968134825
+GO:0019695 (choline metabolic process),0,3,3,inf,0.0,0.010621724968134825
+GO:0005634 (nucleus),0,3,3,inf,0.0,0.010621724968134825
+GO:0004382 (GDP phosphatase activity),0,3,3,inf,0.0,0.010621724968134825
+GO:0050025 (L-glutamate oxidase activity),0,3,3,inf,0.0,0.010621724968134825
+GO:0006937 (regulation of muscle contraction),5,3,-2,-40.0,0.024971283024521798,0.010621724968134825
+GO:0050029 (L-lysine oxidase activity),0,3,3,inf,0.0,0.010621724968134825
+GO:0008239 (dipeptidyl-peptidase activity),0,3,3,inf,0.0,0.010621724968134825
+GO:0060422 (peptidyl-dipeptidase inhibitor activity),2,2,0,0.0,0.00998851320980872,0.00708114997875655
+GO:0002003 (angiotensin maturation),0,2,2,inf,0.0,0.00708114997875655
+GO:0035916 (modulation of calcium channel activity in another organism),0,2,2,inf,0.0,0.00708114997875655
+GO:0035894 (induction of platelet aggregation in another organism),0,2,2,inf,0.0,0.00708114997875655
+GO:0022829 (wide pore channel activity),0,2,2,inf,0.0,0.00708114997875655
+GO:0007631 (feeding behavior),0,2,2,inf,0.0,0.00708114997875655
+GO:0140313 (molecular sequestering activity),0,2,2,inf,0.0,0.00708114997875655
+GO:0005184 (neuropeptide hormone activity),0,2,2,inf,0.0,0.00708114997875655
+GO:0005178 (integrin binding),0,2,2,inf,0.0,0.00708114997875655
+GO:0005154 (epidermal growth factor receptor binding),0,2,2,inf,0.0,0.00708114997875655
+GO:0044532 (modulation of apoptotic process in another organism),0,2,2,inf,0.0,0.00708114997875655
+GO:0009966 (regulation of signal transduction),0,2,2,inf,0.0,0.00708114997875655
+GO:0035814 (negative regulation of renal sodium excretion),0,2,2,inf,0.0,0.00708114997875655
+GO:0001515 (opioid peptide activity),4,2,-2,-50.0,0.01997702641961744,0.00708114997875655
+GO:0042730 (fibrinolysis),6,2,-4,-66.66666666666666,0.02996553962942616,0.00708114997875655
+GO:0051607 (defense response to virus),0,2,2,inf,0.0,0.00708114997875655
+GO:0044465 (modulation of sensory perception of pain in another organism),0,2,2,inf,0.0,0.00708114997875655
+GO:0006874 (intracellular calcium ion homeostasis),0,2,2,inf,0.0,0.00708114997875655
+GO:1905656 (positive regulation of artery smooth muscle contraction),0,2,2,inf,0.0,0.00708114997875655
+GO:0006469 (negative regulation of protein kinase activity),2,2,0,0.0,0.00998851320980872,0.00708114997875655
+GO:0006309 (apoptotic DNA fragmentation),0,2,2,inf,0.0,0.00708114997875655
+GO:0006959 (humoral immune response),0,2,2,inf,0.0,0.00708114997875655
+GO:0007157 (heterophilic cell-cell adhesion via plasma membrane cell adhesion molecules),0,2,2,inf,0.0,0.00708114997875655
+GO:0141041 (disruption of extracellular matrix of another organism),0,2,2,inf,0.0,0.00708114997875655
+"GO:0044482 (envenomation resulting in blood vessel extracellular matrix damage, causing hemorrhagic damage in another organism)",0,2,2,inf,0.0,0.00708114997875655
+GO:0007173 (epidermal growth factor receptor signaling pathway),0,2,2,inf,0.0,0.00708114997875655
+GO:0044487 (envenomation resulting in modulation of transmission of nerve impulse in another organism),0,2,2,inf,0.0,0.00708114997875655
+GO:0050996 (positive regulation of lipid catabolic process),2,2,0,0.0,0.00998851320980872,0.00708114997875655
+GO:0005783 (endoplasmic reticulum),0,2,2,inf,0.0,0.00708114997875655
+GO:0050921 (positive regulation of chemotaxis),4,2,-2,-50.0,0.01997702641961744,0.00708114997875655
+GO:0050660 (flavin adenine dinucleotide binding),2,2,0,0.0,0.00998851320980872,0.00708114997875655
+GO:0008284 (positive regulation of cell population proliferation),0,2,2,inf,0.0,0.00708114997875655
+GO:0048019 (receptor antagonist activity),1,2,1,100.0,0.00499425660490436,0.00708114997875655
+GO:0031708 (endothelin B receptor binding),0,2,2,inf,0.0,0.00708114997875655
+GO:0004620 (phospholipase activity),2,2,0,0.0,0.00998851320980872,0.00708114997875655
+GO:0016491 (oxidoreductase activity),0,2,2,inf,0.0,0.00708114997875655
+GO:0016853 (isomerase activity),2,2,0,0.0,0.00998851320980872,0.00708114997875655
+GO:0017110 (nucleoside diphosphate phosphatase activity),0,2,2,inf,0.0,0.00708114997875655
+GO:0030899 (calcium-dependent ATPase activity),0,2,2,inf,0.0,0.00708114997875655
+GO:0017171 (serine hydrolase activity),0,2,2,inf,0.0,0.00708114997875655
+GO:0045202 (synapse),1,2,1,100.0,0.00499425660490436,0.00708114997875655
+GO:0003100 (regulation of systemic arterial blood pressure by endothelin),0,2,2,inf,0.0,0.00708114997875655
+GO:0014826 (vein smooth muscle contraction),0,2,2,inf,0.0,0.00708114997875655
+GO:0045840 (positive regulation of mitotic nuclear division),0,2,2,inf,0.0,0.00708114997875655
+GO:0031841 (neuropeptide Y receptor binding),0,2,2,inf,0.0,0.00708114997875655
+GO:0019934 (cGMP-mediated signaling),0,2,2,inf,0.0,0.00708114997875655
+GO:0004190 (aspartic-type endopeptidase activity),0,2,2,inf,0.0,0.00708114997875655
+GO:0006581 (acetylcholine catabolic process),0,2,2,inf,0.0,0.00708114997875655
+GO:0003085 (negative regulation of systemic arterial blood pressure),0,2,2,inf,0.0,0.00708114997875655
+GO:0044475 (envenomation resulting in negative regulation of high voltage-gated calcium channel activity in another organism),0,1,1,inf,0.0,0.003540574989378275
+GO:0051016 (barbed-end actin filament capping),0,1,1,inf,0.0,0.003540574989378275
+GO:0044490 (positive regulation of voltage-gated sodium channel activity in another organism),0,1,1,inf,0.0,0.003540574989378275
+GO:0051918 (negative regulation of fibrinolysis),1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:0103026 (fructose-1-phosphatase activity),0,1,1,inf,0.0,0.003540574989378275
+GO:0140367 (antibacterial innate immune response),0,1,1,inf,0.0,0.003540574989378275
+GO:0051014 (actin filament severing),0,1,1,inf,0.0,0.003540574989378275
+GO:0140629 (small conductance calcium-activated potassium channel inhibitor activity),0,1,1,inf,0.0,0.003540574989378275
+GO:0045932 (negative regulation of muscle contraction),1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:0055037 (recycling endosome),0,1,1,inf,0.0,0.003540574989378275
+GO:0051381 (histamine binding),0,1,1,inf,0.0,0.003540574989378275
+GO:0140628 (outward rectifier potassium channel inhibitor activity),0,1,1,inf,0.0,0.003540574989378275
+GO:1903135 (cupric ion binding),0,1,1,inf,0.0,0.003540574989378275
+GO:0044480 (envenomation resulting in positive regulation of mast cell degranulation in another organism),0,1,1,inf,0.0,0.003540574989378275
+GO:0106435 (carboxylesterase activity),0,1,1,inf,0.0,0.003540574989378275
+GO:0045785 (positive regulation of cell adhesion),1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:0140311 (protein sequestering activity),0,1,1,inf,0.0,0.003540574989378275
+GO:0051701 (biological process involved in interaction with host),0,1,1,inf,0.0,0.003540574989378275
+GO:0044476 (envenomation resulting in negative regulation of low voltage-gated calcium channel activity in another organism),0,1,1,inf,0.0,0.003540574989378275
+GO:0048018 (receptor ligand activity),0,1,1,inf,0.0,0.003540574989378275
+GO:0140548 (envenomation resulting in blood agglutination in another organism),0,1,1,inf,0.0,0.003540574989378275
+GO:1903609 (negative regulation of inward rectifier potassium channel activity),0,1,1,inf,0.0,0.003540574989378275
+GO:0051673 (disruption of plasma membrane integrity in another organism),0,1,1,inf,0.0,0.003540574989378275
+GO:0050484 (GMP 5'-nucleotidase activity),0,1,1,inf,0.0,0.003540574989378275
+GO:0060300 (regulation of cytokine activity),1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:0060326 (cell chemotaxis),0,1,1,inf,0.0,0.003540574989378275
+GO:0044619 (positive regulation of relaxation of uterine smooth muscle in another organism),0,1,1,inf,0.0,0.003540574989378275
+GO:1901017 (negative regulation of potassium ion transmembrane transporter activity),0,1,1,inf,0.0,0.003540574989378275
+GO:0044555 (negative regulation of heart rate in another organism),0,1,1,inf,0.0,0.003540574989378275
+GO:0090330 (regulation of platelet aggregation),1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:0044554 (modulation of heart rate in another organism),0,1,1,inf,0.0,0.003540574989378275
+GO:0044552 (vasodilation in another organism),0,1,1,inf,0.0,0.003540574989378275
+GO:0044551 (envenomation resulting in vasodilation in another organism),0,1,1,inf,0.0,0.003540574989378275
+GO:0044742 (envenomation resulting in modulation of sensory perception of pain in another organism),0,1,1,inf,0.0,0.003540574989378275
+GO:0050796 (regulation of insulin secretion),1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:1901380 (negative regulation of potassium ion transmembrane transport),0,1,1,inf,0.0,0.003540574989378275
+GO:0044514 (envenomation resulting in positive regulation of G protein-coupled receptor activity in another organism),0,1,1,inf,0.0,0.003540574989378275
+GO:0044511 (envenomation resulting in modulation of receptor activity in another organism),0,1,1,inf,0.0,0.003540574989378275
+GO:0044505 (positive regulation of G protein-coupled receptor activity in another organism),0,1,1,inf,0.0,0.003540574989378275
+GO:0070527 (platelet aggregation),0,1,1,inf,0.0,0.003540574989378275
+GO:0045454 (cell redox homeostasis),0,1,1,inf,0.0,0.003540574989378275
+GO:0070320 (inward rectifier potassium channel inhibitor activity),0,1,1,inf,0.0,0.003540574989378275
+GO:0097023 (fructose 6-phosphate aldolase activity),0,1,1,inf,0.0,0.003540574989378275
+GO:0044503 (modulation of G protein-coupled receptor activity in another organism),0,1,1,inf,0.0,0.003540574989378275
+GO:0044499 (envenomation resulting in positive regulation of blood pressure in another organism),0,1,1,inf,0.0,0.003540574989378275
+GO:0044498 (envenomation resulting in modulation of blood pressure in another organism),0,1,1,inf,0.0,0.003540574989378275
+GO:0070026 (nitric oxide binding),0,1,1,inf,0.0,0.003540574989378275
+GO:0140911 (pore-forming activity),0,1,1,inf,0.0,0.003540574989378275
+GO:0050819 (negative regulation of coagulation),0,1,1,inf,0.0,0.003540574989378275
+GO:0061760 (antifungal innate immune response),0,1,1,inf,0.0,0.003540574989378275
+GO:1902572 (negative regulation of serine-type peptidase activity),0,1,1,inf,0.0,0.003540574989378275
+GO:0098542 (defense response to other organism),0,1,1,inf,0.0,0.003540574989378275
+GO:0050431 (transforming growth factor beta binding),0,1,1,inf,0.0,0.003540574989378275
+GO:0052689 (carboxylic ester hydrolase activity),1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:0000014 (single-stranded DNA endodeoxyribonuclease activity),0,1,1,inf,0.0,0.003540574989378275
+GO:0033296 (rhamnose binding),0,1,1,inf,0.0,0.003540574989378275
+GO:0030430 (host cell cytoplasm),0,1,1,inf,0.0,0.003540574989378275
+GO:0019732 (antifungal humoral response),1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:0005518 (collagen binding),0,1,1,inf,0.0,0.003540574989378275
+GO:0005516 (calmodulin binding),1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:0005272 (sodium channel activity),1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:0030145 (manganese ion binding),0,1,1,inf,0.0,0.003540574989378275
+GO:0030168 (platelet activation),1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:0030193 (regulation of blood coagulation),1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:0030194 (positive regulation of blood coagulation),1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:0030308 (negative regulation of cell growth),1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:0030395 (lactose binding),0,1,1,inf,0.0,0.003540574989378275
+GO:0005267 (potassium channel activity),1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:0016339 (calcium-dependent cell-cell adhesion via plasma membrane cell adhesion molecules),0,1,1,inf,0.0,0.003540574989378275
+GO:0030547 (signaling receptor inhibitor activity),0,1,1,inf,0.0,0.003540574989378275
+GO:0030549 (acetylcholine receptor activator activity),0,1,1,inf,0.0,0.003540574989378275
+GO:0005245 (voltage-gated calcium channel activity),1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:0031628 (opioid receptor binding),0,1,1,inf,0.0,0.003540574989378275
+GO:0031638 (zymogen activation),0,1,1,inf,0.0,0.003540574989378275
+GO:0004930 (G protein-coupled receptor activity),0,1,1,inf,0.0,0.003540574989378275
+GO:0031713 (B2 bradykinin receptor binding),2,1,-1,-50.0,0.00998851320980872,0.003540574989378275
+GO:0006801 (superoxide metabolic process),0,1,1,inf,0.0,0.003540574989378275
+GO:0031859 (platelet activating factor receptor binding),1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:0004860 (protein kinase inhibitor activity),1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:0016485 (protein processing),0,1,1,inf,0.0,0.003540574989378275
+GO:0016209 (antioxidant activity),0,1,1,inf,0.0,0.003540574989378275
+GO:0004857 (enzyme inhibitor activity),0,1,1,inf,0.0,0.003540574989378275
+GO:0005993 (trehalose catabolic process),0,1,1,inf,0.0,0.003540574989378275
+GO:0006826 (iron ion transport),0,1,1,inf,0.0,0.003540574989378275
+GO:0006974 (DNA damage response),0,1,1,inf,0.0,0.003540574989378275
+GO:0006979 (response to oxidative stress),0,1,1,inf,0.0,0.003540574989378275
+GO:0007156 (homophilic cell adhesion via plasma membrane adhesion molecules),0,1,1,inf,0.0,0.003540574989378275
+GO:0007160 (cell-matrix adhesion),0,1,1,inf,0.0,0.003540574989378275
+GO:0006629 (lipid metabolic process),0,1,1,inf,0.0,0.003540574989378275
+GO:0007166 (cell surface receptor signaling pathway),0,1,1,inf,0.0,0.003540574989378275
+GO:0007179 (transforming growth factor beta receptor signaling pathway),0,1,1,inf,0.0,0.003540574989378275
+GO:0007186 (G protein-coupled receptor signaling pathway),0,1,1,inf,0.0,0.003540574989378275
+GO:0007268 (chemical synaptic transmission),0,1,1,inf,0.0,0.003540574989378275
+GO:0007600 (sensory perception),0,1,1,inf,0.0,0.003540574989378275
+GO:0005534 (galactose binding),0,1,1,inf,0.0,0.003540574989378275
+GO:0008154 (actin polymerization or depolymerization),0,1,1,inf,0.0,0.003540574989378275
+GO:0008379 (thioredoxin peroxidase activity),0,1,1,inf,0.0,0.003540574989378275
+GO:0005769 (early endosome),0,1,1,inf,0.0,0.003540574989378275
+GO:0008983 (protein-glutamate O-methyltransferase activity),0,1,1,inf,0.0,0.003540574989378275
+GO:0005743 (mitochondrial inner membrane),0,1,1,inf,0.0,0.003540574989378275
+GO:0010181 (FMN binding),1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:0010951 (negative regulation of endopeptidase activity),0,1,1,inf,0.0,0.003540574989378275
+GO:0005604 (basement membrane),0,1,1,inf,0.0,0.003540574989378275
+"GO:0005546 (phosphatidylinositol-4,5-bisphosphate binding)",0,1,1,inf,0.0,0.003540574989378275
+GO:0015629 (actin cytoskeleton),0,1,1,inf,0.0,0.003540574989378275
+GO:0032259 (methylation),0,1,1,inf,0.0,0.003540574989378275
+GO:0031731 (CCR6 chemokine receptor binding),0,1,1,inf,0.0,0.003540574989378275
+GO:0033484 (intracellular nitric oxide homeostasis),0,1,1,inf,0.0,0.003540574989378275
+GO:0003073 (regulation of systemic arterial blood pressure),0,1,1,inf,0.0,0.003540574989378275
+GO:0004035 (alkaline phosphatase activity),1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:0003993 (acid phosphatase activity),1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:0003948 (N4-(beta-N-acetylglucosaminyl)-L-asparaginase activity),1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:0042744 (hydrogen peroxide catabolic process),0,1,1,inf,0.0,0.003540574989378275
+GO:0042832 (defense response to protozoan),1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:0003796 (lysozyme activity),1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:0043025 (neuronal cell body),0,1,1,inf,0.0,0.003540574989378275
+GO:0003254 (regulation of membrane depolarization),1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:0043083 (synaptic cleft),1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:0043267 (negative regulation of potassium ion transport),1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:0004185 (serine-type carboxypeptidase activity),0,1,1,inf,0.0,0.003540574989378275
+GO:0002687 (positive regulation of leukocyte migration),1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:0002353 (plasma kallikrein-kinin cascade),1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:0001897 (symbiont-mediated cytolysis of host cell),0,1,1,inf,0.0,0.003540574989378275
+GO:0001503 (ossification),0,1,1,inf,0.0,0.003540574989378275
+GO:0043679 (axon terminus),0,1,1,inf,0.0,0.003540574989378275
+GO:0044002 (acquisition of nutrients from host),0,1,1,inf,0.0,0.003540574989378275
+GO:0000302 (response to reactive oxygen species),0,1,1,inf,0.0,0.003540574989378275
+GO:0044325 (transmembrane transporter binding),0,1,1,inf,0.0,0.003540574989378275
+GO:0044360 (modulation of voltage-gated potassium channel activity in another organism),0,1,1,inf,0.0,0.003540574989378275
+GO:0004175 (endopeptidase activity),1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:0042755 (eating behavior),1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:0006695 (cholesterol biosynthetic process),1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:0004556 (alpha-amylase activity),1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:0033906 (hyaluronoglucuronidase activity),0,1,1,inf,0.0,0.003540574989378275
+GO:0035896 (positive regulation of mast cell degranulation in another organism),0,1,1,inf,0.0,0.003540574989378275
+GO:0034638 (phosphatidylcholine catabolic process),1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:0034776 (response to histamine),0,1,1,inf,0.0,0.003540574989378275
+GO:0004771 (sterol ester esterase activity),0,1,1,inf,0.0,0.003540574989378275
+"GO:0004555 (alpha,alpha-trehalase activity)",1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:0004531 (deoxyribonuclease II activity),1,1,0,0.0,0.00499425660490436,0.003540574989378275
+GO:0033554 (cellular response to stress),0,1,1,inf,0.0,0.003540574989378275
+GO:0004521 (RNA endonuclease activity),0,1,1,inf,0.0,0.003540574989378275
+GO:0034220 (monoatomic ion transmembrane transport),0,1,1,inf,0.0,0.003540574989378275
+GO:2000272 (negative regulation of receptor activity),1,0,-1,-100.0,0.00499425660490436,0.0
+GO:0051920 (peroxiredoxin activity),1,0,-1,-100.0,0.00499425660490436,0.0
+GO:0000272 (polysaccharide catabolic process),1,0,-1,-100.0,0.00499425660490436,0.0
+GO:0052331 (hemolysis in other organism involved in symbiotic interaction),1,0,-1,-100.0,0.00499425660490436,0.0
+GO:0052740 (1-acyl-2-lysophosphatidylserine acylhydrolase activity),20,0,-20,-100.0,0.09988513209808719,0.0
+GO:1905655 (negative regulation of artery smooth muscle contraction),2,0,-2,-100.0,0.00998851320980872,0.0
+GO:1905152 (positive regulation of voltage-gated sodium channel activity),1,0,-1,-100.0,0.00499425660490436,0.0
+GO:1905150 (regulation of voltage-gated sodium channel activity),2,0,-2,-100.0,0.00998851320980872,0.0
+GO:1904349 (positive regulation of small intestine smooth muscle contraction),2,0,-2,-100.0,0.00998851320980872,0.0
+GO:1904320 (positive regulation of smooth muscle contraction involved in micturition),2,0,-2,-100.0,0.00998851320980872,0.0
+GO:0070265 (necrotic cell death),1,0,-1,-100.0,0.00499425660490436,0.0
+GO:0000771 (agglutination involved in conjugation),2,0,-2,-100.0,0.00998851320980872,0.0
+GO:0005975 (carbohydrate metabolic process),1,0,-1,-100.0,0.00499425660490436,0.0
+GO:0004630 (phospholipase D activity),214,0,-214,-100.0,1.068770913449533,0.0
+GO:0005102 (receptor binding),1,0,-1,-100.0,0.00499425660490436,0.0
+GO:0004601 (peroxidase activity),1,0,-1,-100.0,0.00499425660490436,0.0
+GO:0072556 (other organism presynaptic membrane),307,0,-307,-100.0,1.5332367777056386,0.0
+GO:0070474 (positive regulation of uterine smooth muscle contraction),2,0,-2,-100.0,0.00998851320980872,0.0
+"GO:0102567 (phospholipase A2 activity (consuming 1,2-dipalmitoylphosphatidylcholine))",428,0,-428,-100.0,2.137541826899066,0.0
+"GO:0102568 (phospholipase A2 activity consuming 1,2-dioleoylphosphatidylethanolamine))",428,0,-428,-100.0,2.137541826899066,0.0
+GO:0103025 (alpha-amylase activity (releasing maltohexaose)),1,0,-1,-100.0,0.00499425660490436,0.0
+GO:0070290 (N-acylphosphatidylethanolamine-specific phospholipase D activity),214,0,-214,-100.0,1.068770913449533,0.0
+GO:0004771 (sterol esterase activity),1,0,-1,-100.0,0.00499425660490436,0.0
+GO:0004528 (phosphodiesterase I activity),2,0,-2,-100.0,0.00998851320980872,0.0
+GO:0055114 (oxidation-reduction process),3,0,-3,-100.0,0.01498276981471308,0.0
+GO:0044361 (negative regulation of voltage-gated potassium channel activity in other organism),5,0,-5,-100.0,0.024971283024521798,0.0
+GO:0006811 (ion transport),58,0,-58,-100.0,0.2896668830844529,0.0
+GO:0051715 (cytolysis in other organism),9,0,-9,-100.0,0.04494830944413924,0.0
+GO:0035792 (other organism postsynaptic membrane),554,0,-554,-100.0,2.7668181591170153,0.0
+GO:0035806 (modulation of blood coagulation in other organism),1,0,-1,-100.0,0.00499425660490436,0.0
+GO:0035807 (positive regulation of blood coagulation in other organism),14,0,-14,-100.0,0.06991959246866104,0.0
+GO:0035810 (positive regulation of urine volume),1,0,-1,-100.0,0.00499425660490436,0.0
+GO:0035821 (modification of morphology or physiology of other organism),2,0,-2,-100.0,0.00998851320980872,0.0
+GO:0035893 (negative regulation of platelet aggregation in other organism),6,0,-6,-100.0,0.02996553962942616,0.0
+GO:0035896 (positive regulation of mast cell degranulation in other organism),1,0,-1,-100.0,0.00499425660490436,0.0
+GO:0035899 (negative regulation of blood coagulation in other organism),2,0,-2,-100.0,0.00998851320980872,0.0
+GO:0042135 (neurotransmitter catabolic process),2,0,-2,-100.0,0.00998851320980872,0.0
+GO:0044493 (envenomation resulting in negative regulation of voltage-gated sodium channel activity in other organism),2,0,-2,-100.0,0.00998851320980872,0.0
+GO:0042629 (mast cell granule),59,0,-59,-100.0,0.29466113968935725,0.0
+GO:0044487 (envenomation resulting in modulation of transmission of nerve impulse in other organism),1,0,-1,-100.0,0.00499425660490436,0.0
+GO:0044485 (envenomation resulting in fibrinogenolysis in other organism),8,0,-8,-100.0,0.03995405283923488,0.0
+GO:0044484 (envenomation resulting in fibrinolysis in other organism),1,0,-1,-100.0,0.00499425660490436,0.0
+GO:0043303 (mast cell degranulation),59,0,-59,-100.0,0.29466113968935725,0.0
+GO:0044481 (envenomation resulting in proteolysis in other organism),8,0,-8,-100.0,0.03995405283923488,0.0
+GO:0043655 (extracellular space of host),14,0,-14,-100.0,0.06991959246866104,0.0
+GO:0044478 (envenomation resulting in positive regulation of platelet aggregation in other organism),2,0,-2,-100.0,0.00998851320980872,0.0
+GO:0044477 (envenomation resulting in negative regulation of platelet aggregation in other organism),10,0,-10,-100.0,0.049942566049043596,0.0
+GO:0044476 (envenomation resulting in negative regulation of low voltage-gated calcium channel activity in other organism),1,0,-1,-100.0,0.00499425660490436,0.0
+GO:0044164 (host cell cytosol),3,0,-3,-100.0,0.01498276981471308,0.0
+GO:0044475 (envenomation resulting in negative regulation of high voltage-gated calcium channel activity in other organism),1,0,-1,-100.0,0.00499425660490436,0.0
+GO:0044179 (hemolysis in other organism),368,0,-368,-100.0,1.8378864306048046,0.0
+GO:0044325 (ion channel binding),1,0,-1,-100.0,0.00499425660490436,0.0
+GO:0044469 (envenomation resulting in positive regulation of blood coagulation in other organism),15,0,-15,-100.0,0.07491384907356541,0.0
+GO:0044358 (envenomation resulting in hemorrhagic damage to other organism),6,0,-6,-100.0,0.02996553962942616,0.0
+GO:0044465 (modulation of sensory perception of pain in other organism),2,0,-2,-100.0,0.00998851320980872,0.0
+GO:0044522 (envenomation resulting in myocyte killing in other organism),1,0,-1,-100.0,0.00499425660490436,0.0
+GO:0035529 (NADH pyrophosphatase activity),2,0,-2,-100.0,0.00998851320980872,0.0
+GO:0044532 (modulation of apoptotic process in other organism),2,0,-2,-100.0,0.00998851320980872,0.0
+GO:0019836 (hemolysis by symbiont of host erythrocytes),4,0,-4,-100.0,0.01997702641961744,0.0
+GO:0007049 (cell cycle),1,0,-1,-100.0,0.00499425660490436,0.0
+GO:0007162 (negative regulation of cell adhesion),1,0,-1,-100.0,0.00499425660490436,0.0
+GO:0007599 (hemostasis),1,0,-1,-100.0,0.00499425660490436,0.0
+GO:0050880 (regulation of blood vessel size),17,0,-17,-100.0,0.08490236228337411,0.0
+GO:0008152 (metabolic process),2,0,-2,-100.0,0.00998851320980872,0.0
+GO:0008168 (methyltransferase activity),1,0,-1,-100.0,0.00499425660490436,0.0
+GO:0008970 (phosphatidylcholine 1-acylhydrolase activity),20,0,-20,-100.0,0.09988513209808719,0.0
+GO:0009405 (pathogenesis),101,0,-101,-100.0,0.5044199170953403,0.0
+GO:0044398 (envenomation resulting in induction of edema in other organism),3,0,-3,-100.0,0.01498276981471308,0.0
+GO:0050290 (sphingomyelin phosphodiesterase D activity),1,0,-1,-100.0,0.00499425660490436,0.0
+GO:0016021 (integral component of membrane),93,0,-93,-100.0,0.4644658642561055,0.0
+GO:0019835 (cytolysis),115,0,-115,-100.0,0.5743395095640014,0.0
+GO:0030054 (cell junction),2,0,-2,-100.0,0.00998851320980872,0.0
+GO:0044551 (envenomation resulting in vasodilation in other organism),1,0,-1,-100.0,0.00499425660490436,0.0
+GO:0046983 (protein dimerization activity),3,0,-3,-100.0,0.01498276981471308,0.0
+GO:0045919 (positive regulation of cytolysis),1,0,-1,-100.0,0.00499425660490436,0.0
+GO:0030547 (receptor inhibitor activity),1,0,-1,-100.0,0.00499425660490436,0.0
+GO:0030828 (positive regulation of cGMP biosynthetic process),1,0,-1,-100.0,0.00499425660490436,0.0
+GO:0031225 (anchored component of membrane),3,0,-3,-100.0,0.01498276981471308,0.0
+GO:0031334 (positive regulation of protein complex assembly),4,0,-4,-100.0,0.01997702641961744,0.0
+GO:0031640 (killing of cells of other organism),54,0,-54,-100.0,0.2696898566648354,0.0
+GO:0031712 (B1 bradykinin receptor binding),2,0,-2,-100.0,0.00998851320980872,0.0
+GO:0044564 (envenomation resulting in occlusion of the pore of voltage-gated potassium channel in other organism),17,0,-17,-100.0,0.08490236228337411,0.0
+GO:0044562 (envenomation resulting in negative regulation of voltage-gated potassium channel activity in other organism),7,0,-7,-100.0,0.03495979623433052,0.0
+GO:0044555 (negative regulation of heart rate in other organism),1,0,-1,-100.0,0.00499425660490436,0.0
+GO:0044554 (modulation of heart rate in other organism),1,0,-1,-100.0,0.00499425660490436,0.0
+GO:0010952 (positive regulation of peptidase activity),1,0,-1,-100.0,0.00499425660490436,0.0
