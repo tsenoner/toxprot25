@@ -70,7 +70,11 @@ def main():
     ax_top_taxa.set_ylabel("Count", fontsize=18)
     ax_top_taxa.tick_params(axis="x", rotation=0, labelsize=16)
     ax_top_taxa.tick_params(axis="y", labelsize=16)  # Added y-axis tick label size
+    # Get the legend handles and labels, then reverse them
+    handles, labels = ax_top_taxa.get_legend_handles_labels()
     ax_top_taxa.legend(
+        handles[::-1],
+        labels[::-1],  # Reverse the order
         title="Order",
         bbox_to_anchor=(1.05, 1),
         loc="upper left",
