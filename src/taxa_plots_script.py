@@ -92,10 +92,26 @@ def main():
         title_fontsize=18,
     )
 
+    # Add percentage labels to each segment
     for container in ax_top_taxa.containers:
+        # Calculate percentages for each segment
+        total_counts = plot_data_top_taxa.sum(axis=1)
+        percentages = []
+        for i, bar in enumerate(container):
+            height = bar.get_height()
+            if height > 0:  # Only show percentage if there's a value
+                percentage = (height / total_counts.iloc[i]) * 100
+                percentages.append(f"{int(height):5,} ({percentage:2.0f}%)")
+            else:
+                percentages.append("")
+
         ax_top_taxa.bar_label(
-            container, label_type="center", fmt="%d", fontsize=16
-        )  # Added fontsize to bar labels
+            container,
+            labels=percentages,
+            label_type="center",
+            fontsize=15,
+            fontfamily="monospace",
+        )
 
     ax_top_taxa.grid(axis="y", linestyle="--", alpha=0.7, zorder=0)
     fig1.tight_layout()
