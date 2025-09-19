@@ -59,8 +59,18 @@ def main():
     plot_data_top_taxa = plot_data_top_taxa.T
 
     fig1, ax_top_taxa = plt.subplots(figsize=(10, 8))
+
+    # Create custom colors with bright gray for "Others"
+    colors = [
+        "tab:blue",
+        "tab:orange",
+        "tab:green",
+        "tab:red",
+        "tab:purple",
+        "silver",
+    ]
     plot_data_top_taxa.plot(
-        kind="bar", stacked=True, colormap="tab10", ax=ax_top_taxa, zorder=3
+        kind="bar", stacked=True, color=colors, ax=ax_top_taxa, zorder=3
     )
 
     ax_top_taxa.set_title(
@@ -73,8 +83,8 @@ def main():
     # Get the legend handles and labels, then reverse them
     handles, labels = ax_top_taxa.get_legend_handles_labels()
     ax_top_taxa.legend(
-        handles[::-1],
-        labels[::-1],  # Reverse the order
+        handles,
+        labels,
         title="Order",
         bbox_to_anchor=(1.05, 1),
         loc="upper left",
@@ -89,12 +99,21 @@ def main():
 
     ax_top_taxa.grid(axis="y", linestyle="--", alpha=0.7, zorder=0)
     fig1.tight_layout()
+
+    # Save as PNG
     plt.savefig(
         os.path.join(FIGURES_DIR, "top_taxa_distribution.png"),
         dpi=300,
         bbox_inches="tight",
     )
     print(f"Saved {os.path.join(FIGURES_DIR, 'top_taxa_distribution.png')}")
+
+    # Save as SVG
+    plt.savefig(
+        os.path.join(FIGURES_DIR, "top_taxa_distribution.svg"),
+        bbox_inches="tight",
+    )
+    print(f"Saved {os.path.join(FIGURES_DIR, 'top_taxa_distribution.svg')}")
 
     # --- Plot 2: Newcomer Taxa Orders ---
     print("Generating Newcomer Taxa Orders plot...")
