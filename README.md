@@ -48,7 +48,8 @@ Key steps:
 - Process signal peptides for mature protein sequences
 - Extract protein metadata (names, families, length, mass)
 - Capture functional annotations (tissue specificity, toxic dose)
-- Extract post-translational modifications
+- Extract post-translational modifications (MOD_RES, CARBOHYD, DISULFID, CROSSLNK, LIPID)
+- Auto-download PTM controlled vocabulary (ptmlist.txt)
 
 ### 2. Comparative Analyses (2017 vs 2025)
 
