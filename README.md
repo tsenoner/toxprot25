@@ -1,16 +1,18 @@
-# ToxProt25: Comparative Analysis of Venom/Toxin Proteins (2017-2025)
+# ToxProt25: Analysis of ToxProt (2017-2025)
 
-A comprehensive bioinformatics project analyzing the evolution and changes in venom/toxin protein datasets between 2017 and 2025 UniProtKB/SwissProt releases.
+Comparative analysis of toxin proteins from [ToxProt](https://www.uniprot.org/help/Toxins) between UniProtKB 2017 and 2025 releases.
 
 ## 🎯 Project Overview
 
-This project provides a systematic comparative analysis of toxin-related proteins from two major UniProtKB/SwissProt database snapshots (2017 and 2025). The analysis focuses on:
+This project analyzes changes in toxin-related proteins across two UniProtKB snapshots (2017 and 2025):
 
-- **Taxonomic changes**: Evolution of species representation and emergence of new taxa
-- **Habitat-specific patterns**: Marine vs terrestrial protein family distributions
-- **Protein family dynamics**: Changes in family classifications and abundance
-- **Data curation insights**: Identification of protein family renamings and annotations
-- **Protein space visualization**: 2D embedding analysis using ProtSpace
+- **Taxonomic changes**: Species representation and new taxa emergence
+- **Habitat patterns**: Marine vs terrestrial protein family distributions
+- **Protein families**: Classification and abundance changes
+- **GO-term analysis**: Functional annotation comparisons
+- **PTM analysis**: Post-translational modification patterns
+- **Curation insights**: Protein family renamings and annotation improvements
+- **Protein space**: 2D embedding visualization using ProtSpace
 
 ## 🚀 Quick Start
 
@@ -39,51 +41,49 @@ pip install -e .
 
 **SwissProt Parsing** (`src/parse_sprot_dat.py`)
 
-- Extracts entries matching: `(taxonomy_id:33208) AND ((cc_tissue_specificity:venom) OR (keyword:KW-0800))`
-- Processes signal peptides to extract mature protein sequences
-- Generates comprehensive metadata including:
-  - Protein characteristics (names, families, length, mass)
-  - Functional annotations (tissue specificity, toxic dose)
-  - Post-translational modifications
+Extracts entries matching: `(taxonomy_id:33208) AND ((cc_tissue_specificity:venom) OR (keyword:KW-0800))`
+
+Key steps:
+
+- Process signal peptides for mature protein sequences
+- Extract protein metadata (names, families, length, mass)
+- Capture functional annotations (tissue specificity, toxic dose)
+- Extract post-translational modifications
 
 ### 2. Comparative Analyses (2017 vs 2025)
 
 **Taxonomic Analysis** (`src/taxa_plots_script.py`)
 
 - Top taxa distribution comparison
-- Identification of newcomer orders and families
-- Species-level counting improvements
+- Newcomer orders and families identification
+- Species-level counting
 
-**Habitat-Specific Analysis** (`src/visualize_habitat_protein_changes.py`)
+**Habitat Analysis** (`src/visualize_habitat_protein_changes.py`)
 
 - Marine vs terrestrial protein family distribution
-- Percentage and absolute change calculations
-- Dual-habitat family analysis with heatmaps and diverging bar charts
+- Percentage and absolute changes
+- Dual-habitat family analysis
 
-**Data Curation Analysis** (`src/generate_family_renaming_report.py`)
+**GO-term Analysis** (`src/analyze_go_terms.py`)
 
-- Tracks protein family name changes between releases
-- Identifies systematic renamings and improvements
+- Functional annotation comparisons
+- GO term enrichment changes
+
+**Curation Analysis** (`src/generate_family_renaming_report.py`)
+
+- Protein family name changes tracking
+- Systematic renaming identification
 
 ### 3. Visualization Capabilities
 
 - **Stacked bar charts**: Taxonomic and protein family distributions
-- **Heatmaps**: Habitat-specific percentage changes
-- **Venn diagrams**: Overlap analysis between marine/terrestrial habitats
-- **Diverging bar charts**: Change visualization with clear directionality
-- **ProtSpace plots**: 2D protein embedding visualization
-
-## 🛠️ Technical Stack
-
-- **Core**: Python 3.12+, pandas, numpy
-- **Visualization**: matplotlib, seaborn, matplotlib-venn
-- **Taxonomic analysis**: taxopy
-- **Protein analysis**: ProtSpace
-- **Notebooks**: Jupyter Lab
-- **Data formats**: CSV, TSV, FASTA, JSON
+- **Heatmaps**: Habitat-specific changes
+- **Venn diagrams**: Marine/terrestrial overlap analysis
+- **Diverging bar charts**: Directional change visualization
+- **ProtSpace plots**: 2D protein embedding
+- **Sankey diagrams**: Protein evidence flow
 
 ## 📝 Data Sources
 
-- **UniProtKB/SwissProt**: November 2017 release (`201711_sprot.dat`)
-- **UniProtKB/SwissProt**: January 2025 release (`202501_sprot.dat`)
-- **Habitat classification**: Manual curation based on taxonomic families
+- **UniProtKB/SwissProt**: Nov 2017 (`201711_sprot.dat`) and Jan 2025 (`202501_sprot.dat`)
+- **Habitat classification**: Manual curation from taxonomic families
