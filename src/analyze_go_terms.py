@@ -30,7 +30,7 @@ except FileNotFoundError as e:
 
 
 # --- GO Term Analysis Functions ---
-def get_go_counts(df, go_col="Gene Ontology (GO)"):
+def get_go_counts(df, go_col="Gene Ontology (molecular function)"):
     """Extract and count GO terms from a DataFrame."""
     # Dropna, split by <; >, flatten, and count
     go_series = df[go_col].dropna().astype(str)
@@ -82,7 +82,7 @@ def plot_go_terms_stacked_bar():
     go_summary = go_summary.sort_values(by="2025_count", ascending=False)
 
     # Create the plot
-    title = f"Top {len(go_summary)} GO Terms"
+    title = f"Top {len(go_summary)} GO Molecular Function Terms"
     y_labels = go_summary.index
 
     values_2017 = go_summary["2017_count"]
