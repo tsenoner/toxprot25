@@ -1,0 +1,31 @@
+PTM_Type,PTM_Count,Proteins_2017,Proteins_2025
+Disulfide bonds,1,232,333
+Disulfide bonds,2,713,705
+Disulfide bonds,3,1791,2144
+Disulfide bonds,4,1326,1502
+Disulfide bonds,5,365,405
+Disulfide bonds,6,253,306
+Disulfide bonds,7,386,405
+Disulfide bonds,8,54,61
+Disulfide bonds,9,26,32
+Disulfide bonds,10+,103,113
+Modified residues,1,1132,1414
+Modified residues,2,143,210
+Modified residues,3,70,100
+Modified residues,4,49,63
+Modified residues,5,29,35
+Modified residues,6,19,20
+Modified residues,7,13,13
+Modified residues,8,0,1
+Modified residues,9,3,3
+Modified residues,10+,17,17
+Glycosylation,1,259,295
+Glycosylation,2,98,116
+Glycosylation,3,54,65
+Glycosylation,4,36,41
+Glycosylation,5,27,27
+Glycosylation,6,17,22
+Glycosylation,7,4,5
+Glycosylation,8,2,3
+Glycosylation,9,2,2
+Glycosylation,10+,4,4
