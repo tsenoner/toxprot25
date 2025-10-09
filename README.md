@@ -37,13 +37,13 @@ pip install -e .
 
 ## 🔬 Key Analyses
 
-### 1. Data Processing Pipeline
+### 1. Data Processing
 
-**SwissProt Parsing** (`src/parse_sprot_dat.py`)
+**Step 1: Parse SwissProt DAT files** (`src/data_processing/parse_sprot_dat.py`)
 
 Extracts entries matching: `(taxonomy_id:33208) AND ((cc_tissue_specificity:venom) OR (keyword:KW-0800))`
 
-Key steps:
+Key features:
 
 - Process signal peptides for mature protein sequences
 - Extract protein metadata (names, families, length, mass)
@@ -51,38 +51,57 @@ Key steps:
 - Extract post-translational modifications (MOD_RES, CARBOHYD, DISULFID, CROSSLNK, LIPID)
 - Auto-download PTM controlled vocabulary (ptmlist.txt)
 
+**Step 2: Clean and enrich data** (`src/data_processing/clean_data.py`)
+
+- Standardize protein family names
+- Create FASTA files with signal peptide removal
+- Add taxonomic information (phylum, class, order, family, genus, species)
+- Add habitat classification (marine/terrestrial)
+
+**Step 3: Remove fragments** (`src/data_processing/remove_fragments.py`)
+
+- Filter out fragment sequences for specific analyses
+
 ### 2. Comparative Analyses (2017 vs 2025)
 
-**Taxonomic Analysis** (`src/taxa_plots_script.py`)
+**Protein Families** (`src/analysis/analyze_protein_families.py`)
+
+- Distribution comparisons with stacked bar charts
+- Sequence length histograms
+- Summary statistics tables
+
+**Taxonomic Changes** (`src/analysis/analyze_taxa.py`)
 
 - Top taxa distribution comparison
 - Newcomer orders and families identification
 - Species-level counting
 
-**Habitat Analysis** (`src/visualize_habitat_protein_changes.py`)
+**Habitat Patterns** (`src/analysis/analyze_habitat.py`)
 
 - Marine vs terrestrial protein family distribution
 - Percentage and absolute changes
 - Dual-habitat family analysis
+- Venn diagrams and heatmaps
 
-**GO-term Analysis** (`src/analyze_go_terms.py`)
+**Post-Translational Modifications** (`src/analysis/analyze_ptm.py`)
+
+- PTM type distributions
+- Modification count analysis
+- Comparative statistics
+
+**GO Terms** (`src/analysis/analyze_go_terms.py`)
 
 - Functional annotation comparisons
 - GO term enrichment changes
 
-**Curation Analysis** (`src/generate_family_renaming_report.py`)
+**Curation Tracking** (`src/analysis/generate_family_renaming_report.py`)
 
 - Protein family name changes tracking
 - Systematic renaming identification
 
-### 3. Visualization Capabilities
+**Protein Evidence** (`src/analysis/plot_protein_evidence_sankey.py`)
 
-- **Stacked bar charts**: Taxonomic and protein family distributions
-- **Heatmaps**: Habitat-specific changes
-- **Venn diagrams**: Marine/terrestrial overlap analysis
-- **Diverging bar charts**: Directional change visualization
-- **ProtSpace plots**: 2D protein embedding
-- **Sankey diagrams**: Protein evidence flow
+- Sankey diagrams showing protein evidence flow
 
 ## 📝 Data Sources
 
