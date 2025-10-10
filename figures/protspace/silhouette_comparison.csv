@@ -1,0 +1,7 @@
+Variant,Description,N_proteins,N_families,Silhouette_score
+Top 15,"Top 15 families, full sequences",4254,15,0.2504702352933814
+"Top 15
+mature","Top 15 families, mature sequences",4254,15,0.44987600805066175
+"Top 15
+mature
+no fragments","Top 15 families, mature, no fragments",3399,15,0.4940634653933218
