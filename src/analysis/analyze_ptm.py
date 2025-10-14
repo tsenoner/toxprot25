@@ -279,9 +279,9 @@ def generate_summary_table(df_2017, df_2025, output_dir):
         ],
         [
             "PTM Coverage (%)",
-            f"{(df_2017['has_any_ptm'].sum() / len(df_2017) * 100):.1f}%",
-            f"{(df_2025['has_any_ptm'].sum() / len(df_2025) * 100):.1f}%",
-            f"{(df_2025['has_any_ptm'].sum() / len(df_2025) - df_2017['has_any_ptm'].sum() / len(df_2017)) * 100:+.1f}%",
+            f"{(df_2017['has_any_ptm'].sum() / len(df_2017) * 100):.2f}%",
+            f"{(df_2025['has_any_ptm'].sum() / len(df_2025) * 100):.2f}%",
+            f"{(df_2025['has_any_ptm'].sum() / len(df_2025) - df_2017['has_any_ptm'].sum() / len(df_2017)) * 100:+.2f}%",
         ],
         [
             "Mean PTMs/Protein",
