@@ -1,0 +1,36 @@
+Freshwater and estuarine species breakdown for 2017 and 2025:
+
+2017 - Freshwater species (10 unique):
+  - Amia calva
+  - Helicops angulatus
+  - Hydra viridissima
+  - Hydra vulgaris
+  - Lepisosteus osseus
+  - Oncorhynchus mykiss
+  - Pomacea canaliculata
+  - Potamotrygon orbignyi
+  - Pseudoferania polylepis
+  - Trachemys scripta
+
+2017 - Estuarine species (1 unique):
+  - Cerberus rynchops
+
+2025 - Freshwater species (15 unique):
+  - Amia calva
+  - Haementeria depressa
+  - Haementeria ghilianii
+  - Haementeria officinalis
+  - Helicops angulatus
+  - Hirudo medicinalis
+  - Hydra viridissima
+  - Hydra vulgaris
+  - Lepisosteus osseus
+  - Oncorhynchus mykiss
+  - Pomacea canaliculata
+  - Pomacea maculata
+  - Potamotrygon orbignyi
+  - Pseudoferania polylepis
+  - Trachemys scripta
+
+2025 - Estuarine species (1 unique):
+  - Cerberus rynchops
