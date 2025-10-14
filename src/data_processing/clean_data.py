@@ -321,18 +321,50 @@ def determine_habitat(row, habitat_mapping):
     return "unknown"
 
 
-def add_habitat_classification(csv_path, habitat_mapping_path):
+def determine_habitat_detailed(row, habitat_mapping):
+    """Determine detailed habitat (terrestrial/freshwater/estuarine/marine) based on order and genus."""
+    order = row["Order"]
+    genus = row.get("Genus", "")  # Get genus if available, otherwise empty string
+
+    # Check if order is in clear_orders
+    for habitat_type in ["terrestrial", "freshwater", "estuarine", "marine"]:
+        if order in habitat_mapping["clear_orders"].get(habitat_type, {}):
+            return habitat_type
+
+    # Check if order is in ambiguous_orders
+    if order in habitat_mapping["ambiguous_orders"]:
+        # Check each habitat type for this order
+        for habitat_type in ["terrestrial", "freshwater", "estuarine", "marine"]:
+            if genus in habitat_mapping["ambiguous_orders"][order].get(
+                habitat_type, {}
+            ):
+                return habitat_type
+
+    # If we can't determine, return 'unknown'
+    return "unknown"
+
+
+def add_habitat_classification(csv_path, habitat_mapping_path, habitat_detailed_path):
     """Add habitat classification to the CSV file."""
     # Load the marine/terrestrial mapping
     with open(habitat_mapping_path, "r") as f:
         habitat_mapping = json.load(f)
 
+    # Load the detailed habitat mapping
+    with open(habitat_detailed_path, "r") as f:
+        habitat_detailed_mapping = json.load(f)
+
     # Load the CSV
     df = pd.read_csv(csv_path)
 
-    # Add habitat column
+    # Add habitat column (simple: marine/terrestrial)
     df["Habitat"] = df.apply(
         lambda row: determine_habitat(row, habitat_mapping), axis=1
+    )
+
+    # Add detailed habitat column (terrestrial/freshwater/estuarine/marine)
+    df["Habitat_Detailed"] = df.apply(
+        lambda row: determine_habitat_detailed(row, habitat_detailed_mapping), axis=1
     )
 
     # Save updated CSV
@@ -366,6 +398,7 @@ def main():
     interim_path = data_path / "interim"
     processed_path = data_path / "processed"
     habitat_mapping_path = data_path / "raw" / "marine_terrestrial.json"
+    habitat_detailed_path = data_path / "raw" / "habitat_detailed.json"
 
     # Ensure directories exist
     processed_path.mkdir(parents=True, exist_ok=True)
@@ -404,13 +437,19 @@ def main():
         )
 
         # Step 3: Add habitat classification
-        df = add_habitat_classification(processed_csv_path, habitat_mapping_path)
+        df = add_habitat_classification(
+            processed_csv_path, habitat_mapping_path, habitat_detailed_path
+        )
 
         # Print summary statistics
         print(f"    ✓ Processed: {len(df)} entries")
         print(f"    ✓ Unique families: {df['Protein families'].nunique()}")
         habitat_counts = {k: int(v) for k, v in df["Habitat"].value_counts().items()}
         print(f"    ✓ Habitat: {habitat_counts}")
+        habitat_detailed_counts = {
+            k: int(v) for k, v in df["Habitat_Detailed"].value_counts().items()
+        }
+        print(f"    ✓ Habitat (detailed): {habitat_detailed_counts}")
         print(f"    ✓ Output: {processed_csv_path}")
 
     print(f"\n{'=' * 60}")
