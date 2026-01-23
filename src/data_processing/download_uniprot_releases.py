@@ -147,8 +147,8 @@ def main():
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=Path("data/raw/uniprot_releases"),
-        help="Directory to save downloaded files (default: data/raw/uniprot_releases)",
+        default=Path("data/raw"),
+        help="Directory to save downloaded files (default: data/raw)",
     )
     parser.add_argument(
         "--years",

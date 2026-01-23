@@ -32,7 +32,7 @@ UniProtKB SwissProt DAT files (`.dat`) are not included due to size. Download th
 uv run python src/data_processing/download_uniprot_releases.py
 ```
 
-Files are saved to `data/raw/uniprot_releases/` as `{year}_sprot.dat`.
+Files are saved to `data/raw/` as `{year}_sprot.dat`.
 
 ## 🔬 Analysis Pipeline
 
