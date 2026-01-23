@@ -141,16 +141,29 @@ class SwissProtParser:
 
     def parse_position(self, position_str):
         """Parse position information from feature line"""
+        # Handle modern ".." format (e.g., "41..77")
         if ".." in position_str:
             match = re.match(r"(\d+|\?)\.\.(\d+|\?)", position_str)
             if match:
                 start = match.group(1) if match.group(1) != "?" else "?"
                 end = match.group(2) if match.group(2) != "?" else "?"
+                # Return single position for interchain bonds (same start/end)
+                if start == end:
+                    return start
                 return f"{start}-{end}"
-        else:
-            match = re.match(r"(\d+)", position_str)
+
+        # Handle space-separated format (e.g., "41     77" or "41 77")
+        parts = position_str.split()
+        if len(parts) >= 2 and parts[0].isdigit() and parts[1].isdigit():
+            # Return single position for interchain bonds (same start/end)
+            if parts[0] == parts[1]:
+                return parts[0]
+            return f"{parts[0]}-{parts[1]}"
+        elif len(parts) >= 1:
+            match = re.match(r"(\d+)", parts[0])
             if match:
                 return match.group(1)
+
         return ""
 
     def extract_ptm_details(self, lines, start_idx):
@@ -314,6 +327,30 @@ class SwissProtParser:
                             entry_data["Protein names"] += "; " + name.group(1)
                         else:
                             entry_data["Protein names"] = name.group(1)
+                # Handle old (pre-2014) simple DE format: "DE   Bucain."
+                # Also handles "[Contains: ...]" and "[Includes: ...]" annotations
+                elif not entry_data["Protein names"] and not any(
+                    x in content
+                    for x in [
+                        "RecName:",
+                        "AltName:",
+                        "SubName:",
+                        "Flags:",
+                    ]
+                ):
+                    name = content.rstrip(".")
+                    # Extract name before [Contains: or [Includes: if present
+                    if "[Contains:" in name:
+                        name = name.split("[Contains:")[0].strip()
+                    if "[Includes:" in name:
+                        name = name.split("[Includes:")[0].strip()
+                    # Handle fragment notation in old format
+                    if "(Fragment)" in name:
+                        entry_data["Fragment"] = "fragment"
+                        name = name.replace("(Fragment)", "").strip()
+                    name = name.rstrip(".")
+                    if name:
+                        entry_data["Protein names"] = name
 
             # Comments
             elif line.startswith("CC"):
