@@ -1,227 +1,282 @@
 #!/usr/bin/env python3
+"""Analyze and visualize taxonomic distribution in ToxProt datasets."""
 
 import pandas as pd
 import matplotlib.pyplot as plt
-import os
+from pathlib import Path
 
 # --- Configuration ---
-DATA_DIR = "data/processed/"
-FIGURES_DIR = "figures/taxa/"
-TOXPROT_2017_FILE = os.path.join(DATA_DIR, "toxprot_2017.csv")
-TOXPROT_2025_FILE = os.path.join(DATA_DIR, "toxprot_2025.csv")
+DATA_DIR = Path("data/processed")
+FIGURES_DIR = Path("figures/taxa")
+YEARS = ["2005", "2015", "2017", "2025"]
 
-# Ensure the figures directory exists
-os.makedirs(FIGURES_DIR, exist_ok=True)
+# Colors for stacked bar chart
+COLORS = ["tab:blue", "tab:orange", "tab:green", "tab:red", "tab:purple", "silver"]
 
-# --- Function Definitions ---
+# Common names for newcomer taxa orders
+ORDER_COMMON_NAMES = {
+    "Lepidoptera": "Butterflies and Moths",
+    "Scutigeromorpha": "House Centipedes",
+    "Rhynchobdellida": "Proboscis Leeches",
+    "Zoantharia": "Colonial Anemones",
+    "Chiroptera": "Bats",
+    "Hirudinida": "Leeches",
+    "Xiphosura": "Horseshoe Crabs",
+    "Suberitida": "Sponges",
+    "Semaeostomeae": "Jellyfish",
+    "Rhabditida": "Roundworms",
+    "Nectiopoda": "Remipedes",
+    "Euphausiacea": "Krill",
+}
 
 
-def get_top_taxa_counts(df, taxa_column="Order", top_n=5):
-    """Function to get top N taxa and group the rest as "Others"."""
+def load_datasets(years: list[str]) -> dict[str, pd.DataFrame]:
+    """Load ToxProt datasets for specified years."""
+    datasets = {}
+    for year in years:
+        filepath = DATA_DIR / f"toxprot_{year}.csv"
+        if filepath.exists():
+            datasets[year] = pd.read_csv(filepath)
+            print(f"  Loaded {year}: {len(datasets[year]):,} entries")
+        else:
+            print(f"  Warning: {filepath} not found, skipping")
+    return datasets
+
+
+def get_top_taxa_counts(df: pd.DataFrame, taxa_column: str = "Order", top_n: int = 5) -> dict:
+    """Get top N taxa counts with remaining grouped as 'Others'."""
     taxa_counts = df[taxa_column].value_counts()
     top_taxa = taxa_counts.nlargest(top_n)
-    result = top_taxa.to_dict()
     others_count = taxa_counts[~taxa_counts.index.isin(top_taxa.index)].sum()
-    result["Others"] = others_count
-    return result
+    return {**top_taxa.to_dict(), "Others": others_count}
 
 
-def get_taxa_newcomers(df_2017, df_2025, taxa_level="Order"):
-    """Identify taxa present in 2025 dataset but not in 2017 dataset."""
-    taxa_2017_set = set(df_2017[taxa_level].unique())
-    taxa_2025_set = set(df_2025[taxa_level].unique())
-    newcomers = taxa_2025_set - taxa_2017_set
-    return df_2025[df_2025[taxa_level].isin(newcomers)][taxa_level].value_counts()
+def get_taxa_newcomers(df_old: pd.DataFrame, df_new: pd.DataFrame, taxa_level: str = "Order") -> pd.Series:
+    """Identify taxa present in new dataset but not in old dataset."""
+    old_taxa = set(df_old[taxa_level].unique())
+    new_taxa = set(df_new[taxa_level].unique())
+    newcomers = new_taxa - old_taxa
+    return df_new[df_new[taxa_level].isin(newcomers)][taxa_level].value_counts()
 
 
-def main():
-    """Main function to load data and generate plots."""
-    # Load the data
-    try:
-        toxprot_2017 = pd.read_csv(TOXPROT_2017_FILE)
-        toxprot_2025 = pd.read_csv(TOXPROT_2025_FILE)
-    except FileNotFoundError as e:
-        print(f"Error loading data: {e}")
-        print(
-            f"Please ensure the files '{TOXPROT_2017_FILE}' and '{TOXPROT_2025_FILE}' exist."
-        )
-        return
+def plot_top_taxa_distribution(datasets: dict[str, pd.DataFrame], output_path: Path, reference_year: str = "2025"):
+    """Create stacked bar chart of top taxa distribution across years."""
+    # Get top 5 orders from reference year (2025) for consistency
+    ref_df = datasets[reference_year]
+    top_orders = ref_df["Order"].value_counts().nlargest(5).index.tolist()
 
-    # --- Plot 1: Top 5 Taxa Distribution ---
-    print("Generating Top 5 Taxa Distribution plot...")
-    top_taxa_2017_counts = get_top_taxa_counts(toxprot_2017, "Order", 5)
-    top_taxa_2025_counts = get_top_taxa_counts(toxprot_2025, "Order", 5)
+    # Calculate counts for each year using consistent categories
+    taxa_data = {}
+    for year, df in datasets.items():
+        counts = df["Order"].value_counts()
+        taxa_data[year] = {order: counts.get(order, 0) for order in top_orders}
+        taxa_data[year]["Others"] = counts[~counts.index.isin(top_orders)].sum()
 
-    plot_data_top_taxa = pd.DataFrame(
-        {"2017": top_taxa_2017_counts, "2025": top_taxa_2025_counts}
-    )
-    plot_data_top_taxa = plot_data_top_taxa.fillna(0)
-    plot_data_top_taxa = plot_data_top_taxa.T
+    plot_df = pd.DataFrame(taxa_data).T
 
-    fig1, ax_top_taxa = plt.subplots(figsize=(10, 8))
+    fig, ax = plt.subplots(figsize=(12, 8))
+    plot_df.plot(kind="bar", stacked=True, color=COLORS, ax=ax, zorder=3)
 
-    # Create custom colors with bright gray for "Others"
-    colors = [
-        "tab:blue",
-        "tab:orange",
-        "tab:green",
-        "tab:red",
-        "tab:purple",
-        "silver",
-    ]
-    plot_data_top_taxa.plot(
-        kind="bar", stacked=True, color=colors, ax=ax_top_taxa, zorder=3
-    )
+    ax.set_title("Distribution of Top 5 Taxa Orders in ToxProt Datasets", fontsize=20)
+    ax.set_xlabel("Year", fontsize=18)
+    ax.set_ylabel("Count", fontsize=18)
+    ax.tick_params(axis="x", rotation=0, labelsize=16)
+    ax.tick_params(axis="y", labelsize=16)
 
-    ax_top_taxa.set_title(
-        "Distribution of Top 5 Taxa Orders in ToxProt 2017 vs 2025", fontsize=20
-    )
-    ax_top_taxa.set_xlabel("Year", fontsize=18)
-    ax_top_taxa.set_ylabel("Count", fontsize=18)
-    ax_top_taxa.tick_params(axis="x", rotation=0, labelsize=16)
-    ax_top_taxa.tick_params(axis="y", labelsize=16)  # Added y-axis tick label size
-    # Get the legend handles and labels, then reverse them
-    handles, labels = ax_top_taxa.get_legend_handles_labels()
-    ax_top_taxa.legend(
-        handles,
-        labels,
+    ax.legend(
         title="Order",
         bbox_to_anchor=(1.05, 1),
         loc="upper left",
-        fontsize=16,
-        title_fontsize=18,
+        fontsize=14,
+        title_fontsize=16,
     )
 
     # Add percentage labels to each segment
-    for container in ax_top_taxa.containers:
-        # Calculate percentages for each segment
-        total_counts = plot_data_top_taxa.sum(axis=1)
+    total_counts = plot_df.sum(axis=1)
+    for container in ax.containers:
         percentages = []
         for i, bar in enumerate(container):
             height = bar.get_height()
-            if height > 0:  # Only show percentage if there's a value
-                percentage = (height / total_counts.iloc[i]) * 100
-                percentages.append(f"{int(height):5,} ({percentage:2.0f}%)")
+            if height > 0:
+                pct = (height / total_counts.iloc[i]) * 100
+                percentages.append(f"{int(height):,} ({pct:.0f}%)")
             else:
                 percentages.append("")
+        ax.bar_label(container, labels=percentages, label_type="center", fontsize=12, fontfamily="monospace")
 
-        ax_top_taxa.bar_label(
-            container,
-            labels=percentages,
-            label_type="center",
-            fontsize=15,
-            fontfamily="monospace",
+    ax.grid(axis="y", linestyle="--", alpha=0.7, zorder=0)
+    fig.tight_layout()
+
+    # Save both formats
+    plt.savefig(output_path.with_suffix(".png"), dpi=300, bbox_inches="tight")
+    plt.savefig(output_path.with_suffix(".svg"), bbox_inches="tight")
+    plt.close()
+
+    print(f"  Saved: {output_path.with_suffix('.png')}")
+    print(f"  Saved: {output_path.with_suffix('.svg')}")
+
+
+def plot_top_taxa_trend(datasets: dict[str, pd.DataFrame], output_path: Path, reference_year: str = "2025"):
+    """Create line plot showing taxa trends over time."""
+    # Get top 5 orders from reference year for consistency
+    ref_df = datasets[reference_year]
+    top_orders = ref_df["Order"].value_counts().nlargest(5).index.tolist()
+
+    # Calculate counts for each year
+    taxa_data = {}
+    for year, df in datasets.items():
+        counts = df["Order"].value_counts()
+        taxa_data[year] = {order: counts.get(order, 0) for order in top_orders}
+        taxa_data[year]["Others"] = counts[~counts.index.isin(top_orders)].sum()
+
+    plot_df = pd.DataFrame(taxa_data).T
+    plot_df.index = plot_df.index.astype(int)
+
+    fig, ax = plt.subplots(figsize=(10, 7))
+
+    # Plot each order as a line
+    for i, order in enumerate(plot_df.columns):
+        color = COLORS[i] if i < len(COLORS) else f"C{i}"
+        ax.plot(plot_df.index, plot_df[order], marker="o", markersize=8,
+                linewidth=2.5, color=color)
+        # Add label at end of line
+        ax.annotate(order, xy=(plot_df.index[-1], plot_df[order].iloc[-1]),
+                    xytext=(5, 0), textcoords="offset points",
+                    fontsize=11, va="center", color=color, fontweight="bold")
+
+    ax.set_title("Growth of Top Taxa Orders in ToxProt Over Time", fontsize=18)
+    ax.set_xlabel("Year", fontsize=14)
+    ax.set_ylabel("Number of Entries", fontsize=14)
+    ax.set_xticks(plot_df.index)
+    ax.set_ylim(bottom=0)
+    ax.tick_params(axis="both", labelsize=12)
+
+    ax.grid(axis="y", linestyle="--", alpha=0.7)
+
+    # Add padding on right for labels
+    ax.set_xlim(right=plot_df.index[-1] + 3)
+
+    fig.tight_layout()
+
+    plt.savefig(output_path.with_suffix(".png"), dpi=300, bbox_inches="tight")
+    plt.savefig(output_path.with_suffix(".svg"), bbox_inches="tight")
+    plt.close()
+
+    print(f"  Saved: {output_path.with_suffix('.png')}")
+    print(f"  Saved: {output_path.with_suffix('.svg')}")
+
+
+def plot_top_taxa_area(datasets: dict[str, pd.DataFrame], output_path: Path, reference_year: str = "2025"):
+    """Create stacked area plot showing taxa composition over time."""
+    # Get top 5 orders from reference year for consistency
+    ref_df = datasets[reference_year]
+    top_orders = ref_df["Order"].value_counts().nlargest(5).index.tolist()
+
+    # Calculate counts for each year
+    taxa_data = {}
+    for year, df in datasets.items():
+        counts = df["Order"].value_counts()
+        taxa_data[year] = {order: counts.get(order, 0) for order in top_orders}
+        taxa_data[year]["Others"] = counts[~counts.index.isin(top_orders)].sum()
+
+    plot_df = pd.DataFrame(taxa_data).T
+    plot_df.index = plot_df.index.astype(int)
+
+    fig, ax = plt.subplots(figsize=(10, 7))
+
+    ax.stackplot(plot_df.index, plot_df.T.values, labels=plot_df.columns, colors=COLORS, alpha=0.85)
+
+    ax.set_title("ToxProt Database Growth by Taxa Order", fontsize=18)
+    ax.set_xlabel("Year", fontsize=14)
+    ax.set_ylabel("Number of Entries", fontsize=14)
+    ax.set_xticks(plot_df.index)
+    ax.set_ylim(bottom=0)
+    ax.tick_params(axis="both", labelsize=12)
+
+    ax.legend(title="Order", fontsize=11, title_fontsize=13, loc="upper left")
+    ax.grid(axis="y", linestyle="--", alpha=0.7)
+
+    fig.tight_layout()
+
+    plt.savefig(output_path.with_suffix(".png"), dpi=300, bbox_inches="tight")
+    plt.savefig(output_path.with_suffix(".svg"), bbox_inches="tight")
+    plt.close()
+
+    print(f"  Saved: {output_path.with_suffix('.png')}")
+    print(f"  Saved: {output_path.with_suffix('.svg')}")
+
+
+def plot_taxa_newcomers(df_old: pd.DataFrame, df_new: pd.DataFrame, taxa_level: str,
+                        output_path: Path, color: str, max_items: int = 15):
+    """Create horizontal bar chart of newcomer taxa."""
+    newcomers = get_taxa_newcomers(df_old, df_new, taxa_level)
+
+    if len(newcomers) == 0:
+        print(f"  No newcomers found at {taxa_level} level")
+        return
+
+    plot_data = newcomers.head(max_items)
+    title_suffix = f" (Top {max_items} Shown)" if len(newcomers) > max_items else ""
+
+    fig, ax = plt.subplots(figsize=(12, max(6, len(plot_data) * 0.5)))
+    plot_data.plot(kind="barh", color=color, ax=ax, zorder=3)
+
+    # Add common names for Order level
+    if taxa_level == "Order":
+        labels = [f"{name} ({ORDER_COMMON_NAMES.get(name, '')})" for name in plot_data.index]
+        ax.set_yticks(range(len(labels)))
+        ax.set_yticklabels(labels, fontsize=11)
+
+    ax.set_title(f"New Taxa {taxa_level}s in ToxProt 2025 (Not in 2017){title_suffix}", fontsize=16)
+    ax.set_xlabel("Number of Entries", fontsize=14)
+    ax.set_ylabel(taxa_level, fontsize=14)
+
+    # Add value labels
+    for i, v in enumerate(plot_data):
+        ax.text(v + 0.5, i, str(v), va="center", fontsize=10)
+
+    ax.grid(axis="x", linestyle="--", alpha=0.7, zorder=0)
+    fig.tight_layout()
+
+    plt.savefig(output_path, dpi=300, bbox_inches="tight")
+    plt.close()
+
+    print(f"  Saved: {output_path}")
+
+
+def main():
+    """Generate all taxa analysis plots."""
+    FIGURES_DIR.mkdir(parents=True, exist_ok=True)
+
+    print("Loading datasets...")
+    datasets = load_datasets(YEARS)
+
+    if len(datasets) < 2:
+        print("Error: Need at least 2 datasets to generate plots")
+        return
+
+    print("\nGenerating top taxa distribution plot...")
+    plot_top_taxa_distribution(datasets, FIGURES_DIR / "top_taxa_distribution")
+
+    print("\nGenerating top taxa trend plot...")
+    plot_top_taxa_trend(datasets, FIGURES_DIR / "top_taxa_trend")
+
+    print("\nGenerating top taxa area plot...")
+    plot_top_taxa_area(datasets, FIGURES_DIR / "top_taxa_area")
+
+    # Newcomer plots (comparing 2017 to 2025)
+    if "2017" in datasets and "2025" in datasets:
+        print("\nGenerating newcomer taxa plots...")
+        plot_taxa_newcomers(
+            datasets["2017"], datasets["2025"], "Order",
+            FIGURES_DIR / "taxa_newcomers_order.png", "tab:green"
+        )
+        plot_taxa_newcomers(
+            datasets["2017"], datasets["2025"], "Family",
+            FIGURES_DIR / "taxa_newcomers_family.png", "tab:blue"
         )
 
-    ax_top_taxa.grid(axis="y", linestyle="--", alpha=0.7, zorder=0)
-    fig1.tight_layout()
-
-    # Save as PNG
-    plt.savefig(
-        os.path.join(FIGURES_DIR, "top_taxa_distribution.png"),
-        dpi=300,
-        bbox_inches="tight",
-    )
-    print(f"Saved {os.path.join(FIGURES_DIR, 'top_taxa_distribution.png')}")
-
-    # Save as SVG
-    plt.savefig(
-        os.path.join(FIGURES_DIR, "top_taxa_distribution.svg"),
-        bbox_inches="tight",
-    )
-    print(f"Saved {os.path.join(FIGURES_DIR, 'top_taxa_distribution.svg')}")
-
-    # --- Plot 2: Newcomer Taxa Orders ---
-    print("Generating Newcomer Taxa Orders plot...")
-    order_common_names = {
-        "Lepidoptera": "Butterflies and Moths",
-        "Scutigeromorpha": "House Centipedes",
-        "Rhynchobdellida": "Proboscis Leeches",
-        "Zoantharia": "Colonial Anemones",
-        "Chiroptera": "Bats",
-        "Hirudinida": "Leeches",
-        "Xiphosura": "Horseshoe Crabs",
-        "Suberitida": "Sponges",
-        "Semaeostomeae": "Jellyfish",
-        "Rhabditida": "Roundworms",
-        "Nectiopoda": "Remipedes",
-        "Euphausiacea": "Krill",
-    }
-
-    order_newcomers = get_taxa_newcomers(toxprot_2017, toxprot_2025, "Order")
-
-    fig2, ax_order_newcomers = plt.subplots(figsize=(12, 8))
-    plot_data_order_newcomers = (
-        order_newcomers.head(15) if len(order_newcomers) > 15 else order_newcomers
-    )
-    title_suffix_order = " (Top 15 Shown)" if len(order_newcomers) > 15 else ""
-
-    plot_data_order_newcomers.plot(
-        kind="barh", color="tab:green", ax=ax_order_newcomers, zorder=3
-    )
-
-    labels_order = [
-        f"{order} ({order_common_names.get(order, 'Unknown')})"
-        for order in plot_data_order_newcomers.index
-    ]
-    ax_order_newcomers.set_yticks(range(len(labels_order)))
-    ax_order_newcomers.set_yticklabels(labels_order, fontsize=11)
-
-    ax_order_newcomers.set_title(
-        f"New Taxa Orders in ToxProt 2025 (Not Present in 2017){title_suffix_order}",
-        fontsize=16,
-    )
-    ax_order_newcomers.set_xlabel("Number of Entries", fontsize=14)
-    ax_order_newcomers.set_ylabel("Order (Common Name)", fontsize=14)
-
-    for i, v_val in enumerate(
-        plot_data_order_newcomers
-    ):  # Renamed v to v_val to avoid confusion
-        ax_order_newcomers.text(v_val + 0.5, i, str(v_val), va="center", fontsize=10)
-
-    ax_order_newcomers.grid(axis="x", linestyle="--", alpha=0.7, zorder=0)
-    fig2.tight_layout()
-    plt.savefig(
-        os.path.join(FIGURES_DIR, "taxa_newcomers_order.png"),
-        dpi=300,
-        bbox_inches="tight",
-    )
-    print(f"Saved {os.path.join(FIGURES_DIR, 'taxa_newcomers_order.png')}")
-
-    # --- Plot 3: Newcomer Taxa Families ---
-    print("Generating Newcomer Taxa Families plot...")
-    family_newcomers = get_taxa_newcomers(toxprot_2017, toxprot_2025, "Family")
-
-    fig3, ax_family_newcomers = plt.subplots(figsize=(12, 10))
-    plot_data_family_newcomers = (
-        family_newcomers.head(15) if len(family_newcomers) > 15 else family_newcomers
-    )
-    title_suffix_family = " (Top 15 Shown)" if len(family_newcomers) > 15 else ""
-
-    plot_data_family_newcomers.plot(
-        kind="barh", color="tab:blue", ax=ax_family_newcomers, zorder=3
-    )
-    ax_family_newcomers.set_title(
-        f"New Taxa Families in ToxProt 2025 (Not Present in 2017){title_suffix_family}",
-        fontsize=16,
-    )
-    ax_family_newcomers.set_xlabel("Number of Entries", fontsize=14)
-    ax_family_newcomers.set_ylabel("Family", fontsize=14)
-    ax_family_newcomers.tick_params(axis="y", labelsize=12)
-
-    for i, v_val in enumerate(plot_data_family_newcomers):  # Renamed v to v_val
-        ax_family_newcomers.text(v_val + 0.5, i, str(v_val), va="center", fontsize=10)
-
-    ax_family_newcomers.grid(axis="x", linestyle="--", alpha=0.7, zorder=0)
-    fig3.tight_layout()
-    plt.savefig(
-        os.path.join(FIGURES_DIR, "taxa_newcomers_family.png"),
-        dpi=300,
-        bbox_inches="tight",
-    )
-    print(f"Saved {os.path.join(FIGURES_DIR, 'taxa_newcomers_family.png')}")
-
-    print("\nAll plots generated and saved.")
+    print("\nDone!")
 
 
 if __name__ == "__main__":

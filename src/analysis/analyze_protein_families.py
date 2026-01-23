@@ -298,57 +298,44 @@ def _calculate_statistics(df):
     }
 
 
-def generate_summary_table(df_2017, df_2025, output_path):
+def generate_summary_table(datasets: dict[str, pd.DataFrame], output_path: Path):
     """
-    Generate summary statistics table comparing 2017 and 2025 datasets.
+    Generate summary statistics table comparing all datasets.
 
     Args:
-        df_2017: DataFrame with 2017 data
-        df_2025: DataFrame with 2025 data
+        datasets: Dictionary mapping year to DataFrame
         output_path: Path to save the figure
     """
-    # Calculate statistics for both years
-    stats_17 = _calculate_statistics(df_2017)
-    stats_25 = _calculate_statistics(df_2025)
+    # Calculate statistics for all years
+    all_stats = {year: _calculate_statistics(df) for year, df in datasets.items()}
+    years = list(datasets.keys())
 
     # Create table data
     cell_text = [
-        [stats_17["total"], stats_25["total"]],
-        [stats_17["unique_families"], stats_25["unique_families"]],
-        [
-            f"{stats_17['na_count']} ({stats_17['na_pct']:.2f}%)",
-            f"{stats_25['na_count']} ({stats_25['na_pct']:.2f}%)",
-        ],
-        [
-            f"{stats_17['fragment_count']} ({stats_17['fragment_pct']:.2f}%)",
-            f"{stats_25['fragment_count']} ({stats_25['fragment_pct']:.2f}%)",
-        ],
-        [
-            f"{stats_17['ptm_count']} ({stats_17['ptm_pct']:.2f}%)",
-            f"{stats_25['ptm_count']} ({stats_25['ptm_pct']:.2f}%)",
-        ],
-        [
-            f"{stats_17['toxic_count']} ({stats_17['toxic_pct']:.2f}%)",
-            f"{stats_25['toxic_count']} ({stats_25['toxic_pct']:.2f}%)",
-        ],
-        [stats_17["species_count"], stats_25["species_count"]],
-        [stats_17["order_count"], stats_25["order_count"]],
+        [all_stats[y]["total"] for y in years],
+        [all_stats[y]["unique_families"] for y in years],
+        [f"{all_stats[y]['na_count']} ({all_stats[y]['na_pct']:.1f}%)" for y in years],
+        [f"{all_stats[y]['fragment_count']} ({all_stats[y]['fragment_pct']:.1f}%)" for y in years],
+        [f"{all_stats[y]['ptm_count']} ({all_stats[y]['ptm_pct']:.1f}%)" for y in years],
+        [f"{all_stats[y]['toxic_count']} ({all_stats[y]['toxic_pct']:.1f}%)" for y in years],
+        [all_stats[y]["species_count"] for y in years],
+        [all_stats[y]["order_count"] for y in years],
     ]
 
     row_headers = [
-        "Total entry count",
-        'Unique protein families\n(collapsed after first ",")',
-        "N/A protein family count",
-        "Entries that are fragments",
-        "Entries with PTM annotation",
-        "Entries with toxic dose",
-        "Number of species",
-        "Number of orders",
+        "Total entries",
+        "Unique protein families",
+        "Missing protein family",
+        "Fragment entries",
+        "PTM annotations",
+        "Toxic dose annotations",
+        "Species count",
+        "Order count",
     ]
-    column_headers = ["2017", "2025"]
+    column_headers = years
 
     # Create figure and table
-    fig, ax = plt.subplots(figsize=(8, 6))
+    fig, ax = plt.subplots(figsize=(12, 6))
     ax.axis("tight")
     ax.axis("off")
 
@@ -356,6 +343,7 @@ def generate_summary_table(df_2017, df_2025, output_path):
     row_colors = plt.cm.BuPu(np.full(len(row_headers), 0.1))
     col_colors = plt.cm.BuPu(np.full(len(column_headers), 0.1))
 
+    col_width = 0.22
     table = plt.table(
         cellText=cell_text,
         rowLabels=row_headers,
@@ -365,21 +353,21 @@ def generate_summary_table(df_2017, df_2025, output_path):
         colLabels=column_headers,
         cellLoc="center",
         loc="center",
-        colWidths=[0.4, 0.4],
+        colWidths=[col_width] * len(years),
     )
 
     # Style the table
     table.auto_set_font_size(False)
-    table.set_fontsize(13)
+    table.set_fontsize(12)
 
     for cell in table.properties()["children"]:
-        cell.set_height(0.14)
+        cell.set_height(0.12)
 
     # Make headers larger
     for key in table._cells:
-        print(key)
         if key[0] == 0 or key[1] == -1:  # Column or row labels
-            table._cells[key].set_fontsize(15)
+            table._cells[key].set_fontsize(13)
+            table._cells[key].set_text_props(weight="bold")
 
     plt.savefig(output_path, dpi=300, bbox_inches="tight")
     plt.close()
@@ -411,19 +399,28 @@ def main():
 
     args = parser.parse_args()
 
-    # Load data
+    # Load all datasets
+    years = ["2005", "2015", "2017", "2025"]
     print("Loading ToxProt datasets...")
-    df_2017 = pd.read_csv(args.data_dir / "toxprot_2017.csv")
-    df_2025 = pd.read_csv(args.data_dir / "toxprot_2025.csv")
-    print(f"  → 2017: {len(df_2017)} entries")
-    print(f"  → 2025: {len(df_2025)} entries")
+    datasets = {}
+    for year in years:
+        filepath = args.data_dir / f"toxprot_{year}.csv"
+        if filepath.exists():
+            datasets[year] = pd.read_csv(filepath)
+            print(f"  → {year}: {len(datasets[year]):,} entries")
+        else:
+            print(f"  → {year}: not found, skipping")
+
+    if len(datasets) < 2:
+        print("Error: Need at least 2 datasets")
+        return
 
     # Ensure output directories exist
     args.output_dir.mkdir(parents=True, exist_ok=True)
     protein_families_dir = args.output_dir / "protein_families"
     protein_families_dir.mkdir(parents=True, exist_ok=True)
 
-    # Define output paths with descriptive names
+    # Define output paths
     length_hist_path = args.output_dir / "sequence_length_distribution.png"
     families_bar_path = protein_families_dir / "top_families_stacked_bar.png"
     summary_table_path = args.output_dir / "dataset_summary_statistics.png"
@@ -431,18 +428,20 @@ def main():
     # Generate visualizations
     print("\nGenerating visualizations...")
 
-    print("  → Sequence length distribution histogram...")
-    plot_sequence_length_histogram(df_2017, df_2025, length_hist_path)
-    print(f"    ✓ {length_hist_path}")
+    # Use 2017 and 2025 for histogram and families chart (for now)
+    if "2017" in datasets and "2025" in datasets:
+        print("  → Sequence length distribution histogram...")
+        plot_sequence_length_histogram(datasets["2017"], datasets["2025"], length_hist_path)
+        print(f"    ✓ {length_hist_path}")
 
-    print(f"  → Top {args.top_n} protein families stacked bar chart...")
-    plot_stacked_bar_protein_families(
-        df_2017, df_2025, families_bar_path, top_n=args.top_n
-    )
-    print(f"    ✓ {families_bar_path}")
+        print(f"  → Top {args.top_n} protein families stacked bar chart...")
+        plot_stacked_bar_protein_families(
+            datasets["2017"], datasets["2025"], families_bar_path, top_n=args.top_n
+        )
+        print(f"    ✓ {families_bar_path}")
 
     print("  → Summary statistics table...")
-    generate_summary_table(df_2017, df_2025, summary_table_path)
+    generate_summary_table(datasets, summary_table_path)
     print(f"    ✓ {summary_table_path}")
 
     print("\n" + "=" * 60)
