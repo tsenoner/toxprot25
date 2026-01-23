@@ -1,10 +1,10 @@
 # ToxProt25: Analysis of ToxProt (2017-2025)
 
-Comparative analysis of toxin proteins from [ToxProt](https://www.uniprot.org/help/Toxins) between UniProtKB 2017 and 2025 releases.
+Comparative analysis of toxin proteins from [ToxProt](https://www.uniprot.org/help/Toxins) between historical UniProtKB releases (2017) and current releases (2025).
 
 ## 🎯 Project Overview
 
-This project analyzes changes in toxin-related proteins across two UniProtKB snapshots (2017 and 2025):
+This project analyzes changes in toxin-related proteins across different UniProtKB snapshots:
 
 - **Taxonomic changes**: Species representation and new taxa emergence
 - **Habitat patterns**: Marine vs terrestrial protein family distributions
@@ -14,96 +14,86 @@ This project analyzes changes in toxin-related proteins across two UniProtKB sna
 - **Curation insights**: Protein family renamings and annotation improvements
 - **Protein space**: 2D embedding visualization using ProtSpace
 
-## 🚀 Quick Start
-
-### Prerequisites
-
-- Python 3.12+
-- UV package manager (recommended) or pip
+## 🚀 Setup
 
 ### Installation
 
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd toxprot25
-
-# Install dependencies with UV (recommended)
+# Install dependencies
 uv sync
-
-# OR install with pip
-pip install -e .
 ```
 
-## 🔬 Key Analyses
+### Data Files
+
+UniProtKB SwissProt DAT files (`.dat`) are not included in the repository due to size. Place them in `data/raw/`:
+
+- Historical release (e.g., `201501_sprot.dat`, `200502_sprot_release4.dat`)
+- Current release (e.g., `202501_sprot.dat`)
+
+**Note**: `.dat` files are automatically ignored by git.
+
+## 🔬 Analysis Pipeline
 
 ### 1. Data Processing
 
-**Step 1: Parse SwissProt DAT files** (`src/data_processing/parse_sprot_dat.py`)
+**Parse SwissProt DAT files** (`src/data_processing/parse_sprot_dat.py`)
 
-Extracts entries matching: `(taxonomy_id:33208) AND ((cc_tissue_specificity:venom) OR (keyword:KW-0800))`
+Extracts toxin entries matching: `(taxonomy_id:33208) AND ((cc_tissue_specificity:venom) OR (keyword:KW-0800))`
 
-Key features:
+Features:
 
-- Process signal peptides for mature protein sequences
-- Extract protein metadata (names, families, length, mass)
-- Capture functional annotations (tissue specificity, toxic dose)
-- Extract post-translational modifications (MOD_RES, CARBOHYD, DISULFID, CROSSLNK, LIPID)
-- Auto-download PTM controlled vocabulary (ptmlist.txt)
+- Signal peptide processing for mature sequences
+- Protein metadata extraction (names, families, length, mass)
+- Functional annotations (tissue specificity, toxic dose)
+- Post-translational modifications (MOD_RES, CARBOHYD, DISULFID, CROSSLNK, LIPID)
+- Automatic PTM vocabulary download (ptmlist.txt)
 
-**Step 2: Clean and enrich data** (`src/data_processing/clean_data.py`)
+**Clean and enrich data** (`src/data_processing/clean_data.py`)
 
 - Standardize protein family names
-- Create FASTA files with signal peptide removal
-- Add taxonomic information (phylum, class, order, family, genus, species)
-- Add habitat classification (marine/terrestrial)
+- Generate FASTA files (full and mature sequences)
+- Taxonomic enrichment (phylum, class, order, family, genus, species)
+- Habitat classification (marine/terrestrial)
 
-**Step 3: Remove fragments** (`src/data_processing/remove_fragments.py`)
+### 2. Comparative Analyses
 
-- Filter out fragment sequences for specific analyses
+All analysis scripts are in `src/analysis/`:
 
-### 2. Comparative Analyses (2017 vs 2025)
+| Analysis              | Script                               | Outputs                                                    |
+| --------------------- | ------------------------------------ | ---------------------------------------------------------- |
+| **Protein Families**  | `analyze_protein_families.py`        | Distribution charts, length histograms                     |
+| **Taxonomic Changes** | `analyze_taxa.py`                    | Taxa distribution, newcomers by order/family               |
+| **Habitat Patterns**  | `analyze_habitat.py`                 | Marine vs terrestrial comparisons, Venn diagrams, heatmaps |
+| **PTMs**              | `analyze_ptm.py`                     | Modification type distributions and statistics             |
+| **GO Terms**          | `analyze_go_terms.py`                | Functional annotation comparisons                          |
+| **Protein Evidence**  | `plot_protein_evidence_sankey.py`    | Evidence flow Sankey diagrams                              |
+| **Curation Tracking** | `generate_family_renaming_report.py` | Family name change reports                                 |
 
-**Protein Families** (`src/analysis/analyze_protein_families.py`)
+### 3. ProtSpace Analysis
 
-- Distribution comparisons with stacked bar charts
-- Sequence length histograms
-- Summary statistics tables
+Generate protein embeddings and 2D visualizations (`src/protspace/`):
 
-**Taxonomic Changes** (`src/analysis/analyze_taxa.py`)
+1. `generate_fasta_for_embeddings.py` - Prepare sequences
+2. `process_protspace.py` - Generate embeddings (requires ProtSpace)
+3. `generate_plots.py` - Create 2D visualizations
+4. `analyze_clustering.py` - Clustering quality metrics
 
-- Top taxa distribution comparison
-- Newcomer orders and families identification
-- Species-level counting
+See `src/protspace/README.md` for details.
 
-**Habitat Patterns** (`src/analysis/analyze_habitat.py`)
+## 📊 Output Structure
 
-- Marine vs terrestrial protein family distribution
-- Percentage and absolute changes
-- Dual-habitat family analysis
-- Venn diagrams and heatmaps
-
-**Post-Translational Modifications** (`src/analysis/analyze_ptm.py`)
-
-- PTM type distributions
-- Modification count analysis
-- Comparative statistics
-
-**GO Terms** (`src/analysis/analyze_go_terms.py`)
-
-- Functional annotation comparisons
-- GO term enrichment changes
-
-**Curation Tracking** (`src/analysis/generate_family_renaming_report.py`)
-
-- Protein family name changes tracking
-- Systematic renaming identification
-
-**Protein Evidence** (`src/analysis/plot_protein_evidence_sankey.py`)
-
-- Sankey diagrams showing protein evidence flow
+```
+data/
+  ├── raw/           # Source data (habitat classifications, PTM vocabulary)
+  ├── interim/       # Parsed SwissProt data
+  └── processed/     # Cleaned datasets and ProtSpace embeddings
+figures/             # All generated visualizations
+notebook/            # Jupyter analysis notebooks
+docs/                # Analysis summaries and notes
+```
 
 ## 📝 Data Sources
 
-- **UniProtKB/SwissProt**: Nov 2017 (`201711_sprot.dat`) and Jan 2025 (`202501_sprot.dat`)
-- **Habitat classification**: Manual curation from taxonomic families
+- **UniProtKB/SwissProt**: Historical and current releases (.dat files)
+- **ToxProt**: March 2025 export (`202503_ToxProt.tsv`)
+- **Habitat classification**: Manual taxonomic curation (`marine_terrestrial.json`, `habitat_detailed.json`)
