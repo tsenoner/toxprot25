@@ -1,6 +1,6 @@
-# ToxProt25: Analysis of ToxProt (2017-2025)
+# ToxProt25: Analysis of ToxProt (2005-2025)
 
-Comparative analysis of toxin proteins from [ToxProt](https://www.uniprot.org/help/Toxins) between historical UniProtKB releases (2017) and current releases (2025).
+Comparative analysis of toxin proteins from [ToxProt](https://www.uniprot.org/help/Toxins) across 20 years of UniProtKB releases (2005-2025).
 
 ## 🎯 Project Overview
 
@@ -25,12 +25,14 @@ uv sync
 
 ### Data Files
 
-UniProtKB SwissProt DAT files (`.dat`) are not included in the repository due to size. Place them in `data/raw/`:
+UniProtKB SwissProt DAT files (`.dat`) are not included due to size. Download them:
 
-- Historical release (e.g., `201501_sprot.dat`, `200502_sprot_release4.dat`)
-- Current release (e.g., `202501_sprot.dat`)
+```bash
+# Download all years (2005-2025)
+uv run python src/data_processing/download_uniprot_releases.py
+```
 
-**Note**: `.dat` files are automatically ignored by git.
+Files are saved to `data/raw/` as `{year}_sprot.dat`.
 
 ## 🔬 Analysis Pipeline
 
