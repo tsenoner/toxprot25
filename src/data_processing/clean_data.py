@@ -241,12 +241,20 @@ def get_taxonomy_info(taxon_id, taxdb):
     }
 
 
+# Mapping of deprecated/merged NCBI taxonomy IDs to current IDs
+LEGACY_TAXID_MAP = {
+    184771: 666126,  # Oxyopes kitabensis -> Oxyopes takobius
+}
+
+
 def build_taxonomy_cache(df, taxdb):
     """Build a cache of taxonomy information for all unique organism IDs."""
     taxonomy_cache = {}
     for taxon_id in df["Organism (ID)"].unique():
         if pd.notna(taxon_id):
-            taxonomy_cache[taxon_id] = get_taxonomy_info(taxon_id, taxdb)
+            # Map legacy taxonomy IDs to current ones
+            lookup_id = LEGACY_TAXID_MAP.get(int(taxon_id), int(taxon_id))
+            taxonomy_cache[taxon_id] = get_taxonomy_info(lookup_id, taxdb)
 
     return taxonomy_cache
 
@@ -380,9 +388,9 @@ def main():
     )
     parser.add_argument(
         "--year",
-        choices=["2017", "2025", "both"],
-        default="both",
-        help="Which year(s) to process (default: both)",
+        choices=["2005", "2015", "2017", "2025", "all"],
+        default="all",
+        help="Which year(s) to process (default: all)",
     )
     parser.add_argument(
         "--data-dir",
@@ -404,11 +412,11 @@ def main():
     processed_path.mkdir(parents=True, exist_ok=True)
 
     # Determine which years to process
-    years_to_process = []
-    if args.year in ["2017", "both"]:
-        years_to_process.append("2017")
-    if args.year in ["2025", "both"]:
-        years_to_process.append("2025")
+    all_years = ["2005", "2015", "2017", "2025"]
+    if args.year == "all":
+        years_to_process = all_years
+    else:
+        years_to_process = [args.year]
 
     # Initialize taxonomy database
     print("Initializing taxonomy database...")
