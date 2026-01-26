@@ -10,10 +10,13 @@ The script downloads uniprot_sprot-only*.tar.gz files and extracts the .dat file
 
 import argparse
 import gzip
+import logging
 import shutil
 import subprocess
 import tarfile
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 # Base URL for UniProt previous releases
 BASE_URL = "https://ftp.uniprot.org/pub/databases/uniprot/previous_major_releases"
@@ -50,21 +53,26 @@ RELEASES = {
 
 def download_file(url: str, output_path: Path) -> bool:
     """Download a file using curl with progress bar."""
-    print(f"  Downloading: {url}")
+    logger.debug(f"  Downloading: {url}")
     try:
-        subprocess.run(
-            ["curl", "-L", "-#", "-o", str(output_path), url],
-            check=True,
-        )
+        # Show progress bar only if logging at DEBUG level
+        show_progress = logger.isEnabledFor(logging.DEBUG)
+        curl_args = ["curl", "-L", "-o", str(output_path), url]
+        if show_progress:
+            curl_args.insert(2, "-#")  # Add progress bar
+        else:
+            curl_args.insert(2, "-s")  # Silent mode
+
+        subprocess.run(curl_args, check=True)
         return True
     except subprocess.CalledProcessError as e:
-        print(f"  Error downloading: {e}")
+        logger.error(f"  Error downloading: {e}")
         return False
 
 
 def extract_dat_file(archive_path: Path, output_dir: Path, year: int) -> Path | None:
     """Extract the .dat file from the tar.gz archive."""
-    print(f"  Extracting .dat file from {archive_path.name}...")
+    logger.debug(f"  Extracting .dat file from {archive_path.name}...")
 
     output_file = output_dir / f"{year}_sprot.dat"
 
@@ -74,12 +82,12 @@ def extract_dat_file(archive_path: Path, output_dir: Path, year: int) -> Path | 
             dat_gz_files = [m for m in tar.getmembers() if "sprot.dat" in m.name]
 
             if not dat_gz_files:
-                print("  Error: No sprot.dat file found in archive")
+                logger.error("  Error: No sprot.dat file found in archive")
                 return None
 
             # Extract the first matching file found
             dat_member = dat_gz_files[0]
-            print(f"  Found: {dat_member.name}")
+            logger.debug(f"  Found: {dat_member.name}")
 
             # Extract to output directory
             tar.extract(dat_member, output_dir, filter="data")
@@ -87,7 +95,7 @@ def extract_dat_file(archive_path: Path, output_dir: Path, year: int) -> Path | 
 
             # If it's gzipped, decompress it
             if extracted_path.suffix == ".gz":
-                print(f"  Decompressing {extracted_path.name}...")
+                logger.debug(f"  Decompressing {extracted_path.name}...")
                 with gzip.open(extracted_path, "rb") as f_in:
                     with open(output_file, "wb") as f_out:
                         shutil.copyfileobj(f_in, f_out)
@@ -96,18 +104,18 @@ def extract_dat_file(archive_path: Path, output_dir: Path, year: int) -> Path | 
                 # Just rename if not gzipped
                 extracted_path.rename(output_file)
 
-            print(f"  Saved: {output_file}")
+            logger.debug(f"  Saved: {output_file}")
             return output_file
 
     except Exception as e:
-        print(f"  Error extracting: {e}")
+        logger.error(f"  Error extracting: {e}")
         return None
 
 
 def download_release(year: int, output_dir: Path, keep_archive: bool = False) -> bool:
     """Download and extract a single year's release."""
     if year not in RELEASES:
-        print(f"  Error: No release mapping for year {year}")
+        logger.error(f"  Error: No release mapping for year {year}")
         return False
 
     release_dir, archive_name = RELEASES[year]
@@ -117,7 +125,7 @@ def download_release(year: int, output_dir: Path, keep_archive: bool = False) ->
 
     # Check if already downloaded
     if output_dat.exists():
-        print(f"  Already exists: {output_dat}")
+        logger.debug(f"  Already exists: {output_dat}")
         return True
 
     # Download archive
@@ -127,14 +135,21 @@ def download_release(year: int, output_dir: Path, keep_archive: bool = False) ->
         if not download_file(url, archive_path):
             return False
     else:
-        print(f"  Archive exists: {archive_path}")
+        logger.debug(f"  Archive exists: {archive_path}")
 
     # Extract .dat file
     result = extract_dat_file(archive_path, output_dir, year)
 
+    # If extraction failed, the archive might be corrupted - delete and retry once
+    if result is None and archive_path.exists():
+        logger.warning("  Archive appears corrupted, deleting and retrying...")
+        archive_path.unlink()
+        if download_file(url, archive_path):
+            result = extract_dat_file(archive_path, output_dir, year)
+
     # Optionally remove archive to save space
     if result and not keep_archive and archive_path.exists():
-        print(f"  Removing archive: {archive_path.name}")
+        logger.debug(f"  Removing archive: {archive_path.name}")
         archive_path.unlink()
 
     return result is not None

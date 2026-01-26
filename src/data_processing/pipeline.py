@@ -42,21 +42,51 @@ from .parse_sprot_dat import (
 logger = logging.getLogger(__name__)
 
 
+class YearLogger:
+    """Logger wrapper that automatically prefixes messages with [year]."""
+
+    def __init__(self, year: int, base_logger: logging.Logger):
+        self.year = year
+        self.logger = base_logger
+
+    def _fmt(self, msg: str) -> str:
+        return f"[{self.year}] {msg}"
+
+    def debug(self, msg: str) -> None:
+        self.logger.debug(self._fmt(msg))
+
+    def info(self, msg: str) -> None:
+        self.logger.info(self._fmt(msg))
+
+    def warning(self, msg: str) -> None:
+        self.logger.warning(self._fmt(msg))
+
+    def error(self, msg: str) -> None:
+        self.logger.error(self._fmt(msg))
+
+
 def setup_logging(verbose: bool = False) -> None:
     """Configure logging for the pipeline.
 
     Args:
-        verbose: If True, set DEBUG level; otherwise INFO level.
+        verbose: If True, set DEBUG level; otherwise WARNING level.
     """
-    level = logging.DEBUG if verbose else logging.INFO
-    logging.basicConfig(
-        level=level,
-        format="%(asctime)s %(levelname)s [%(name)s] - %(message)s",
-        datefmt="%H:%M:%S",
-        handlers=[
-            logging.StreamHandler(sys.stdout),
-        ],
-    )
+    # Set root logger to WARNING by default, DEBUG if verbose
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.DEBUG if verbose else logging.WARNING)
+
+    # Configure handler
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(logging.Formatter(
+        "%(asctime)s %(levelname)s [%(name)s] - %(message)s" if verbose
+        else "%(message)s",
+        datefmt="%H:%M:%S"
+    ))
+    root_logger.addHandler(handler)
+
+    # Set pipeline logger to INFO by default, DEBUG if verbose
+    pipeline_logger = logging.getLogger("src.data_processing.pipeline")
+    pipeline_logger.setLevel(logging.DEBUG if verbose else logging.INFO)
 
 
 def is_year_complete(year: int, config: PipelineConfig) -> bool:
@@ -100,7 +130,7 @@ def process_single_year(
     Returns:
         YearResult with processing outcome.
     """
-    logger.info(f"[{year}] Starting processing...")
+    log = YearLogger(year, logger)
 
     # File paths
     dat_path = config.raw_dir / f"{year}_sprot.dat"
@@ -110,92 +140,58 @@ def process_single_year(
 
     try:
         # Stage 1: Download
-        logger.info(f"[{year}] Stage 1: Download")
         if not dat_path.exists():
             if not download_release(year, config.raw_dir, keep_archive=False):
-                return YearResult(
-                    year=year,
-                    success=False,
-                    stage_completed="download",
-                    error="Download failed",
-                )
+                return YearResult(year=year, success=False, stage_completed="download", error="Download failed")
         else:
-            logger.info(f"[{year}]   .dat file exists, skipping download")
+            log.debug("Using existing .dat file")
 
         # Stage 2: Parse
-        logger.info(f"[{year}] Stage 2: Parse")
         if not tsv_path.exists():
             config.interim_dir.mkdir(parents=True, exist_ok=True)
-            success = process_swissprot_file(dat_path, tsv_path, ptm_vocab)
-            if not success:
-                return YearResult(
-                    year=year,
-                    success=False,
-                    stage_completed="parse",
-                    error="Parsing failed",
-                )
+            if not process_swissprot_file(dat_path, tsv_path, ptm_vocab):
+                return YearResult(year=year, success=False, stage_completed="parse", error="Parsing failed")
         else:
-            logger.info(f"[{year}]   .tsv file exists, skipping parse")
+            log.debug("Using existing .tsv file")
 
-        # Stage 3: Delete .dat file (if configured)
+        # Delete .dat file to save space
         if config.delete_dat_files and dat_path.exists():
-            logger.info(f"[{year}] Deleting .dat file to save disk space")
             dat_path.unlink()
 
-        # Stage 4: Clean and process
-        logger.info(f"[{year}] Stage 3: Clean")
+        # Stage 3: Clean and process
         config.processed_dir.mkdir(parents=True, exist_ok=True)
-
-        # Process TSV to CSV and FASTA (in interim directory as intermediate)
         process_toxprot_tsv(tsv_path, update_protfams, create_fasta_file)
 
-        # Intermediate files created next to input
+        # Add taxonomy and habitat classification
         interim_csv_path = tsv_path.with_suffix(".csv")
         interim_fasta_path = tsv_path.with_suffix(".fasta")
 
-        # Add taxonomic information
-        logger.info(f"[{year}]   Adding taxonomy...")
+        log.debug("Adding taxonomy and habitat data")
         df = process_dataframe_with_taxonomy(interim_csv_path, csv_path, taxdb)
 
-        # Add habitat classification
-        logger.info(f"[{year}]   Adding habitat classification...")
         habitat_mapping_path = config.data_dir / "raw" / "marine_terrestrial.json"
         habitat_detailed_path = config.data_dir / "raw" / "habitat_detailed.json"
         df = add_habitat_classification(csv_path, habitat_mapping_path, habitat_detailed_path)
 
-        # Move FASTA to output directory
+        # Move FASTA and cleanup
         if interim_fasta_path.exists():
             if fasta_path.exists():
                 fasta_path.unlink()
             interim_fasta_path.rename(fasta_path)
-
-        # Clean up intermediate CSV
         if interim_csv_path.exists():
             interim_csv_path.unlink()
-
-        entries_count = len(df) if df is not None else 0
-
-        # Stage 5: Delete intermediate TSV (if configured)
         if config.delete_tsv_files and tsv_path.exists():
-            logger.info(f"[{year}] Deleting intermediate .tsv file")
             tsv_path.unlink()
 
-        logger.info(f"[{year}] Complete! {entries_count} entries")
-        return YearResult(
-            year=year,
-            success=True,
-            stage_completed="complete",
-            entries_count=entries_count,
-        )
+        entries_count = len(df) if df is not None else 0
+        log.info(f"✓ {entries_count:,} entries")
+
+        return YearResult(year=year, success=True, stage_completed="complete", entries_count=entries_count)
 
     except Exception as e:
-        logger.error(f"[{year}] Error: {e}", exc_info=True)
-        return YearResult(
-            year=year,
-            success=False,
-            stage_completed="unknown",
-            error=str(e),
-        )
+        log.error(f"Error: {e}")
+        logger.debug(f"[{year}] Full traceback:", exc_info=True)
+        return YearResult(year=year, success=False, stage_completed="unknown", error=str(e))
 
 
 def run_pipeline(config: PipelineConfig) -> list[YearResult]:
@@ -220,70 +216,54 @@ def run_pipeline(config: PipelineConfig) -> list[YearResult]:
     config.interim_dir.mkdir(parents=True, exist_ok=True)
     config.processed_dir.mkdir(parents=True, exist_ok=True)
 
-    logger.info("=" * 60)
-    logger.info("ToxProt Unified Data Processing Pipeline")
-    logger.info("=" * 60)
-    logger.info(f"Years to process: {min(config.years)}-{max(config.years)} ({len(config.years)} years)")
-    logger.info(f"Raw directory: {config.raw_dir}")
-    logger.info(f"Interim directory: {config.interim_dir}")
-    logger.info(f"Processed directory: {config.processed_dir}")
-    logger.info(f"Delete .dat files: {config.delete_dat_files}")
-    logger.info(f"Delete .tsv files: {config.delete_tsv_files}")
-    logger.info(f"Skip existing: {config.skip_existing}")
-    logger.info("=" * 60)
+    year_range = f"{min(config.years)}-{max(config.years)}"
+    logger.info(f"ToxProt Pipeline: Processing {len(config.years)} years ({year_range})")
+    logger.debug("=" * 60)
+    logger.debug(f"Directories: raw={config.raw_dir}, interim={config.interim_dir}, processed={config.processed_dir}")
+    logger.debug(f"Options: delete_dat={config.delete_dat_files}, delete_tsv={config.delete_tsv_files}, skip_existing={config.skip_existing}")
+    logger.debug("=" * 60)
 
     # Initialize shared resources
-    logger.info("Initializing PTM vocabulary...")
+    logger.debug("Initializing resources (PTM vocabulary, taxonomy database)...")
     vocab_manager = PTMVocabulary(str(config.data_dir / "raw"))
     vocab_manager.ensure_ptmlist_available()
     vocab_manager.load_ptmlist()
     ptm_vocab = vocab_manager.ptm_vocab
-
-    logger.info("Initializing taxonomy database...")
     taxdb = initialize_taxdb()
 
     # Process each year
     results = []
     for year in sorted(config.years):
-        # Check if already complete
         if config.skip_existing and is_year_complete(year, config):
-            logger.info(f"[{year}] Already complete, skipping")
-            # Read existing file to get entry count
+            # Read cached entry count
             csv_path = config.processed_dir / f"toxprot_{year}.csv"
             try:
                 import pandas as pd
-                df = pd.read_csv(csv_path)
-                entries_count = len(df)
+                entries_count = len(pd.read_csv(csv_path))
+                logger.info(f"[{year}] ✓ {entries_count:,} entries (cached)")
             except Exception:
                 entries_count = None
-            results.append(YearResult(
-                year=year,
-                success=True,
-                stage_completed="complete",
-                entries_count=entries_count,
-            ))
+                logger.info(f"[{year}] ✓ cached")
+
+            results.append(YearResult(year=year, success=True, stage_completed="complete", entries_count=entries_count))
             continue
 
-        result = process_single_year(year, config, ptm_vocab, taxdb)
-        results.append(result)
+        results.append(process_single_year(year, config, ptm_vocab, taxdb))
 
     # Summary
-    logger.info("=" * 60)
-    logger.info("Pipeline Summary")
-    logger.info("=" * 60)
     successful = sum(1 for r in results if r.success)
     total_entries = sum(r.entries_count or 0 for r in results if r.success)
-    logger.info(f"Successful: {successful}/{len(results)} years")
-    logger.info(f"Total entries: {total_entries}")
+    logger.info("")
+    logger.info(f"Complete: {successful}/{len(results)} years, {total_entries:,} total entries")
 
     # Report failures
     failures = [r for r in results if not r.success]
     if failures:
-        logger.warning("Failed years:")
+        logger.warning(f"Failed: {len(failures)} years")
         for r in failures:
-            logger.warning(f"  {r}")
+            logger.warning(f"  [{r.year}] {r.error}")
 
-    logger.info("=" * 60)
+    logger.debug("=" * 60)
     return results
 
 

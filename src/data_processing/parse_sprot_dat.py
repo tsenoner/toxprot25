@@ -643,18 +643,19 @@ def process_swissprot_file(input_file, output_file, ptm_vocab=None):
         Path(output_file).parent.mkdir(parents=True, exist_ok=True)
 
         # Count total entries
-        logger.info("Counting total entries...")
+        logger.debug("Counting total entries...")
         total_entries = 0
         with open(input_file, encoding="utf-8") as f:
             for line in f:
                 if line.startswith("//"):
                     total_entries += 1
-        logger.info(f"Found {total_entries:,} entries")
+        logger.debug(f"Found {total_entries:,} entries")
 
-        # Process entries
+        # Process entries (show progress bar only if logging at DEBUG level)
+        show_progress = logger.isEnabledFor(logging.DEBUG)
         with open(input_file, encoding="utf-8") as f:
             current_entry = []
-            pbar = tqdm(total=total_entries, desc="Processing entries")
+            pbar = tqdm(total=total_entries, desc="Processing entries", disable=not show_progress)
 
             for line in f:
                 if line.startswith("//"):
@@ -670,14 +671,14 @@ def process_swissprot_file(input_file, output_file, ptm_vocab=None):
             pbar.close()
 
         # Write TSV output
-        logger.info(f"Writing {len(entries_found):,} entries to {output_file}")
+        logger.debug(f"Writing {len(entries_found):,} entries to {output_file}")
         with open(output_file, "w", encoding="utf-8") as out:
             out.write("\t".join(parser.HEADERS) + "\n")
             for entry in entries_found:
                 row = [entry.get(field, "") for field in parser.HEADERS]
                 out.write("\t".join(row) + "\n")
 
-        logger.info(f"Processing complete: {len(entries_found):,} matching entries")
+        logger.debug(f"Processing complete: {len(entries_found):,} matching entries")
         return True
 
     except Exception as e:
