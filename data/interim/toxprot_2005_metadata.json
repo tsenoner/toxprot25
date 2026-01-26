@@ -1,8 +1,0 @@
-{
-  "input_file": "data/raw/200502_sprot_release4.dat",
-  "output_file": "data/interim/toxprot_2005.tsv",
-  "processing_date": "2026-01-23T14:52:32.938271",
-  "query": "(taxonomy_id:33208) AND ((cc_tissue_specificity:venom) OR (keyword:KW-0800))",
-  "total_entries_processed": 168297,
-  "matching_entries_found": 1565
-}

@@ -381,87 +381,131 @@ def add_habitat_classification(csv_path, habitat_mapping_path, habitat_detailed_
     return df
 
 
+def get_year_from_filename(filepath: Path) -> str:
+    """Extract year from filename like toxprot_2005.tsv -> 2005"""
+    import re
+    match = re.search(r"toxprot_(\d{4})", filepath.stem)
+    return match.group(1) if match else filepath.stem
+
+
 def main():
     """Main function to process ToxProt data."""
     parser = argparse.ArgumentParser(
-        description="Clean and process ToxProt TSV data files."
+        description="Clean and process ToxProt TSV data files.",
+        epilog="""Examples:
+  # Process all files in default input directory
+  python clean_data.py
+
+  # Process specific years
+  python clean_data.py --years 2005 2010 2015 2020 2025
+
+  # Process files from custom directory
+  python clean_data.py --input-dir data/interim/toxprot_parsed""",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
-        "--year",
-        choices=["2005", "2015", "2017", "2025", "all"],
-        default="all",
-        help="Which year(s) to process (default: all)",
+        "--input-dir",
+        type=Path,
+        default=Path("data/interim/toxprot_parsed"),
+        help="Directory containing toxprot_*.tsv files (default: data/interim/toxprot_parsed)",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("data/processed/toxprot"),
+        help="Directory for output files (default: data/processed/toxprot)",
+    )
+    parser.add_argument(
+        "--years",
+        type=int,
+        nargs="+",
+        help="Specific years to process (default: all found in input-dir)",
     )
     parser.add_argument(
         "--data-dir",
         type=Path,
         default=Path("data"),
-        help="Base data directory (default: data)",
+        help="Base data directory for habitat mappings (default: data)",
     )
 
     args = parser.parse_args()
 
-    # Define paths
-    data_path = args.data_dir
-    interim_path = data_path / "interim"
-    processed_path = data_path / "processed"
-    habitat_mapping_path = data_path / "raw" / "marine_terrestrial.json"
-    habitat_detailed_path = data_path / "raw" / "habitat_detailed.json"
+    # Define paths for habitat mappings
+    habitat_mapping_path = args.data_dir / "raw" / "marine_terrestrial.json"
+    habitat_detailed_path = args.data_dir / "raw" / "habitat_detailed.json"
 
-    # Ensure directories exist
-    processed_path.mkdir(parents=True, exist_ok=True)
+    # Ensure output directory exists
+    args.output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Determine which years to process
-    all_years = ["2005", "2015", "2017", "2025"]
-    if args.year == "all":
-        years_to_process = all_years
+    # Find input files
+    if args.years:
+        input_files = [args.input_dir / f"toxprot_{year}.tsv" for year in args.years]
+        input_files = [f for f in input_files if f.exists()]
     else:
-        years_to_process = [args.year]
+        input_files = sorted(args.input_dir.glob("toxprot_*.tsv"))
+
+    if not input_files:
+        print(f"No toxprot_*.tsv files found in {args.input_dir}")
+        return
+
+    print("=" * 60)
+    print("ToxProt Data Cleaning Pipeline")
+    print("=" * 60)
+    print(f"Input directory: {args.input_dir}")
+    print(f"Output directory: {args.output_dir}")
+    print(f"Files to process: {len(input_files)}")
+    print("=" * 60)
 
     # Initialize taxonomy database
-    print("Initializing taxonomy database...")
+    print("\nInitializing taxonomy database...")
     taxdb = initialize_taxdb()
 
-    for year in years_to_process:
-        print(f"\nProcessing ToxProt {year}...")
+    successful = 0
+    for tsv_path in input_files:
+        year = get_year_from_filename(tsv_path)
+        print(f"\n[{year}] Processing {tsv_path.name}...")
 
-        # Step 1: Process TSV to CSV and FASTA
-        tsv_path = interim_path / f"toxprot_{year}.tsv"
-        csv_path = interim_path / f"toxprot_{year}.csv"
-        fasta_path = interim_path / f"toxprot_{year}.fasta"
-
+        # Step 1: Process TSV to CSV and FASTA (in input directory as intermediate)
         print("  → Processing TSV and creating FASTA...")
         process_toxprot_tsv(tsv_path, update_protfams, create_fasta_file)
-        print(f"    ✓ CSV: {csv_path}")
-        print(f"    ✓ FASTA: {fasta_path}")
+
+        # Intermediate files created next to input
+        interim_csv_path = tsv_path.with_suffix(".csv")
+        interim_fasta_path = tsv_path.with_suffix(".fasta")
+
+        # Final output paths
+        processed_csv_path = args.output_dir / f"toxprot_{year}.csv"
+        processed_fasta_path = args.output_dir / f"toxprot_{year}.fasta"
 
         # Step 2: Add taxonomic information
-        interim_csv_path = interim_path / f"toxprot_{year}.csv"
-        processed_csv_path = processed_path / f"toxprot_{year}.csv"
-
-        print("  → Adding taxonomy and habitat classification...")
+        print("  → Adding taxonomy...")
         df = process_dataframe_with_taxonomy(
             interim_csv_path, processed_csv_path, taxdb
         )
 
         # Step 3: Add habitat classification
+        print("  → Adding habitat classification...")
         df = add_habitat_classification(
             processed_csv_path, habitat_mapping_path, habitat_detailed_path
         )
 
+        # Move FASTA to output directory
+        interim_fasta_path.rename(processed_fasta_path)
+
+        # Clean up intermediate CSV
+        interim_csv_path.unlink()
+
         # Print summary statistics
-        print(f"    ✓ Processed: {len(df)} entries")
-        print(f"    ✓ Unique families: {df['Protein families'].nunique()}")
-        habitat_counts = {k: int(v) for k, v in df["Habitat"].value_counts().items()}
+        print(f"    ✓ Entries: {len(df)}")
+        print(f"    ✓ Families: {df['Protein families'].nunique()}")
+        habitat_counts = df["Habitat"].value_counts().to_dict()
         print(f"    ✓ Habitat: {habitat_counts}")
-        habitat_detailed_counts = {
-            k: int(v) for k, v in df["Habitat_Detailed"].value_counts().items()
-        }
-        print(f"    ✓ Habitat (detailed): {habitat_detailed_counts}")
-        print(f"    ✓ Output: {processed_csv_path}")
+
+        successful += 1
 
     print(f"\n{'=' * 60}")
-    print("✓ All processing complete!")
+    print(f"✓ Processing complete! {successful}/{len(input_files)} files processed")
+    print(f"  Output: {args.output_dir}")
     print(f"{'=' * 60}")
 
 

@@ -32,30 +32,23 @@ UniProtKB SwissProt DAT files (`.dat`) are not included due to size. Download th
 uv run python src/data_processing/download_uniprot_releases.py
 ```
 
-Files are saved to `data/raw/` as `{year}_sprot.dat`.
+Files are saved to `data/raw/uniprot_releases/{year}_sprot.dat`.
 
 ## 🔬 Analysis Pipeline
 
 ### 1. Data Processing
 
-**Parse SwissProt DAT files** (`src/data_processing/parse_sprot_dat.py`)
+```bash
+# Parse all SwissProt releases (outputs to data/interim/toxprot_parsed/)
+uv run python src/data_processing/parse_sprot_dat.py --input-dir data/raw/uniprot_releases --delete-input
 
-Extracts toxin entries matching: `(taxonomy_id:33208) AND ((cc_tissue_specificity:venom) OR (keyword:KW-0800))`
+# Clean and enrich (outputs to data/processed/toxprot/)
+uv run python src/data_processing/clean_data.py
+```
 
-Features:
+**parse_sprot_dat.py**: Extracts toxin entries (Metazoa + venom/toxin keyword), PTMs, signal peptides.
 
-- Signal peptide processing for mature sequences
-- Protein metadata extraction (names, families, length, mass)
-- Functional annotations (tissue specificity, toxic dose)
-- Post-translational modifications (MOD_RES, CARBOHYD, DISULFID, CROSSLNK, LIPID)
-- Automatic PTM vocabulary download (ptmlist.txt)
-
-**Clean and enrich data** (`src/data_processing/clean_data.py`)
-
-- Standardize protein family names
-- Generate FASTA files (full and mature sequences)
-- Taxonomic enrichment (phylum, class, order, family, genus, species)
-- Habitat classification (marine/terrestrial)
+**clean_data.py**: Adds taxonomy, habitat classification, generates FASTA files.
 
 ### 2. Comparative Analyses
 
@@ -86,12 +79,12 @@ See `src/protspace/README.md` for details.
 
 ```
 data/
-  ├── raw/           # Source data (habitat classifications, PTM vocabulary)
-  ├── interim/       # Parsed SwissProt data
-  └── processed/     # Cleaned datasets and ProtSpace embeddings
-figures/             # All generated visualizations
-notebook/            # Jupyter analysis notebooks
-docs/                # Analysis summaries and notes
+├── raw/                    # Source data (habitat mappings, PTM vocabulary)
+├── interim/                # Intermediate files (not tracked in git)
+│   └── toxprot_parsed/     # Parsed TSV files
+└── processed/
+    ├── toxprot/            # Final CSV + FASTA files (21 years)
+    └── protspace/          # Embeddings and visualizations
 ```
 
 ## 📝 Data Sources

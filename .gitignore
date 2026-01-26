@@ -2,8 +2,11 @@
 docs/manuscript
 *.dat
 *.h5
-data/processed/protspace/*.json
 *.log
+
+# Data - ignore intermediate files (can be regenerated)
+data/interim/
+data/raw/uniprot_releases/
 
 # Python
 __pycache__/
