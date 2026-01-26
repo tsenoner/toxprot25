@@ -1,11 +1,12 @@
-import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
-import numpy as np
 from pathlib import Path
+
 import matplotlib.cm as cm
-from mpl_toolkits.axes_grid1 import make_axes_locatable
+import matplotlib.colors as mcolors
+import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
+import numpy as np
+import pandas as pd
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 # --- Configuration ---
 TOP_N_FAMILIES = 15
@@ -217,7 +218,7 @@ def plot_100_stacked_bar_habitat_vs_year_mpl():
             terrestrial_percentages,
             marine_percentages,
             terrestrial_abs_counts,
-            marine_abs_counts,
+            marine_abs_counts, strict=False,
         )
     ):
         if t_perc > 0 or t_abs > 0:
@@ -274,7 +275,7 @@ def plot_percentage_increase_by_habitat_mpl():
     ax.set_ylabel("Percentage Increase (%)")
     ax.set_title(title, pad=20)
 
-    for bar, inc, counts in zip(bars, increases, abs_counts_list):
+    for bar, inc, counts in zip(bars, increases, abs_counts_list, strict=False):
         perc_text = (
             f"{inc:.1f}%" if np.isfinite(inc) else "Inf" if inc == np.inf else "0%"
         )
@@ -472,13 +473,13 @@ def plot_diverging_bar_charts_protein_family_mpl():
         calculate_percentage_increase(old, new)
         for old, new in zip(
             protein_family_summary["Terrestrial_2017"],
-            protein_family_summary["Terrestrial_2025"],
+            protein_family_summary["Terrestrial_2025"], strict=False,
         )
     ]
     protein_family_summary["Marine_Change_Perc"] = [
         calculate_percentage_increase(old, new)
         for old, new in zip(
-            protein_family_summary["Marine_2017"], protein_family_summary["Marine_2025"]
+            protein_family_summary["Marine_2017"], protein_family_summary["Marine_2025"], strict=False
         )
     ]
 
@@ -526,7 +527,7 @@ def plot_diverging_bar_charts_protein_family_mpl():
 
     ax_abs.xaxis.set_major_formatter(mticker.FuncFormatter(abs_formatter))
 
-    for i, (t_val, m_val) in enumerate(zip(terrestrial_values_abs, marine_values_abs)):
+    for i, (t_val, m_val) in enumerate(zip(terrestrial_values_abs, marine_values_abs, strict=False)):
         # Always draw text for t_val, even if 0
         ax_abs.text(
             t_val
@@ -626,7 +627,7 @@ def plot_diverging_bar_charts_protein_family_mpl():
             terrestrial_original_perc,
             marine_original_perc,
             terrestrial_values_perc,
-            marine_values_perc,
+            marine_values_perc, strict=False,
         )
     ):
         if pd.notna(

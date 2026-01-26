@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Analyze and visualize taxonomic distribution in ToxProt datasets."""
 
-import pandas as pd
-import matplotlib.pyplot as plt
 from pathlib import Path
+
+import matplotlib.pyplot as plt
+import pandas as pd
 
 # --- Configuration ---
 DATA_DIR = Path("data/processed")

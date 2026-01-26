@@ -8,8 +8,9 @@ Generates four metadata files for the 2025 dataset:
 4. Top 15 mature no fragments (excluding NaN/Other/fragments, mature sequences)
 """
 
-import pandas as pd
 from pathlib import Path
+
+import pandas as pd
 
 
 def process_top_n_families(

@@ -9,11 +9,12 @@ from ToxProt 2017 to ToxProt 2025 with proper node positioning.
 Author: Tobias Senoner
 """
 
+import argparse
+from collections import Counter
+from pathlib import Path
+
 import pandas as pd
 import plotly.graph_objects as go
-from collections import Counter
-import argparse
-from pathlib import Path
 
 
 def normalize_pe_category(category):
@@ -114,7 +115,7 @@ def calculate_node_positions(
         positions = []
         current_y = margin_top
 
-        for i, cat in enumerate(categories):
+        for _i, cat in enumerate(categories):
             # Calculate this node's height based on its flow
             node_height = (node_flows[cat] / total_flow) * available_for_nodes
 
@@ -157,7 +158,7 @@ def calculate_node_positions(
         positions = []
         current_y = margin_top
 
-        for i, cat in enumerate(categories):
+        for _i, cat in enumerate(categories):
             # Calculate this node's height based on its flow
             node_height = (node_flows[cat] / total_flow) * available_for_nodes
 
@@ -261,7 +262,7 @@ def create_protein_evidence_sankey(
 
     # Build color mapping
     color_map = {}
-    for i, cat in enumerate(ordered_categories):
+    for _i, cat in enumerate(ordered_categories):
         if cat in pe_categories:
             idx = pe_categories.index(cat)
             color_map[cat] = pe_colors[idx]
@@ -308,7 +309,7 @@ def create_protein_evidence_sankey(
     flow_categories_2025 = set()  # Target categories (2025 side)
     has_new_node = False
 
-    for (src, tgt), count in flow_counter.items():
+    for (src, tgt), _count in flow_counter.items():
         if src == "New":
             has_new_node = True
         else:

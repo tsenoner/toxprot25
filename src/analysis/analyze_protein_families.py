@@ -79,7 +79,7 @@ def plot_sequence_length_histogram(df_2017, df_2025, output_path):
     # Create bin labels
     bin_labels = [
         f"{start}-{end - 1}"
-        for start, end in zip(all_hist_bins[:-2], all_hist_bins[1:-1])
+        for start, end in zip(all_hist_bins[:-2], all_hist_bins[1:-1], strict=False)
     ]
     bin_labels.append(f"{all_hist_bins[-2]}+")  # "301+"
 

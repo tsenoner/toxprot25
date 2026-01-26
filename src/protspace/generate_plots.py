@@ -12,6 +12,7 @@ All plots use UMAP embeddings colored by protein families.
 """
 
 from pathlib import Path
+
 from protspace import ProtSpace
 
 

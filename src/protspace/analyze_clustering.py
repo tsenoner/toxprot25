@@ -12,15 +12,15 @@ Score ranges from -1 to 1, where higher is better.
 """
 
 import json
+from pathlib import Path
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from pathlib import Path
 from sklearn.metrics import silhouette_score
-from typing import Tuple
 
 
-def load_protspace_json(json_path: Path) -> Tuple[np.ndarray, np.ndarray]:
+def load_protspace_json(json_path: Path) -> tuple[np.ndarray, np.ndarray]:
     """
     Load UMAP embeddings and protein family labels from protspace JSON.
 
@@ -30,7 +30,7 @@ def load_protspace_json(json_path: Path) -> Tuple[np.ndarray, np.ndarray]:
     Returns:
         Tuple of (embeddings, labels)
     """
-    with open(json_path, "r") as f:
+    with open(json_path) as f:
         data = json.load(f)
 
     embeddings = []
@@ -223,7 +223,7 @@ def plot_silhouette_comparison(df: pd.DataFrame, output_path: Path):
     ax.grid(axis="x", alpha=0.5, linestyle="--", linewidth=2, zorder=0)
 
     # Add score labels on bars (rounded to 2 decimal places)
-    for i, (idx, row) in enumerate(df_plot.iterrows()):
+    for i, (_idx, row) in enumerate(df_plot.iterrows()):
         score = row["Silhouette_score"]
         ax.text(score + 0.02, i, f"{score:.2f}", va="center", fontsize=18)
 

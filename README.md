@@ -7,88 +7,123 @@ Comparative analysis of toxin proteins from [ToxProt](https://www.uniprot.org/he
 This project analyzes changes in toxin-related proteins across different UniProtKB snapshots:
 
 - **Taxonomic changes**: Species representation and new taxa emergence
-- **Habitat patterns**: Marine vs terrestrial protein family distributions
+- **Habitat patterns**: Marine vs terrestrial protein distributions
 - **Protein families**: Classification and abundance changes
 - **GO-term analysis**: Functional annotation comparisons
 - **PTM analysis**: Post-translational modification patterns
-- **Curation insights**: Protein family renamings and annotation improvements
 - **Protein space**: 2D embedding visualization using ProtSpace
 
-## 🚀 Setup
+## 🚀 Quick Start
 
 ### Installation
 
 ```bash
-# Install dependencies
+# Clone and install
+git clone <repository-url>
+cd toxprot25
 uv sync
 ```
 
-### Data Files
+### Data Processing Pipeline
 
-UniProtKB SwissProt DAT files (`.dat`) are not included due to size. Download them:
-
-```bash
-# Download all years (2005-2025)
-uv run python src/data_processing/download_uniprot_releases.py
-```
-
-Files are saved to `data/raw/uniprot_releases/{year}_sprot.dat`.
-
-## 🔬 Analysis Pipeline
-
-### 1. Data Processing
+The unified pipeline processes UniProt releases year-by-year to minimize disk usage (~2.5GB instead of ~50GB):
 
 ```bash
-# Parse all SwissProt releases (outputs to data/interim/toxprot_parsed/)
-uv run python src/data_processing/parse_sprot_dat.py --input-dir data/raw/uniprot_releases --delete-input
+# Process all years (2005-2025): download → parse → clean
+toxprot data pipeline
 
-# Clean and enrich (outputs to data/processed/toxprot/)
-uv run python src/data_processing/clean_data.py
+# Process specific years
+toxprot data pipeline -y 2020-2025
+
+# Individual stages (if needed)
+toxprot data download              # Download releases only
+toxprot data parse                 # Parse .dat files only
+toxprot data clean                 # Clean parsed data only
 ```
 
-**parse_sprot_dat.py**: Extracts toxin entries (Metazoa + venom/toxin keyword), PTMs, signal peptides.
+**Output**: Final datasets in `data/processed/toxprot/` (CSV + FASTA for each year)
 
-**clean_data.py**: Adds taxonomy, habitat classification, generates FASTA files.
+## 📊 Analysis Scripts
 
-### 2. Comparative Analyses
+Run analyses on processed data:
 
-All analysis scripts are in `src/analysis/`:
+```bash
+# Protein family analysis
+python src/analysis/analyze_protein_families.py
 
-| Analysis              | Script                               | Outputs                                                    |
-| --------------------- | ------------------------------------ | ---------------------------------------------------------- |
-| **Protein Families**  | `analyze_protein_families.py`        | Distribution charts, length histograms                     |
-| **Taxonomic Changes** | `analyze_taxa.py`                    | Taxa distribution, newcomers by order/family               |
-| **Habitat Patterns**  | `analyze_habitat.py`                 | Marine vs terrestrial comparisons, Venn diagrams, heatmaps |
-| **PTMs**              | `analyze_ptm.py`                     | Modification type distributions and statistics             |
-| **GO Terms**          | `analyze_go_terms.py`                | Functional annotation comparisons                          |
-| **Protein Evidence**  | `plot_protein_evidence_sankey.py`    | Evidence flow Sankey diagrams                              |
-| **Curation Tracking** | `generate_family_renaming_report.py` | Family name change reports                                 |
+# Taxonomic changes
+python src/analysis/analyze_taxa.py
 
-### 3. ProtSpace Analysis
+# Habitat patterns (marine vs terrestrial)
+python src/analysis/analyze_habitat.py
 
-Generate protein embeddings and 2D visualizations (`src/protspace/`):
+# Post-translational modifications
+python src/analysis/analyze_ptm.py
 
-1. `generate_fasta_for_embeddings.py` - Prepare sequences
-2. `process_protspace.py` - Generate embeddings (requires ProtSpace)
-3. `generate_plots.py` - Create 2D visualizations
-4. `analyze_clustering.py` - Clustering quality metrics
+# GO term comparisons
+python src/analysis/analyze_go_terms.py
+
+# Protein evidence flow
+python src/analysis/plot_protein_evidence_sankey.py
+```
+
+## 🧬 ProtSpace Analysis
+
+Generate protein embeddings and 2D visualizations:
+
+```bash
+# 1. Prepare sequences
+python src/protspace/generate_fasta_for_embeddings.py
+
+# 2. Generate embeddings (requires ProtSpace installation)
+python src/protspace/process_protspace.py
+
+# 3. Create visualizations
+python src/protspace/generate_plots.py
+
+# 4. Clustering analysis
+python src/protspace/analyze_clustering.py
+```
 
 See `src/protspace/README.md` for details.
 
-## 📊 Output Structure
+## 📁 Project Structure
 
 ```
-data/
-├── raw/                    # Source data (habitat mappings, PTM vocabulary)
-├── interim/                # Intermediate files (not tracked in git)
-│   └── toxprot_parsed/     # Parsed TSV files
-└── processed/
-    ├── toxprot/            # Final CSV + FASTA files (21 years)
-    └── protspace/          # Embeddings and visualizations
+toxprot25/
+├── src/
+│   ├── data_processing/     # Pipeline: download, parse, clean
+│   ├── analysis/            # Comparative analysis scripts
+│   └── protspace/           # Embedding and visualization
+├── data/
+│   ├── raw/                 # Habitat mappings, PTM vocabulary
+│   ├── interim/             # Intermediate parsed files
+│   └── processed/           # Final datasets (CSV + FASTA)
+└── tests/                   # Unit tests (pytest)
+```
+
+## 🛠️ CLI Reference
+
+Use `-h` or `--help` with any command for detailed options (e.g., `toxprot data pipeline -h`)
+
+**Common options:**
+- `-y, --years`: Specify years (e.g., `-y 2020-2025`)
+- `-f, --force`: Reprocess existing files
+- `--keep-dat`: Keep intermediate .dat files
+- `-v, --verbose`: Enable verbose logging
+
+## 🧪 Testing
+
+```bash
+# Run all tests
+uv run pytest tests/ -v
+
+# Run specific test module
+uv run pytest tests/test_pipeline.py -v
 ```
 
 ## 📝 Data Sources
 
-- **UniProtKB/SwissProt**: Historical and current releases (.dat files)
-- **ToxProt**: March 2025 export (`202503_ToxProt.tsv`)
-- **Habitat classification**: Manual taxonomic curation (`marine_terrestrial.json`, `habitat_detailed.json`)
+- **UniProtKB/SwissProt**: Historical releases (2005-2025)
+- **ToxProt**: March 2025 export
+- **Habitat classification**: Manual taxonomic curation

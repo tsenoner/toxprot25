@@ -9,8 +9,8 @@ Generates JSON and styled files for all 2025 data variants:
 4. Top 15 families (mature sequences, no fragments)
 """
 
-import subprocess
 import shutil
+import subprocess
 from pathlib import Path
 
 

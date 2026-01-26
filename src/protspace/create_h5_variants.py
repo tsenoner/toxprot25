@@ -8,9 +8,10 @@ Generates four .h5 files from base embeddings:
 4. Top 15 mature no fragments (uses mature sequences .h5, filtered by metadata)
 """
 
+from pathlib import Path
+
 import h5py
 import pandas as pd
-from pathlib import Path
 
 
 def filter_h5_by_metadata(

@@ -1,7 +1,8 @@
-import pandas as pd
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import numpy as np
-from pathlib import Path
+import pandas as pd
 
 # --- Configuration ---
 TOP_N_GO_TERMS = 15
@@ -75,7 +76,7 @@ def plot_go_terms_stacked_bar():
     go_summary["absolute_change"] = go_summary["2025_count"] - go_summary["2017_count"]
     go_summary["percentage_change"] = [
         calculate_percentage_change(old, new)
-        for old, new in zip(go_summary["2017_count"], go_summary["2025_count"])
+        for old, new in zip(go_summary["2017_count"], go_summary["2025_count"], strict=False)
     ]
 
     # Sort by 2025 count (descending) to show terms with highest usage at top
@@ -196,7 +197,7 @@ def generate_go_counts_comparison_table():
     )
     comparison_df["percentage_change"] = [
         calculate_percentage_change(old, new)
-        for old, new in zip(comparison_df["2017_count"], comparison_df["2025_count"])
+        for old, new in zip(comparison_df["2017_count"], comparison_df["2025_count"], strict=False)
     ]
 
     # Add total counts for percentage calculations

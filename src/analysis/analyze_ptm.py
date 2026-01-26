@@ -47,9 +47,9 @@ def load_data(file_path):
 
     for ptm_type in PTM_TYPES:
         df[f"has_{ptm_type}"] = df["PTM_dict"].apply(
-            lambda x: 1 if ptm_type in x else 0
+            lambda x, pt=ptm_type: 1 if pt in x else 0
         )
-        df[f"count_{ptm_type}"] = df["PTM_dict"].apply(lambda x: x.get(ptm_type, 0))
+        df[f"count_{ptm_type}"] = df["PTM_dict"].apply(lambda x, pt=ptm_type: x.get(pt, 0))
 
     df["total_ptm_count"] = df["PTM_dict"].apply(lambda x: sum(x.values()))
     df["has_any_ptm"] = df["PTM_dict"].apply(lambda x: len(x) > 0)

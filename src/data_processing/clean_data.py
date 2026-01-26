@@ -12,10 +12,15 @@ This script:
 
 import argparse
 import json
+import logging
+import sys
 from pathlib import Path
 
 import pandas as pd
 import taxopy
+
+# Module logger - configuration handled by caller or main()
+logger = logging.getLogger(__name__)
 
 
 def update_protfams(df):
@@ -111,7 +116,7 @@ def process_toxprot_tsv(tsv_input_path: Path, update_protfams_func, create_fasta
 
     # Read columns from the TSV file
     # Try to infer columns present in the file
-    with open(tsv_input_path, "r") as f:
+    with open(tsv_input_path) as f:
         header = f.readline().strip().split("\t")
     # Required columns
     required_cols = [
@@ -355,11 +360,11 @@ def determine_habitat_detailed(row, habitat_mapping):
 def add_habitat_classification(csv_path, habitat_mapping_path, habitat_detailed_path):
     """Add habitat classification to the CSV file."""
     # Load the marine/terrestrial mapping
-    with open(habitat_mapping_path, "r") as f:
+    with open(habitat_mapping_path) as f:
         habitat_mapping = json.load(f)
 
     # Load the detailed habitat mapping
-    with open(habitat_detailed_path, "r") as f:
+    with open(habitat_detailed_path) as f:
         habitat_detailed_mapping = json.load(f)
 
     # Load the CSV
@@ -390,6 +395,16 @@ def get_year_from_filename(filepath: Path) -> str:
 
 def main():
     """Main function to process ToxProt data."""
+    # Configure logging for standalone execution
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s - %(message)s",
+        datefmt="%H:%M:%S",
+        handlers=[
+            logging.StreamHandler(sys.stdout),
+        ],
+    )
+
     parser = argparse.ArgumentParser(
         description="Clean and process ToxProt TSV data files.",
         epilog="""Examples:
@@ -445,28 +460,28 @@ def main():
         input_files = sorted(args.input_dir.glob("toxprot_*.tsv"))
 
     if not input_files:
-        print(f"No toxprot_*.tsv files found in {args.input_dir}")
+        logger.error(f"No toxprot_*.tsv files found in {args.input_dir}")
         return
 
-    print("=" * 60)
-    print("ToxProt Data Cleaning Pipeline")
-    print("=" * 60)
-    print(f"Input directory: {args.input_dir}")
-    print(f"Output directory: {args.output_dir}")
-    print(f"Files to process: {len(input_files)}")
-    print("=" * 60)
+    logger.info("=" * 60)
+    logger.info("ToxProt Data Cleaning Pipeline")
+    logger.info("=" * 60)
+    logger.info(f"Input directory: {args.input_dir}")
+    logger.info(f"Output directory: {args.output_dir}")
+    logger.info(f"Files to process: {len(input_files)}")
+    logger.info("=" * 60)
 
     # Initialize taxonomy database
-    print("\nInitializing taxonomy database...")
+    logger.info("Initializing taxonomy database...")
     taxdb = initialize_taxdb()
 
     successful = 0
     for tsv_path in input_files:
         year = get_year_from_filename(tsv_path)
-        print(f"\n[{year}] Processing {tsv_path.name}...")
+        logger.info(f"[{year}] Processing {tsv_path.name}...")
 
         # Step 1: Process TSV to CSV and FASTA (in input directory as intermediate)
-        print("  → Processing TSV and creating FASTA...")
+        logger.info("  Processing TSV and creating FASTA...")
         process_toxprot_tsv(tsv_path, update_protfams, create_fasta_file)
 
         # Intermediate files created next to input
@@ -478,13 +493,13 @@ def main():
         processed_fasta_path = args.output_dir / f"toxprot_{year}.fasta"
 
         # Step 2: Add taxonomic information
-        print("  → Adding taxonomy...")
+        logger.info("  Adding taxonomy...")
         df = process_dataframe_with_taxonomy(
             interim_csv_path, processed_csv_path, taxdb
         )
 
         # Step 3: Add habitat classification
-        print("  → Adding habitat classification...")
+        logger.info("  Adding habitat classification...")
         df = add_habitat_classification(
             processed_csv_path, habitat_mapping_path, habitat_detailed_path
         )
@@ -495,18 +510,18 @@ def main():
         # Clean up intermediate CSV
         interim_csv_path.unlink()
 
-        # Print summary statistics
-        print(f"    ✓ Entries: {len(df)}")
-        print(f"    ✓ Families: {df['Protein families'].nunique()}")
+        # Log summary statistics
+        logger.info(f"    Entries: {len(df)}")
+        logger.info(f"    Families: {df['Protein families'].nunique()}")
         habitat_counts = df["Habitat"].value_counts().to_dict()
-        print(f"    ✓ Habitat: {habitat_counts}")
+        logger.info(f"    Habitat: {habitat_counts}")
 
         successful += 1
 
-    print(f"\n{'=' * 60}")
-    print(f"✓ Processing complete! {successful}/{len(input_files)} files processed")
-    print(f"  Output: {args.output_dir}")
-    print(f"{'=' * 60}")
+    logger.info("=" * 60)
+    logger.info(f"Processing complete! {successful}/{len(input_files)} files processed")
+    logger.info(f"  Output: {args.output_dir}")
+    logger.info("=" * 60)
 
 
 if __name__ == "__main__":

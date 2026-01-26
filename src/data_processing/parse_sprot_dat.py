@@ -9,24 +9,16 @@ Features:
 - Outputs results in TSV format
 """
 
-import re
 import argparse
 import logging
-from pathlib import Path
-from tqdm import tqdm
-import urllib.request
+import re
 import sys
+import urllib.request
+from pathlib import Path
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s - %(message)s",
-    datefmt="%H:%M:%S",
-    handlers=[
-        logging.FileHandler("swissprot_parser.log"),
-        logging.StreamHandler(sys.stdout),
-    ],
-)
+from tqdm import tqdm
+
+# Module logger - configuration handled by caller or main()
 logger = logging.getLogger(__name__)
 
 
@@ -72,7 +64,7 @@ class PTMVocabulary:
             return
 
         try:
-            with open(self.ptmlist_path, "r", encoding="utf-8") as f:
+            with open(self.ptmlist_path, encoding="utf-8") as f:
                 current_entry = {}
                 for line in f:
                     line = line.rstrip()
@@ -637,27 +629,37 @@ class SwissProtParser:
 def process_swissprot_file(input_file, output_file, ptm_vocab=None):
     """Process SwissProt file and extract matching entries.
 
-    Returns True if processing was successful, False otherwise.
+    Args:
+        input_file: Path to the input .dat file.
+        output_file: Path to the output .tsv file.
+        ptm_vocab: Optional PTM vocabulary dictionary.
+
+    Returns:
+        True if processing was successful, False otherwise.
+        The number of entries can be retrieved by checking the output file.
     """
     parser = SwissProtParser(ptm_vocab)
     entries_found = []
 
     try:
-        if not input_file.exists():
+        if not Path(input_file).exists():
             logger.error(f"Input file {input_file} not found")
             return False
+
+        # Ensure output directory exists
+        Path(output_file).parent.mkdir(parents=True, exist_ok=True)
 
         # Count total entries
         logger.info("Counting total entries...")
         total_entries = 0
-        with open(input_file, "r", encoding="utf-8") as f:
+        with open(input_file, encoding="utf-8") as f:
             for line in f:
                 if line.startswith("//"):
                     total_entries += 1
         logger.info(f"Found {total_entries:,} entries")
 
         # Process entries
-        with open(input_file, "r", encoding="utf-8") as f:
+        with open(input_file, encoding="utf-8") as f:
             current_entry = []
             pbar = tqdm(total=total_entries, desc="Processing entries")
 
@@ -703,6 +705,16 @@ def get_output_filename(input_path: Path) -> str:
 
 
 def main():
+    # Configure logging for standalone execution
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s - %(message)s",
+        datefmt="%H:%M:%S",
+        handlers=[
+            logging.StreamHandler(sys.stdout),
+        ],
+    )
+
     parser = argparse.ArgumentParser(
         description="SwissProt parser for Tox-Prot (animal toxin annotation project)",
         epilog="""Examples:

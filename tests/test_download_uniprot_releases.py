@@ -1,18 +1,16 @@
 """Tests for UniProt release download script."""
 
-import pytest
-from pathlib import Path
-from unittest.mock import patch, MagicMock
-import tempfile
 import gzip
-import tarfile
 import io
+import tarfile
+import tempfile
+from pathlib import Path
 
 from src.data_processing.download_uniprot_releases import (
-    RELEASES,
     BASE_URL,
-    extract_dat_file,
+    RELEASES,
     download_release,
+    extract_dat_file,
 )
 
 
@@ -27,7 +25,7 @@ class TestReleasesMapping:
 
     def test_release_tuple_format(self):
         """Verify each release entry has correct format (dir, archive)."""
-        for year, (release_dir, archive_name) in RELEASES.items():
+        for _year, (release_dir, archive_name) in RELEASES.items():
             assert isinstance(release_dir, str)
             assert isinstance(archive_name, str)
             assert archive_name.endswith(".tar.gz")
@@ -51,7 +49,7 @@ class TestURLConstruction:
 
     def test_url_format(self):
         """Verify URLs are constructed correctly."""
-        for year, (release_dir, archive_name) in RELEASES.items():
+        for _year, (release_dir, archive_name) in RELEASES.items():
             expected_url = f"{BASE_URL}/{release_dir}/knowledgebase/{archive_name}"
             assert "ftp.uniprot.org" in expected_url
             assert "knowledgebase" in expected_url
@@ -76,10 +74,10 @@ class TestExtraction:
             dat_gz_content = dat_gz_buffer.getvalue()
 
             # Create tar.gz with the dat.gz file
-            with tarfile.open(archive_path, "w:gz") as tar:
+            with tarfile.open(archive_path, "w:gz") as tar_file:
                 info = tarfile.TarInfo(name="uniprot_sprot.dat.gz")
                 info.size = len(dat_gz_content)
-                tar.addfile(info, io.BytesIO(dat_gz_content))
+                tar_file.addfile(info, io.BytesIO(dat_gz_content))
 
             # Test extraction
             result = extract_dat_file(archive_path, tmpdir, 2020)
@@ -96,7 +94,7 @@ class TestExtraction:
             archive_path = tmpdir / "empty.tar.gz"
 
             # Create empty tar.gz
-            with tarfile.open(archive_path, "w:gz") as tar:
+            with tarfile.open(archive_path, "w:gz"):
                 pass
 
             result = extract_dat_file(archive_path, tmpdir, 2020)

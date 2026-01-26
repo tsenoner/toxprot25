@@ -7,8 +7,9 @@ Creates two FASTA files:
 2. Mature sequences (signal peptides removed) - for variants 3 & 4
 """
 
-import pandas as pd
 from pathlib import Path
+
+import pandas as pd
 
 
 def remove_signal_peptide(sequence: str, signal_range: str) -> str:
