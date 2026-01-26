@@ -43,6 +43,14 @@ toxprot data clean                 # Clean parsed data only
 
 **Output**: Final datasets in `data/processed/toxprot/` (CSV + FASTA for each year)
 
+## 🔍 Data Filtering Criteria
+
+```
+(taxonomy_id:33208) AND (cc_tissue_specificity:venom) AND (reviewed:true)
+```
+
+Extracts Metazoa proteins with "venom" in tissue specificity from manually reviewed SwissProt entries.
+
 ## 📊 Analysis Scripts
 
 Run analyses on processed data:
@@ -104,7 +112,13 @@ toxprot25/
 
 ## 🛠️ CLI Reference
 
-Use `-h` or `--help` with any command for detailed options (e.g., `toxprot data pipeline -h`)
+Use `-h` or `--help` with any command for detailed options:
+
+```bash
+toxprot -h
+toxprot data -h
+toxprot data pipeline -h
+```
 
 **Common options:**
 - `-y, --years`: Specify years (e.g., `-y 2020-2025`)

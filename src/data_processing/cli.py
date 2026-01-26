@@ -38,7 +38,7 @@ def validate_years(ctx, param, value):
     return sorted(set(years))
 
 
-@click.group()
+@click.group(context_settings={'help_option_names': ['-h', '--help']})
 def data():
     """Data processing commands."""
     pass
@@ -254,7 +254,7 @@ def download(years, output_dir, keep_archives, list_only):
 def parse(input_files, input_dir, output_dir, years, delete_input):
     """Parse Swiss-Prot .dat files to extract toxin proteins.
 
-    Filters for Metazoa organisms with venom tissue or Toxin keyword.
+    Filters for Metazoa organisms with venom tissue specificity.
     Outputs TSV files with protein metadata and sequences.
 
     \b

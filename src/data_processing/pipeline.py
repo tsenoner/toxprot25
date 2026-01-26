@@ -86,7 +86,7 @@ def process_single_year(
 
     Stages:
         1. Download .dat file (skip if exists)
-        2. Parse to .tsv (filter Metazoa + venom/toxin)
+        2. Parse to .tsv (filter Metazoa + venom tissue)
         3. Delete .dat file (if configured)
         4. Clean → final .csv + .fasta
         5. Delete intermediate .tsv (if configured)

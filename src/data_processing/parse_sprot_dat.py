@@ -236,7 +236,6 @@ class SwissProtParser:
         # Initialize variables
         current_section = None
         is_metazoa = False
-        has_toxin_keyword = False
         go_terms = {"P": [], "C": [], "F": []}
         processing_de_flags = False
         in_sequence_block = False
@@ -479,12 +478,6 @@ class SwissProtParser:
                         elif go_type == "F":
                             go_terms["F"].append(f"{go_id} ({go_desc})")
 
-            # Keywords
-            elif line.startswith("KW"):
-                in_sequence_block = False
-                if "Toxin" in content:
-                    has_toxin_keyword = True
-
             # Protein existence
             elif line.startswith("PE"):
                 in_sequence_block = False
@@ -511,7 +504,7 @@ class SwissProtParser:
 
         # Check criteria
         has_venom_tissue = "venom" in entry_data["Tissue specificity"].lower()
-        meets_criteria = is_metazoa and (has_venom_tissue or has_toxin_keyword)
+        meets_criteria = is_metazoa and has_venom_tissue
 
         return entry_data, meets_criteria
 
@@ -808,7 +801,7 @@ def main():
     logger.info(f"Input files: {len(input_files)}")
     logger.info(f"Output directory: {args.output_dir}")
     logger.info(
-        "Query: (taxonomy_id:33208) AND ((cc_tissue_specificity:venom) OR (keyword:KW-0800))"
+        "Query: (taxonomy_id:33208) AND (cc_tissue_specificity:venom)"
     )
     logger.info("=" * 60)
 
