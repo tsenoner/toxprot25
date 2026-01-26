@@ -14,9 +14,7 @@ import argparse
 import logging
 from pathlib import Path
 from tqdm import tqdm
-from datetime import datetime
 import urllib.request
-import json
 import sys
 
 # Configure logging
@@ -637,22 +635,17 @@ class SwissProtParser:
 
 
 def process_swissprot_file(input_file, output_file, ptm_vocab=None):
-    """Process SwissProt file and extract matching entries"""
+    """Process SwissProt file and extract matching entries.
+
+    Returns True if processing was successful, False otherwise.
+    """
     parser = SwissProtParser(ptm_vocab)
     entries_found = []
-    metadata = {
-        "input_file": str(input_file),
-        "output_file": str(output_file),
-        "processing_date": datetime.now().isoformat(),
-        "query": "(taxonomy_id:33208) AND ((cc_tissue_specificity:venom) OR (keyword:KW-0800))",
-        "total_entries_processed": 0,
-        "matching_entries_found": 0,
-    }
 
     try:
         if not input_file.exists():
             logger.error(f"Input file {input_file} not found")
-            return
+            return False
 
         # Count total entries
         logger.info("Counting total entries...")
@@ -662,7 +655,6 @@ def process_swissprot_file(input_file, output_file, ptm_vocab=None):
                 if line.startswith("//"):
                     total_entries += 1
         logger.info(f"Found {total_entries:,} entries")
-        metadata["total_entries_processed"] = total_entries
 
         # Process entries
         with open(input_file, "r", encoding="utf-8") as f:
@@ -682,8 +674,6 @@ def process_swissprot_file(input_file, output_file, ptm_vocab=None):
 
             pbar.close()
 
-        metadata["matching_entries_found"] = len(entries_found)
-
         # Write TSV output
         logger.info(f"Writing {len(entries_found):,} entries to {output_file}")
         with open(output_file, "w", encoding="utf-8") as out:
@@ -692,56 +682,125 @@ def process_swissprot_file(input_file, output_file, ptm_vocab=None):
                 row = [entry.get(field, "") for field in parser.HEADERS]
                 out.write("\t".join(row) + "\n")
 
-        # Write metadata
-        metadata_file = output_file.parent / f"{output_file.stem}_metadata.json"
-        with open(metadata_file, "w") as f:
-            json.dump(metadata, f, indent=2)
-
         logger.info(f"Processing complete: {len(entries_found):,} matching entries")
-        logger.info(f"Results: {output_file}")
-        logger.info(f"Metadata: {metadata_file}")
+        return True
 
     except Exception as e:
         logger.error(f"Error processing file: {e}", exc_info=True)
-        raise
+        return False
+
+
+def get_output_filename(input_path: Path) -> str:
+    """Generate output filename from input filename (e.g., 2005_sprot.dat -> toxprot_2005.tsv)"""
+    stem = input_path.stem  # e.g., "2005_sprot"
+    # Extract year from filename
+    match = re.match(r"(\d{4})", stem)
+    if match:
+        year = match.group(1)
+        return f"toxprot_{year}.tsv"
+    # Fallback: use input stem
+    return f"toxprot_{stem}.tsv"
 
 
 def main():
     parser = argparse.ArgumentParser(
         description="SwissProt parser for Tox-Prot (animal toxin annotation project)",
-        epilog="Example: python parse_sprot_dat.py data/raw/201711_sprot.dat data/interim/toxprot_2017.tsv",
+        epilog="""Examples:
+  # Process single file
+  python parse_sprot_dat.py data/raw/uniprot_releases/2005_sprot.dat
+
+  # Process multiple files
+  python parse_sprot_dat.py data/raw/uniprot_releases/2005_sprot.dat data/raw/uniprot_releases/2010_sprot.dat
+
+  # Process all files in directory
+  python parse_sprot_dat.py --input-dir data/raw/uniprot_releases
+
+  # Process specific years
+  python parse_sprot_dat.py --years 2005 2010 2015 2020 2025""",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("input_file", type=str, help="Path to SwissProt data file")
-    parser.add_argument("output_file", type=str, help="Path for output TSV file")
+    parser.add_argument(
+        "input_files",
+        type=str,
+        nargs="*",
+        help="Path(s) to SwissProt data file(s)",
+    )
+    parser.add_argument(
+        "--input-dir",
+        type=Path,
+        default=None,
+        help="Directory containing SwissProt .dat files",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("data/interim/toxprot_parsed"),
+        help="Directory for output files (default: data/interim/toxprot_parsed)",
+    )
+    parser.add_argument(
+        "--years",
+        type=int,
+        nargs="+",
+        help="Years to process (looks for {year}_sprot.dat in input-dir)",
+    )
     parser.add_argument(
         "--data-dir",
         type=str,
         default="data/raw",
-        help="Directory for data files (default: data/raw)",
+        help="Directory for PTM vocabulary files (default: data/raw)",
     )
     parser.add_argument(
         "--skip-ptmlist",
         action="store_true",
         help="Skip downloading/loading ptmlist.txt",
     )
+    parser.add_argument(
+        "--delete-input",
+        action="store_true",
+        help="Delete input .dat files after successful processing (to save disk space)",
+    )
 
     args = parser.parse_args()
 
-    input_path = Path(args.input_file)
-    output_path = Path(args.output_file)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
+    # Determine input files
+    input_files = []
+
+    if args.years:
+        # Process specific years from input-dir
+        input_dir = args.input_dir or Path("data/raw/uniprot_releases")
+        for year in args.years:
+            input_path = input_dir / f"{year}_sprot.dat"
+            if input_path.exists():
+                input_files.append(input_path)
+            else:
+                logger.warning(f"File not found: {input_path}")
+    elif args.input_dir:
+        # Process all .dat files in directory
+        input_files = sorted(args.input_dir.glob("*_sprot.dat"))
+    elif args.input_files:
+        # Process specified files
+        input_files = [Path(f) for f in args.input_files]
+    else:
+        parser.error("Specify input files, --input-dir, or --years")
+
+    if not input_files:
+        logger.error("No input files found")
+        return
+
+    # Create output directory
+    args.output_dir.mkdir(parents=True, exist_ok=True)
 
     logger.info("=" * 60)
     logger.info("SwissProt Parser for Tox-Prot")
     logger.info("=" * 60)
-    logger.info(f"Input: {input_path}")
-    logger.info(f"Output: {output_path}")
+    logger.info(f"Input files: {len(input_files)}")
+    logger.info(f"Output directory: {args.output_dir}")
     logger.info(
         "Query: (taxonomy_id:33208) AND ((cc_tissue_specificity:venom) OR (keyword:KW-0800))"
     )
     logger.info("=" * 60)
 
-    # Initialize PTM vocabulary
+    # Initialize PTM vocabulary (once for all files)
     ptm_vocab = None
     if not args.skip_ptmlist:
         vocab_manager = PTMVocabulary(args.data_dir)
@@ -749,11 +808,28 @@ def main():
         vocab_manager.load_ptmlist()
         ptm_vocab = vocab_manager.ptm_vocab
 
-    # Process file
-    process_swissprot_file(input_path, output_path, ptm_vocab)
+    # Process each file
+    successful = 0
+    for input_path in input_files:
+        if not input_path.exists():
+            logger.warning(f"Skipping non-existent file: {input_path}")
+            continue
+
+        output_filename = get_output_filename(input_path)
+        output_path = args.output_dir / output_filename
+
+        logger.info("-" * 60)
+        logger.info(f"Processing: {input_path.name}")
+        logger.info(f"Output: {output_path}")
+
+        if process_swissprot_file(input_path, output_path, ptm_vocab):
+            successful += 1
+            if args.delete_input:
+                logger.info(f"Deleting input file: {input_path}")
+                input_path.unlink()
 
     logger.info("=" * 60)
-    logger.info("Processing complete!")
+    logger.info(f"Processing complete! {successful}/{len(input_files)} file(s) processed successfully")
     logger.info("=" * 60)
 
 
