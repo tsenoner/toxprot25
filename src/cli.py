@@ -2,6 +2,7 @@
 
 import click
 
+from src.analysis.cli import analysis
 from src.data_processing.cli import data
 
 
@@ -17,6 +18,7 @@ def cli():
 
 # Register command groups
 cli.add_command(data)
+cli.add_command(analysis)
 
 
 if __name__ == "__main__":

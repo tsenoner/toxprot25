@@ -123,6 +123,7 @@ class SwissProtParser:
         "Gene Ontology (cellular component)",
         "Gene Ontology (molecular function)",
         "Protein existence",
+        "ToxProt definition",
         "Sequence",
     ]
 
@@ -236,6 +237,7 @@ class SwissProtParser:
         # Initialize variables
         current_section = None
         is_metazoa = False
+        has_kw0800_toxin = False
         go_terms = {"P": [], "C": [], "F": []}
         processing_de_flags = False
         in_sequence_block = False
@@ -290,6 +292,14 @@ class SwissProtParser:
                 match = re.search(r"NCBI_TaxID=(\d+)", content)
                 if match:
                     entry_data["Organism (ID)"] = match.group(1)
+
+            # Keywords
+            elif line.startswith("KW"):
+                in_sequence_block = False
+                keywords_text = content.rstrip(".")
+                keywords = [kw.strip() for kw in keywords_text.split(";")]
+                if "Toxin" in keywords:
+                    has_kw0800_toxin = True
 
             # Protein names and fragments
             elif line.startswith("DE"):
@@ -504,7 +514,15 @@ class SwissProtParser:
 
         # Check criteria
         has_venom_tissue = "venom" in entry_data["Tissue specificity"].lower()
-        meets_criteria = is_metazoa and has_venom_tissue
+        meets_criteria = is_metazoa and (has_venom_tissue or has_kw0800_toxin)
+
+        # Set ToxProt definition
+        if has_venom_tissue and has_kw0800_toxin:
+            entry_data["ToxProt definition"] = "both"
+        elif has_venom_tissue:
+            entry_data["ToxProt definition"] = "venom_tissue"
+        elif has_kw0800_toxin:
+            entry_data["ToxProt definition"] = "kw_toxin"
 
         return entry_data, meets_criteria
 
@@ -802,7 +820,7 @@ def main():
     logger.info(f"Input files: {len(input_files)}")
     logger.info(f"Output directory: {args.output_dir}")
     logger.info(
-        "Query: (taxonomy_id:33208) AND (cc_tissue_specificity:venom)"
+        "Query: (taxonomy_id:33208) AND (cc_tissue_specificity:venom OR keyword:KW-0800)"
     )
     logger.info("=" * 60)
 

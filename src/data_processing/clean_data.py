@@ -132,6 +132,7 @@ def process_toxprot_tsv(tsv_input_path: Path, update_protfams_func, create_fasta
         "Sequence",
         "Signal peptide (range)",
         "Protein existence",
+        "ToxProt definition",
     ]
     # Optional GO columns
     go_cols = [

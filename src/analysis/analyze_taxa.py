@@ -31,11 +31,11 @@ ORDER_COMMON_NAMES = {
 }
 
 
-def load_datasets(years: list[str]) -> dict[str, pd.DataFrame]:
+def load_datasets(years: list[str], data_dir: Path = DATA_DIR) -> dict[str, pd.DataFrame]:
     """Load ToxProt datasets for specified years."""
     datasets = {}
     for year in years:
-        filepath = DATA_DIR / f"toxprot_{year}.csv"
+        filepath = data_dir / f"toxprot_{year}.csv"
         if filepath.exists():
             datasets[year] = pd.read_csv(filepath)
             print(f"  Loaded {year}: {len(datasets[year]):,} entries")

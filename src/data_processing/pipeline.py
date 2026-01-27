@@ -147,7 +147,7 @@ def process_single_year(
             log.debug("Using existing .dat file")
 
         # Stage 2: Parse
-        if not tsv_path.exists():
+        if not tsv_path.exists() or not config.skip_existing:
             config.interim_dir.mkdir(parents=True, exist_ok=True)
             if not process_swissprot_file(dat_path, tsv_path, ptm_vocab):
                 return YearResult(year=year, success=False, stage_completed="parse", error="Parsing failed")
