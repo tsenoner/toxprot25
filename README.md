@@ -49,7 +49,7 @@ toxprot data clean                 # Clean parsed data only
 (taxonomy_id:33208) AND (cc_tissue_specificity:venom) AND (reviewed:true)
 ```
 
-Extracts Metazoa proteins with "venom" in tissue specificity from manually reviewed SwissProt entries.
+Extracts reviewed Swiss-Prot Metazoa proteins with documented tissue expression in venom/venom glands.
 
 ## 📊 Analysis Scripts
 
@@ -121,6 +121,7 @@ toxprot data pipeline -h
 ```
 
 **Common options:**
+
 - `-y, --years`: Specify years (e.g., `-y 2020-2025`)
 - `-f, --force`: Reprocess existing files
 - `--keep-dat`: Keep intermediate .dat files
