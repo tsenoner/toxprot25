@@ -381,8 +381,8 @@ def main():
     parser.add_argument(
         "--data-dir",
         type=Path,
-        default=Path("data/processed"),
-        help="Directory containing processed CSV files (default: data/processed)",
+        default=Path("data/processed/toxprot"),
+        help="Directory containing processed CSV files (default: data/processed/toxprot)",
     )
     parser.add_argument(
         "--output-dir",
@@ -400,7 +400,7 @@ def main():
     args = parser.parse_args()
 
     # Load all datasets
-    years = ["2005", "2015", "2017", "2025"]
+    years = ["2005", "2010", "2015", "2020", "2025"]
     print("Loading ToxProt datasets...")
     datasets = {}
     for year in years:

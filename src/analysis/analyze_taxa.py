@@ -7,9 +7,9 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 # --- Configuration ---
-DATA_DIR = Path("data/processed")
+DATA_DIR = Path("data/processed/toxprot")
 FIGURES_DIR = Path("figures/taxa")
-YEARS = ["2005", "2015", "2017", "2025"]
+YEARS = [str(y) for y in range(2005, 2026)]
 
 # Colors for stacked bar chart
 COLORS = ["tab:blue", "tab:orange", "tab:green", "tab:red", "tab:purple", "silver"]
@@ -81,8 +81,12 @@ def plot_top_taxa_distribution(datasets: dict[str, pd.DataFrame], output_path: P
     ax.set_title("Distribution of Top 5 Taxa Orders in ToxProt Datasets", fontsize=20)
     ax.set_xlabel("Year", fontsize=18)
     ax.set_ylabel("Count", fontsize=18)
-    ax.tick_params(axis="x", rotation=0, labelsize=16)
+    ax.tick_params(axis="x", rotation=45, labelsize=14)
     ax.tick_params(axis="y", labelsize=16)
+    # Show every second x-tick label to avoid overlap
+    for i, label in enumerate(ax.get_xticklabels()):
+        if i % 2 != 0:
+            label.set_visible(False)
 
     ax.legend(
         title="Order",
@@ -134,30 +138,28 @@ def plot_top_taxa_trend(datasets: dict[str, pd.DataFrame], output_path: Path, re
     plot_df.index = plot_df.index.astype(int)
 
     fig, ax = plt.subplots(figsize=(10, 7))
+    fig.subplots_adjust(right=0.78)
 
     # Plot each order as a line
     for i, order in enumerate(plot_df.columns):
         color = COLORS[i] if i < len(COLORS) else f"C{i}"
         ax.plot(plot_df.index, plot_df[order], marker="o", markersize=8,
                 linewidth=2.5, color=color)
-        # Add label at end of line
-        ax.annotate(order, xy=(plot_df.index[-1], plot_df[order].iloc[-1]),
-                    xytext=(5, 0), textcoords="offset points",
-                    fontsize=11, va="center", color=color, fontweight="bold")
+        # Add label outside the axes, aligned to the last data point
+        ax.annotate(order, xy=(1.0, plot_df[order].iloc[-1]),
+                    xycoords=("axes fraction", "data"),
+                    xytext=(8, 0), textcoords="offset points",
+                    fontsize=11, va="center", color=color, fontweight="bold",
+                    clip_on=False)
 
     ax.set_title("Growth of Top Taxa Orders in ToxProt Over Time", fontsize=18)
     ax.set_xlabel("Year", fontsize=14)
     ax.set_ylabel("Number of Entries", fontsize=14)
-    ax.set_xticks(plot_df.index)
+    ax.set_xticks(plot_df.index[::2])
     ax.set_ylim(bottom=0)
     ax.tick_params(axis="both", labelsize=12)
 
     ax.grid(axis="y", linestyle="--", alpha=0.7)
-
-    # Add padding on right for labels
-    ax.set_xlim(right=plot_df.index[-1] + 3)
-
-    fig.tight_layout()
 
     plt.savefig(output_path.with_suffix(".png"), dpi=300, bbox_inches="tight")
     plt.savefig(output_path.with_suffix(".svg"), bbox_inches="tight")
@@ -190,7 +192,7 @@ def plot_top_taxa_area(datasets: dict[str, pd.DataFrame], output_path: Path, ref
     ax.set_title("ToxProt Database Growth by Taxa Order", fontsize=18)
     ax.set_xlabel("Year", fontsize=14)
     ax.set_ylabel("Number of Entries", fontsize=14)
-    ax.set_xticks(plot_df.index)
+    ax.set_xticks(plot_df.index[::2])
     ax.set_ylim(bottom=0)
     ax.tick_params(axis="both", labelsize=12)
 
