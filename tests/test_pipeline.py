@@ -32,7 +32,7 @@ class TestPipelineConfig:
     def test_default_flags(self):
         """Test default flag values."""
         config = PipelineConfig()
-        assert config.delete_dat_files is True
+        assert config.delete_raw_files is True
         assert config.delete_tsv_files is False
         assert config.skip_existing is True
 
@@ -165,17 +165,17 @@ class TestProcessSingleYear:
             data_dir=temp_dir,
         )
         (temp_dir / "raw").mkdir(parents=True)
-        (temp_dir / "raw" / "2020_sprot.dat").write_text("ID TEST\n//\n")
+        (temp_dir / "raw" / "2020_sprot.xml").write_text("ID TEST\n//\n")
 
-        with patch("src.data_processing.pipeline.process_swissprot_file") as mock_parse:
+        with patch("src.data_processing.pipeline.process_xml_file") as mock_parse:
             mock_parse.return_value = False
             result = process_single_year(2020, config)
 
         assert result.success is False
         assert result.stage_completed == "parse"
 
-    def test_skips_download_if_dat_exists(self, temp_dir):
-        """Test that download is skipped if .dat file exists."""
+    def test_skips_download_if_xml_exists(self, temp_dir):
+        """Test that download is skipped if .xml file exists."""
         config = PipelineConfig(
             years=[2020],
             raw_dir=temp_dir / "raw",
@@ -184,32 +184,32 @@ class TestProcessSingleYear:
             data_dir=temp_dir,
         )
         (temp_dir / "raw").mkdir(parents=True)
-        dat_file = temp_dir / "raw" / "2020_sprot.dat"
+        dat_file = temp_dir / "raw" / "2020_sprot.xml"
         dat_file.write_text("ID TEST\n//\n")
 
         with patch("src.data_processing.pipeline.download_release") as mock_download:
-            with patch("src.data_processing.pipeline.process_swissprot_file") as mock_parse:
+            with patch("src.data_processing.pipeline.process_xml_file") as mock_parse:
                 mock_parse.return_value = False  # Will fail at parse stage
                 process_single_year(2020, config)
 
         mock_download.assert_not_called()
 
-    def test_deletes_dat_file_when_configured(self, temp_dir):
-        """Test that .dat file is deleted after parsing when configured."""
+    def test_deletes_raw_file_when_configured(self, temp_dir):
+        """Test that raw .xml file is deleted after parsing when configured."""
         config = PipelineConfig(
             years=[2020],
             raw_dir=temp_dir / "raw",
             interim_dir=temp_dir / "interim",
             processed_dir=temp_dir / "processed",
             data_dir=temp_dir,
-            delete_dat_files=True,
+            delete_raw_files=True,
         )
         (temp_dir / "raw").mkdir(parents=True)
         (temp_dir / "interim").mkdir(parents=True)
-        dat_file = temp_dir / "raw" / "2020_sprot.dat"
+        dat_file = temp_dir / "raw" / "2020_sprot.xml"
         dat_file.write_text("ID TEST\n//\n")
 
-        with patch("src.data_processing.pipeline.process_swissprot_file") as mock_parse:
+        with patch("src.data_processing.pipeline.process_xml_file") as mock_parse:
             mock_parse.return_value = True
             with patch("src.data_processing.pipeline.process_toxprot_tsv"):
                 with patch("src.data_processing.pipeline.process_dataframe_with_taxonomy"):
@@ -265,9 +265,8 @@ class TestRunPipeline:
             skip_existing=True,
         )
 
-        with patch("src.data_processing.pipeline.PTMVocabulary"):
-            with patch("src.data_processing.pipeline.initialize_taxdb"):
-                results = run_pipeline(config)
+        with patch("src.data_processing.pipeline.initialize_taxdb"):
+            results = run_pipeline(config)
 
         assert len(results) == 1
         assert results[0].success is True
@@ -288,11 +287,10 @@ class TestRunPipeline:
             data_dir=temp_dir,
         )
 
-        with patch("src.data_processing.pipeline.PTMVocabulary"):
-            with patch("src.data_processing.pipeline.initialize_taxdb"):
-                with patch("src.data_processing.pipeline.process_single_year") as mock_process:
-                    mock_process.return_value = YearResult(2020, True, "complete", 100)
-                    run_pipeline(config)
+        with patch("src.data_processing.pipeline.initialize_taxdb"):
+            with patch("src.data_processing.pipeline.process_single_year") as mock_process:
+                mock_process.return_value = YearResult(2020, True, "complete", 100)
+                run_pipeline(config)
 
         assert config.raw_dir.exists()
         assert config.interim_dir.exists()
@@ -302,7 +300,7 @@ class TestRunPipeline:
 class TestPipelineIntegration:
     """Integration tests for the pipeline with mocked external dependencies."""
 
-    def test_full_pipeline_single_year_mocked(self, temp_dir, sample_dat_file, habitat_mapping_file, habitat_detailed_file):
+    def test_full_pipeline_single_year_mocked(self, temp_dir, sample_xml_file, habitat_mapping_file, habitat_detailed_file):
         """Test full pipeline flow with mocked download."""
         import shutil
 
@@ -319,8 +317,8 @@ class TestPipelineIntegration:
         shutil.copy(habitat_mapping_file, temp_dir / "raw_base" / "marine_terrestrial.json")
         shutil.copy(habitat_detailed_file, temp_dir / "raw_base" / "habitat_detailed.json")
 
-        # Copy sample dat file as 2020 release
-        shutil.copy(sample_dat_file, raw_dir / "2020_sprot.dat")
+        # Copy sample XML file as 2020 release
+        shutil.copy(sample_xml_file, raw_dir / "2020_sprot.xml")
 
         config = PipelineConfig(
             years=[2020],
@@ -328,7 +326,7 @@ class TestPipelineIntegration:
             interim_dir=interim_dir,
             processed_dir=processed_dir,
             data_dir=temp_dir / "raw_base",  # Points to directory with raw/ subdir
-            delete_dat_files=False,  # Keep for inspection
+            delete_raw_files=False,  # Keep for inspection
             delete_tsv_files=False,
         )
 
@@ -338,27 +336,22 @@ class TestPipelineIntegration:
         shutil.copy(habitat_mapping_file, temp_dir / "raw" / "marine_terrestrial.json")
         shutil.copy(habitat_detailed_file, temp_dir / "raw" / "habitat_detailed.json")
 
-        with patch("src.data_processing.pipeline.PTMVocabulary") as mock_ptm:
-            mock_ptm_instance = MagicMock()
-            mock_ptm_instance.ptm_vocab = {}
-            mock_ptm.return_value = mock_ptm_instance
+        with patch("src.data_processing.pipeline.initialize_taxdb") as mock_taxdb:
+            mock_taxdb.return_value = MagicMock()
 
-            with patch("src.data_processing.pipeline.initialize_taxdb") as mock_taxdb:
-                mock_taxdb.return_value = MagicMock()
+            with patch("src.data_processing.pipeline.process_dataframe_with_taxonomy") as mock_tax:
+                # Return a simple DataFrame
+                mock_df = pd.DataFrame({
+                    "Entry": ["P0C1T5"],
+                    "Order": ["Neogastropoda"],
+                    "Genus": ["Conus"],
+                })
+                mock_tax.return_value = mock_df
 
-                with patch("src.data_processing.pipeline.process_dataframe_with_taxonomy") as mock_tax:
-                    # Return a simple DataFrame
-                    mock_df = pd.DataFrame({
-                        "Entry": ["P0C1T5"],
-                        "Order": ["Neogastropoda"],
-                        "Genus": ["Conus"],
-                    })
-                    mock_tax.return_value = mock_df
+                with patch("src.data_processing.pipeline.add_habitat_classification") as mock_habitat:
+                    mock_habitat.return_value = mock_df
 
-                    with patch("src.data_processing.pipeline.add_habitat_classification") as mock_habitat:
-                        mock_habitat.return_value = mock_df
-
-                        results = run_pipeline(config)
+                    results = run_pipeline(config)
 
         # Check results
         assert len(results) == 1

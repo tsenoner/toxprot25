@@ -33,10 +33,7 @@ from .clean_data import (
 )
 from .config import PipelineConfig, YearResult
 from .download_uniprot_releases import download_release
-from .parse_sprot_dat import (
-    PTMVocabulary,
-    process_swissprot_file,
-)
+from .parse_sprot_xml import process_xml_file
 
 # Module logger
 logger = logging.getLogger(__name__)
@@ -109,22 +106,21 @@ def is_year_complete(year: int, config: PipelineConfig) -> bool:
 def process_single_year(
     year: int,
     config: PipelineConfig,
-    ptm_vocab: dict | None = None,
     taxdb=None,
 ) -> YearResult:
     """Process a single year through all pipeline stages.
 
     Stages:
-        1. Download .dat file (skip if exists)
-        2. Parse to .tsv (filter Metazoa + venom tissue)
-        3. Delete .dat file (if configured)
+        1. Download .xml file (skip if exists)
+        2. Parse XML to .tsv (filter Metazoa + venom tissue)
+        3. Delete .xml file (if configured)
         4. Clean → final .csv + .fasta
         5. Delete intermediate .tsv (if configured)
 
     Args:
         year: The year to process.
         config: Pipeline configuration.
-        ptm_vocab: Pre-loaded PTM vocabulary (optional).
+        ptm_vocab: Pre-loaded PTMVocabulary instance (optional).
         taxdb: Pre-initialized taxonomy database (optional).
 
     Returns:
@@ -133,30 +129,30 @@ def process_single_year(
     log = YearLogger(year, logger)
 
     # File paths
-    dat_path = config.raw_dir / f"{year}_sprot.dat"
+    xml_path = config.raw_dir / f"{year}_sprot.xml"
     tsv_path = config.interim_dir / f"toxprot_{year}.tsv"
     csv_path = config.processed_dir / f"toxprot_{year}.csv"
     fasta_path = config.processed_dir / f"toxprot_{year}.fasta"
 
     try:
         # Stage 1: Download
-        if not dat_path.exists():
-            if not download_release(year, config.raw_dir, keep_archive=False):
+        if not xml_path.exists():
+            if not download_release(year, config.raw_dir, keep_archive=False, file_format="xml"):
                 return YearResult(year=year, success=False, stage_completed="download", error="Download failed")
         else:
-            log.debug("Using existing .dat file")
+            log.debug("Using existing .xml file")
 
         # Stage 2: Parse
         if not tsv_path.exists() or not config.skip_existing:
             config.interim_dir.mkdir(parents=True, exist_ok=True)
-            if not process_swissprot_file(dat_path, tsv_path, ptm_vocab):
+            if not process_xml_file(xml_path, tsv_path):
                 return YearResult(year=year, success=False, stage_completed="parse", error="Parsing failed")
         else:
             log.debug("Using existing .tsv file")
 
-        # Delete .dat file to save space
-        if config.delete_dat_files and dat_path.exists():
-            dat_path.unlink()
+        # Delete raw XML file to save space
+        if config.delete_raw_files and xml_path.exists():
+            xml_path.unlink()
 
         # Stage 3: Clean and process
         config.processed_dir.mkdir(parents=True, exist_ok=True)
@@ -220,15 +216,11 @@ def run_pipeline(config: PipelineConfig) -> list[YearResult]:
     logger.info(f"ToxProt Pipeline: Processing {len(config.years)} years ({year_range})")
     logger.debug("=" * 60)
     logger.debug(f"Directories: raw={config.raw_dir}, interim={config.interim_dir}, processed={config.processed_dir}")
-    logger.debug(f"Options: delete_dat={config.delete_dat_files}, delete_tsv={config.delete_tsv_files}, skip_existing={config.skip_existing}")
+    logger.debug(f"Options: delete_raw={config.delete_raw_files}, delete_tsv={config.delete_tsv_files}, skip_existing={config.skip_existing}")
     logger.debug("=" * 60)
 
     # Initialize shared resources
-    logger.debug("Initializing resources (PTM vocabulary, taxonomy database)...")
-    vocab_manager = PTMVocabulary(str(config.data_dir / "raw"))
-    vocab_manager.ensure_ptmlist_available()
-    vocab_manager.load_ptmlist()
-    ptm_vocab = vocab_manager.ptm_vocab
+    logger.debug("Initializing taxonomy database...")
     taxdb = initialize_taxdb()
 
     # Process each year
@@ -248,7 +240,7 @@ def run_pipeline(config: PipelineConfig) -> list[YearResult]:
             results.append(YearResult(year=year, success=True, stage_completed="complete", entries_count=entries_count))
             continue
 
-        results.append(process_single_year(year, config, ptm_vocab, taxdb))
+        results.append(process_single_year(year, config, taxdb))
 
     # Summary
     successful = sum(1 for r in results if r.success)

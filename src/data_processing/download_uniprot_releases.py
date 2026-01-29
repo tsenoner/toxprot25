@@ -112,8 +112,67 @@ def extract_dat_file(archive_path: Path, output_dir: Path, year: int) -> Path | 
         return None
 
 
-def download_release(year: int, output_dir: Path, keep_archive: bool = False) -> bool:
-    """Download and extract a single year's release."""
+def extract_xml_file(archive_path: Path, output_dir: Path, year: int) -> Path | None:
+    """Extract the .xml file from the tar.gz archive.
+
+    Looks for sprot.xml (or sprot.xml.gz) inside the archive, decompresses
+    if needed, and saves as {year}_sprot.xml.
+
+    Args:
+        archive_path: Path to the .tar.gz archive.
+        output_dir: Directory to extract into.
+        year: Year label for the output filename.
+
+    Returns:
+        Path to the extracted XML file, or None on failure.
+    """
+    logger.debug(f"  Extracting .xml file from {archive_path.name}...")
+
+    output_file = output_dir / f"{year}_sprot.xml"
+
+    try:
+        with tarfile.open(archive_path, "r:gz") as tar:
+            # Find the uniprot_sprot.xml.gz or uniprot_sprot.xml file
+            xml_gz_files = [m for m in tar.getmembers() if "sprot.xml" in m.name]
+
+            if not xml_gz_files:
+                logger.error("  Error: No sprot.xml file found in archive")
+                return None
+
+            xml_member = xml_gz_files[0]
+            logger.debug(f"  Found: {xml_member.name}")
+
+            # Extract to output directory
+            tar.extract(xml_member, output_dir, filter="data")
+            extracted_path = output_dir / xml_member.name
+
+            # If it's gzipped, decompress it
+            if extracted_path.suffix == ".gz":
+                logger.debug(f"  Decompressing {extracted_path.name}...")
+                with gzip.open(extracted_path, "rb") as f_in:
+                    with open(output_file, "wb") as f_out:
+                        shutil.copyfileobj(f_in, f_out)
+                extracted_path.unlink()
+            else:
+                extracted_path.rename(output_file)
+
+            logger.debug(f"  Saved: {output_file}")
+            return output_file
+
+    except Exception as e:
+        logger.error(f"  Error extracting XML: {e}")
+        return None
+
+
+def download_release(year: int, output_dir: Path, keep_archive: bool = False, file_format: str = "xml") -> bool:
+    """Download and extract a single year's release.
+
+    Args:
+        year: Release year.
+        output_dir: Directory for output files.
+        keep_archive: Whether to keep the .tar.gz archive after extraction.
+        file_format: Format to extract: "xml" (default) or "dat".
+    """
     if year not in RELEASES:
         logger.error(f"  Error: No release mapping for year {year}")
         return False
@@ -121,11 +180,12 @@ def download_release(year: int, output_dir: Path, keep_archive: bool = False) ->
     release_dir, archive_name = RELEASES[year]
     url = f"{BASE_URL}/{release_dir}/knowledgebase/{archive_name}"
 
-    output_dat = output_dir / f"{year}_sprot.dat"
+    ext = "xml" if file_format == "xml" else "dat"
+    output_path = output_dir / f"{year}_sprot.{ext}"
 
     # Check if already downloaded
-    if output_dat.exists():
-        logger.debug(f"  Already exists: {output_dat}")
+    if output_path.exists():
+        logger.debug(f"  Already exists: {output_path}")
         return True
 
     # Download archive
@@ -137,15 +197,16 @@ def download_release(year: int, output_dir: Path, keep_archive: bool = False) ->
     else:
         logger.debug(f"  Archive exists: {archive_path}")
 
-    # Extract .dat file
-    result = extract_dat_file(archive_path, output_dir, year)
+    # Extract file
+    extract_func = extract_xml_file if file_format == "xml" else extract_dat_file
+    result = extract_func(archive_path, output_dir, year)
 
     # If extraction failed, the archive might be corrupted - delete and retry once
     if result is None and archive_path.exists():
         logger.warning("  Archive appears corrupted, deleting and retrying...")
         archive_path.unlink()
         if download_file(url, archive_path):
-            result = extract_dat_file(archive_path, output_dir, year)
+            result = extract_func(archive_path, output_dir, year)
 
     # Optionally remove archive to save space
     if result and not keep_archive and archive_path.exists():

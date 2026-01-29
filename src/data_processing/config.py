@@ -13,7 +13,7 @@ class PipelineConfig:
         raw_dir: Directory for raw UniProt .dat files
         interim_dir: Directory for intermediate parsed TSV files
         processed_dir: Directory for final processed CSV/FASTA files
-        delete_dat_files: Whether to delete .dat files after parsing (saves disk space)
+        delete_raw_files: Whether to delete raw files (.xml/.dat) after parsing (saves disk space)
         delete_tsv_files: Whether to delete intermediate TSV files after cleaning
         skip_existing: Whether to skip years that are already processed (resume support)
         data_dir: Base data directory for auxiliary files (PTM vocabulary, habitat mappings)
@@ -23,7 +23,7 @@ class PipelineConfig:
     raw_dir: Path = field(default_factory=lambda: Path("data/raw/uniprot_releases"))
     interim_dir: Path = field(default_factory=lambda: Path("data/interim/toxprot_parsed"))
     processed_dir: Path = field(default_factory=lambda: Path("data/processed/toxprot"))
-    delete_dat_files: bool = True
+    delete_raw_files: bool = True
     delete_tsv_files: bool = False
     skip_existing: bool = True
     data_dir: Path = field(default_factory=lambda: Path("data"))

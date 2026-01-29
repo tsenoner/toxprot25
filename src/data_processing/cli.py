@@ -82,10 +82,10 @@ def data():
     help="Base data directory for auxiliary files.",
 )
 @click.option(
-    "--keep-dat/--delete-dat",
+    "--keep-raw/--delete-raw",
     default=False,
     show_default=True,
-    help="Keep .dat files after parsing (default: delete to save space).",
+    help="Keep raw XML files after parsing (default: delete to save space).",
 )
 @click.option(
     "--keep-tsv/--delete-tsv",
@@ -106,7 +106,7 @@ def data():
     default=False,
     help="Enable verbose logging.",
 )
-def pipeline(years, raw_dir, interim_dir, processed_dir, data_dir, keep_dat, keep_tsv, force, verbose):
+def pipeline(years, raw_dir, interim_dir, processed_dir, data_dir, keep_raw, keep_tsv, force, verbose):
     """Run the unified data processing pipeline.
 
     Downloads UniProt releases, parses them to extract toxin proteins,
@@ -128,7 +128,7 @@ def pipeline(years, raw_dir, interim_dir, processed_dir, data_dir, keep_dat, kee
         toxprot data pipeline -y 2025 --force
 
         # Keep intermediate files for debugging
-        toxprot data pipeline -y 2025 --keep-dat --keep-tsv
+        toxprot data pipeline -y 2025 --keep-raw --keep-tsv
     """
     setup_logging(verbose=verbose)
 
@@ -138,7 +138,7 @@ def pipeline(years, raw_dir, interim_dir, processed_dir, data_dir, keep_dat, kee
         interim_dir=interim_dir,
         processed_dir=processed_dir,
         data_dir=data_dir,
-        delete_dat_files=not keep_dat,
+        delete_raw_files=not keep_raw,
         delete_tsv_files=not keep_tsv,
         skip_existing=not force,
     )
@@ -228,7 +228,7 @@ def download(years, output_dir, keep_archives, list_only):
     "--input-dir",
     "-i",
     type=click.Path(exists=True, path_type=Path),
-    help="Directory containing SwissProt .dat files.",
+    help="Directory containing SwissProt .xml files.",
 )
 @click.option(
     "--output-dir",
@@ -243,16 +243,16 @@ def download(years, output_dir, keep_archives, list_only):
     "-y",
     multiple=True,
     callback=validate_years,
-    help="Years to process (looks for {year}_sprot.dat in input-dir).",
+    help="Years to process (looks for {year}_sprot.xml in input-dir).",
 )
 @click.option(
     "--delete-input/--keep-input",
     default=False,
     show_default=True,
-    help="Delete input .dat files after successful processing.",
+    help="Delete input .xml files after successful processing.",
 )
 def parse(input_files, input_dir, output_dir, years, delete_input):
-    """Parse Swiss-Prot .dat files to extract toxin proteins.
+    """Parse Swiss-Prot .xml files to extract toxin proteins.
 
     Filters for Metazoa organisms with venom tissue specificity.
     Outputs TSV files with protein metadata and sequences.
@@ -260,7 +260,7 @@ def parse(input_files, input_dir, output_dir, years, delete_input):
     \b
     Examples:
         # Parse a single file
-        toxprot data parse data/raw/uniprot_releases/2025_sprot.dat
+        toxprot data parse data/raw/uniprot_releases/2025_sprot.xml
 
         # Parse all files in a directory
         toxprot data parse -i data/raw/uniprot_releases
@@ -275,7 +275,8 @@ def parse(input_files, input_dir, output_dir, years, delete_input):
     )
     logger = logging.getLogger(__name__)
 
-    from .parse_sprot_dat import PTMVocabulary, get_output_filename, process_swissprot_file
+    from .parse_sprot_dat import get_output_filename
+    from .parse_sprot_xml import process_xml_file
 
     # Determine input files
     files_to_process = []
@@ -284,14 +285,14 @@ def parse(input_files, input_dir, output_dir, years, delete_input):
         # Process specific years from input-dir
         search_dir = input_dir or Path("data/raw/uniprot_releases")
         for year in years:
-            input_path = search_dir / f"{year}_sprot.dat"
+            input_path = search_dir / f"{year}_sprot.xml"
             if input_path.exists():
                 files_to_process.append(input_path)
             else:
                 logger.warning(f"File not found: {input_path}")
     elif input_dir:
-        # Process all .dat files in directory
-        files_to_process = sorted(input_dir.glob("*_sprot.dat"))
+        # Process all .xml files in directory
+        files_to_process = sorted(input_dir.glob("*_sprot.xml"))
     elif input_files:
         # Process specified files
         files_to_process = list(input_files)
@@ -305,16 +306,10 @@ def parse(input_files, input_dir, output_dir, years, delete_input):
     output_dir.mkdir(parents=True, exist_ok=True)
 
     logger.info("=" * 60)
-    logger.info("SwissProt Parser for Tox-Prot")
+    logger.info("SwissProt XML Parser for Tox-Prot")
     logger.info("=" * 60)
     logger.info(f"Input files: {len(files_to_process)}")
     logger.info(f"Output directory: {output_dir}")
-
-    # Initialize PTM vocabulary
-    vocab_manager = PTMVocabulary("data/raw")
-    vocab_manager.ensure_ptmlist_available()
-    vocab_manager.load_ptmlist()
-    ptm_vocab = vocab_manager.ptm_vocab
 
     # Process each file
     successful = 0
@@ -324,7 +319,7 @@ def parse(input_files, input_dir, output_dir, years, delete_input):
 
         logger.info(f"Processing: {input_path.name}")
 
-        if process_swissprot_file(input_path, output_path, ptm_vocab):
+        if process_xml_file(input_path, output_path):
             successful += 1
             if delete_input:
                 logger.info(f"Deleting input file: {input_path}")
