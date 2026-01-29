@@ -40,6 +40,7 @@ class PTMVocabulary:
         self.data_dir.mkdir(parents=True, exist_ok=True)
         self.ptmlist_path = self.data_dir / "ptmlist.txt"
         self.ptm_vocab = {}
+        self.description_to_keyword = {}
 
     def ensure_ptmlist_available(self):
         """Download ptmlist.txt if it doesn't exist"""
@@ -66,25 +67,60 @@ class PTMVocabulary:
         try:
             with open(self.ptmlist_path, encoding="utf-8") as f:
                 current_entry = {}
+                current_kw = None
                 for line in f:
                     line = line.rstrip()
                     if line.startswith("ID   "):
                         if current_entry:
                             self.ptm_vocab[current_entry.get("ID")] = current_entry
+                            self._map_description_to_keyword(current_entry, current_kw)
                         current_entry = {"ID": line[5:].strip()}
+                        current_kw = None
                     elif line.startswith("AC   "):
                         current_entry["AC"] = line[5:].strip()
                     elif line.startswith("FT   "):
                         current_entry["FT"] = line[5:].strip()
+                    elif line.startswith("KW   "):
+                        # Take the first KW line encountered for this entry
+                        if current_kw is None:
+                            current_kw = line[5:].strip()
                     elif line.startswith("//"):
                         if current_entry:
                             self.ptm_vocab[current_entry.get("ID")] = current_entry
+                            self._map_description_to_keyword(current_entry, current_kw)
                             current_entry = {}
+                            current_kw = None
             logger.info(
                 f"Loaded {len(self.ptm_vocab)} PTM definitions from {self.ptmlist_path}"
             )
+            logger.info(
+                f"Built {len(self.description_to_keyword)} description→keyword mappings"
+            )
         except Exception as e:
             logger.error(f"Error loading ptmlist.txt: {e}")
+
+    def _map_description_to_keyword(self, entry: dict, kw_line: str | None) -> None:
+        """Map a PTM entry ID (description) to its first KW keyword."""
+        if not kw_line or not entry.get("ID"):
+            return
+        # KW line format: "Hydroxylation." or "D-amino acid; Thioether bond."
+        # Take the first keyword (before ";"), strip trailing "."
+        keyword = kw_line.split(";")[0].strip().rstrip(".")
+        if keyword:
+            self.description_to_keyword[entry["ID"]] = keyword
+
+    def resolve_mod_res_keyword(self, description: str) -> str:
+        """Map a MOD_RES description to its KW category.
+
+        Handles alternate forms by stripping qualifiers:
+        - "Phosphoserine; by host" → "Phosphoserine"
+        - "Glycine amide (G-83 provides amide group)" → "Glycine amide"
+
+        Returns 'Other' if no mapping is found.
+        """
+        # Strip qualifiers after ";" or "("
+        clean = description.split(";")[0].split("(")[0].strip()
+        return self.description_to_keyword.get(clean, "Other")
 
 
 class SwissProtParser:

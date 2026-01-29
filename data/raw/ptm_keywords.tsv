@@ -1,0 +1,48 @@
+Keyword ID	Name	Category
+KW-0007	Acetylation	PTM
+KW-0013	ADP-ribosylation	PTM
+KW-0027	Amidation	PTM
+KW-0068	Autocatalytic cleavage	PTM
+KW-0102	Bromination	PTM
+KW-0164	Citrullination	PTM
+KW-0165	Cleavage on pair of basic residues	PTM
+KW-0190	Covalent protein-DNA linkage	PTM
+KW-0191	Covalent protein-RNA linkage	PTM
+KW-0208	D-amino acid	PTM
+KW-0291	Formylation	PTM
+KW-0301	Gamma-carboxyglutamic acid	PTM
+KW-0318	Glutathionylation	PTM
+KW-0325	Glycoprotein	PTM
+KW-0336	GPI-anchor	PTM
+KW-0357	Heparan sulfate	PTM
+KW-0379	Hydroxylation	PTM
+KW-0385	Hypusine	PTM
+KW-0405	Iodination	PTM
+KW-0449	Lipoprotein	PTM
+KW-0488	Methylation	PTM
+KW-0519	Myristate	PTM
+KW-0556	Organic radical	PTM
+KW-0558	Oxidation	PTM
+KW-0564	Palmitate	PTM
+KW-0572	Peptidoglycan-anchor	PTM
+KW-0596	Phosphopantetheine	PTM
+KW-0597	Phosphoprotein	PTM
+KW-0636	Prenylation	PTM
+KW-0651	Protein splicing	PTM
+KW-0654	Proteoglycan	PTM
+KW-0702	S-nitrosylation	PTM
+KW-0765	Sulfation	PTM
+KW-0801	TPQ	PTM
+KW-0824	TTQ	PTM
+KW-0832	Ubl conjugation	PTM
+KW-0865	Zymogen	PTM
+KW-0873	Pyrrolidone carboxylic acid	PTM
+KW-0874	Quinone	PTM
+KW-0882	Thioester bond	PTM
+KW-0883	Thioether bond	PTM
+KW-0885	CTQ	PTM
+KW-0886	LTQ	PTM
+KW-0944	Nitration	PTM
+KW-0971	Glycation	PTM
+KW-1015	Disulfide bond	PTM
+KW-1017	Isopeptide bond	PTM

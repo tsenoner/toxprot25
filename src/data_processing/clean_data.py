@@ -4,23 +4,83 @@ Clean and process ToxProt data from TSV files.
 
 This script:
 1. Updates protein family names for consistency
-2. Creates FASTA files (with signal peptide removal)
-3. Adds taxonomic information using taxopy
-4. Adds habitat classification (marine/terrestrial)
-5. Exports cleaned CSV files
+2. Extracts PTM summaries from JSON (with resolved modification names)
+3. Creates FASTA files (with signal peptide removal)
+4. Adds taxonomic information using taxopy
+5. Adds habitat classification (marine/terrestrial)
+6. Exports cleaned CSV files
 """
 
 import argparse
 import json
 import logging
 import sys
+from collections import Counter
 from pathlib import Path
 
 import pandas as pd
 import taxopy
 
+from .parse_sprot_dat import PTMVocabulary
+
 # Module logger - configuration handled by caller or main()
 logger = logging.getLogger(__name__)
+
+# Global PTM vocabulary instance, lazy-initialized
+_ptm_vocab = None
+
+
+def _get_ptm_vocab():
+    """Get or initialize the global PTM vocabulary."""
+    global _ptm_vocab
+    if _ptm_vocab is None:
+        _ptm_vocab = PTMVocabulary("data/raw")
+        _ptm_vocab.ensure_ptmlist_available()
+        _ptm_vocab.load_ptmlist()
+    return _ptm_vocab
+
+
+def extract_ptm_summary(ptm_json: str) -> str:
+    """Extract PTM type counts from PTM_Features JSON.
+
+    For "Modified residue" entries, resolves the modification name to its
+    biological keyword (e.g., "4-hydroxyproline" -> "Hydroxylation").
+
+    Args:
+        ptm_json: JSON string with PTM data.
+
+    Returns:
+        Summary string like 'Disulfide bond:4; Hydroxylation:2; Amidation:1'.
+    """
+    if not ptm_json or pd.isna(ptm_json):
+        return ""
+    try:
+        data = json.loads(ptm_json)
+        counts = Counter()
+
+        for ptm_type, features in data.items():
+            if not isinstance(features, list):
+                continue
+
+            if ptm_type == "Modified residue":
+                # Resolve each modification to its keyword
+                vocab = _get_ptm_vocab()
+                for feat in features:
+                    note = feat.get("note", "")
+                    if note:
+                        keyword = vocab.resolve_mod_res_keyword(note)
+                        counts[keyword] += 1
+            else:
+                counts[ptm_type] += len(features)
+
+        if not counts:
+            return ""
+
+        # Sort by count descending, then alphabetically
+        sorted_items = sorted(counts.items(), key=lambda x: (-x[1], x[0]))
+        return "; ".join(f"{k}:{v}" for k, v in sorted_items)
+    except (json.JSONDecodeError, TypeError):
+        return ""
 
 
 def update_protfams(df):
@@ -127,8 +187,8 @@ def process_toxprot_tsv(tsv_input_path: Path, update_protfams_func, create_fasta
         "Length",
         "Fragment",
         "Toxic dose",
-        "Post-translational modification",
-        "PTM Summary",
+        "PTM_Features",
+        "PTM Keywords",
         "Sequence",
         "Signal peptide (range)",
         "Protein existence",
@@ -146,12 +206,18 @@ def process_toxprot_tsv(tsv_input_path: Path, update_protfams_func, create_fasta
 
     df = pd.read_csv(tsv_input_path, sep="\t", usecols=usecols)
 
-    # Rename 'Post-translational modification' to 'PTM' if present
-    if "Post-translational modification" in df.columns:
-        df = df.rename(columns={"Post-translational modification": "PTM"})
-
     # Update protein families
     df = update_protfams_func(df)
+
+    # Extract PTM summaries from PTM_Features JSON and place next to PTM Keywords
+    if "PTM_Features" in df.columns:
+        ptm_summary = df["PTM_Features"].apply(extract_ptm_summary)
+        # Insert PTM Summary right after PTM Keywords
+        if "PTM Keywords" in df.columns:
+            ptm_kw_idx = df.columns.get_loc("PTM Keywords")
+            df.insert(ptm_kw_idx + 1, "PTM Summary", ptm_summary)
+        else:
+            df["PTM Summary"] = ptm_summary
 
     # Merge GO columns if present
     go_merge_cols = [
@@ -186,11 +252,13 @@ def process_toxprot_tsv(tsv_input_path: Path, update_protfams_func, create_fasta
             df, "Entry", "Sequence", fasta_output_path, signal_peptide_col
         )
 
-    # Prepare columns for CSV output: remove 'Sequence', 'Signal peptide (range)', and original GO columns,
-    # but KEEP 'Gene Ontology (molecular function)' in the CSV
-    drop_cols = ["Sequence", "Signal peptide (range)"] + [
-        col for col in go_merge_cols if col != "Gene Ontology (molecular function)"
-    ]
+    # Prepare columns for CSV output: remove columns not needed in final CSV
+    # Keep 'Gene Ontology (molecular function)' from GO columns
+    drop_cols = [
+        "Sequence",
+        "Signal peptide (range)",
+        "PTM_Features",  # Full JSON not needed in final CSV
+    ] + [col for col in go_merge_cols if col != "Gene Ontology (molecular function)"]
     columns_for_csv = [col for col in df.columns if col not in drop_cols]
 
     # Save CSV
