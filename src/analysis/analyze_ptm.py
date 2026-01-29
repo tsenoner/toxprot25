@@ -46,9 +46,7 @@ def load_data(file_path):
     df["PTM_dict"] = df["PTM Summary"].apply(parse_ptm_summary)
 
     for ptm_type in PTM_TYPES:
-        df[f"has_{ptm_type}"] = df["PTM_dict"].apply(
-            lambda x, pt=ptm_type: 1 if pt in x else 0
-        )
+        df[f"has_{ptm_type}"] = df["PTM_dict"].apply(lambda x, pt=ptm_type: 1 if pt in x else 0)
         df[f"count_{ptm_type}"] = df["PTM_dict"].apply(lambda x, pt=ptm_type: x.get(pt, 0))
 
     df["total_ptm_count"] = df["PTM_dict"].apply(lambda x: sum(x.values()))
@@ -91,18 +89,14 @@ def create_combined_figure(df_2017, df_2025, output_dir):
     y_pos = np.arange(len(df_ptm))
 
     ax_a.barh(y_pos, values_base, color=COLOR_2017, edgecolor="black")
-    ax_a.barh(
-        y_pos, values_increase, left=values_base, color=COLOR_2025, edgecolor="black"
-    )
+    ax_a.barh(y_pos, values_increase, left=values_base, color=COLOR_2025, edgecolor="black")
 
     # Formatting
     ax_a.set_yticks(y_pos)
     ax_a.set_yticklabels(df_ptm["PTM Type"])
     ax_a.invert_yaxis()
     ax_a.set_xlabel("Number of Proteins", fontsize=14)
-    ax_a.set_title(
-        "PTM Type Frequency (2017 vs 2025)", fontsize=14, fontweight="bold", pad=10
-    )
+    ax_a.set_title("PTM Type Frequency (2017 vs 2025)", fontsize=14, fontweight="bold", pad=10)
     # Increase the fontsize of both tick labels
     ax_a.tick_params(axis="both", labelsize=12)
 
@@ -218,9 +212,7 @@ def create_combined_figure(df_2017, df_2025, output_dir):
         ax.grid(axis="y", ls="--", lw=2, alpha=0.5)
 
     # Set shared y-axis limits
-    max_y = max(
-        max(hist_2017.max(), hist_2025.max()) for hist_2017, hist_2025 in all_hist_data
-    )
+    max_y = max(max(hist_2017.max(), hist_2025.max()) for hist_2017, hist_2025 in all_hist_data)
     for ax in axes_b:
         ax.set_ylim(0, max_y * 1.05)
 
@@ -256,9 +248,7 @@ def create_combined_figure(df_2017, df_2025, output_dir):
             }
         )
 
-    pd.DataFrame(dist_data).to_csv(
-        output_dir / "ptm_count_distribution_data.csv", index=False
-    )
+    pd.DataFrame(dist_data).to_csv(output_dir / "ptm_count_distribution_data.csv", index=False)
 
 
 def generate_summary_table(df_2017, df_2025, output_dir):

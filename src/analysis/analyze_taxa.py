@@ -52,7 +52,9 @@ def get_top_taxa_counts(df: pd.DataFrame, taxa_column: str = "Order", top_n: int
     return {**top_taxa.to_dict(), "Others": others_count}
 
 
-def get_taxa_newcomers(df_old: pd.DataFrame, df_new: pd.DataFrame, taxa_level: str = "Order") -> pd.Series:
+def get_taxa_newcomers(
+    df_old: pd.DataFrame, df_new: pd.DataFrame, taxa_level: str = "Order"
+) -> pd.Series:
     """Identify taxa present in new dataset but not in old dataset."""
     old_taxa = set(df_old[taxa_level].unique())
     new_taxa = set(df_new[taxa_level].unique())
@@ -60,7 +62,9 @@ def get_taxa_newcomers(df_old: pd.DataFrame, df_new: pd.DataFrame, taxa_level: s
     return df_new[df_new[taxa_level].isin(newcomers)][taxa_level].value_counts()
 
 
-def plot_top_taxa_distribution(datasets: dict[str, pd.DataFrame], output_path: Path, reference_year: str = "2025"):
+def plot_top_taxa_distribution(
+    datasets: dict[str, pd.DataFrame], output_path: Path, reference_year: str = "2025"
+):
     """Create stacked bar chart of top taxa distribution across years."""
     # Get top 5 orders from reference year (2025) for consistency
     ref_df = datasets[reference_year]
@@ -107,7 +111,9 @@ def plot_top_taxa_distribution(datasets: dict[str, pd.DataFrame], output_path: P
                 percentages.append(f"{int(height):,} ({pct:.0f}%)")
             else:
                 percentages.append("")
-        ax.bar_label(container, labels=percentages, label_type="center", fontsize=12, fontfamily="monospace")
+        ax.bar_label(
+            container, labels=percentages, label_type="center", fontsize=12, fontfamily="monospace"
+        )
 
     ax.grid(axis="y", linestyle="--", alpha=0.7, zorder=0)
     fig.tight_layout()
@@ -121,7 +127,9 @@ def plot_top_taxa_distribution(datasets: dict[str, pd.DataFrame], output_path: P
     print(f"  Saved: {output_path.with_suffix('.svg')}")
 
 
-def plot_top_taxa_trend(datasets: dict[str, pd.DataFrame], output_path: Path, reference_year: str = "2025"):
+def plot_top_taxa_trend(
+    datasets: dict[str, pd.DataFrame], output_path: Path, reference_year: str = "2025"
+):
     """Create line plot showing taxa trends over time."""
     # Get top 5 orders from reference year for consistency
     ref_df = datasets[reference_year]
@@ -143,14 +151,20 @@ def plot_top_taxa_trend(datasets: dict[str, pd.DataFrame], output_path: Path, re
     # Plot each order as a line
     for i, order in enumerate(plot_df.columns):
         color = COLORS[i] if i < len(COLORS) else f"C{i}"
-        ax.plot(plot_df.index, plot_df[order], marker="o", markersize=8,
-                linewidth=2.5, color=color)
+        ax.plot(plot_df.index, plot_df[order], marker="o", markersize=8, linewidth=2.5, color=color)
         # Add label outside the axes, aligned to the last data point
-        ax.annotate(order, xy=(1.0, plot_df[order].iloc[-1]),
-                    xycoords=("axes fraction", "data"),
-                    xytext=(8, 0), textcoords="offset points",
-                    fontsize=11, va="center", color=color, fontweight="bold",
-                    clip_on=False)
+        ax.annotate(
+            order,
+            xy=(1.0, plot_df[order].iloc[-1]),
+            xycoords=("axes fraction", "data"),
+            xytext=(8, 0),
+            textcoords="offset points",
+            fontsize=11,
+            va="center",
+            color=color,
+            fontweight="bold",
+            clip_on=False,
+        )
 
     ax.set_title("Growth of Top Taxa Orders in ToxProt Over Time", fontsize=18)
     ax.set_xlabel("Year", fontsize=14)
@@ -169,7 +183,9 @@ def plot_top_taxa_trend(datasets: dict[str, pd.DataFrame], output_path: Path, re
     print(f"  Saved: {output_path.with_suffix('.svg')}")
 
 
-def plot_top_taxa_area(datasets: dict[str, pd.DataFrame], output_path: Path, reference_year: str = "2025"):
+def plot_top_taxa_area(
+    datasets: dict[str, pd.DataFrame], output_path: Path, reference_year: str = "2025"
+):
     """Create stacked area plot showing taxa composition over time."""
     # Get top 5 orders from reference year for consistency
     ref_df = datasets[reference_year]
@@ -209,8 +225,14 @@ def plot_top_taxa_area(datasets: dict[str, pd.DataFrame], output_path: Path, ref
     print(f"  Saved: {output_path.with_suffix('.svg')}")
 
 
-def plot_taxa_newcomers(df_old: pd.DataFrame, df_new: pd.DataFrame, taxa_level: str,
-                        output_path: Path, color: str, max_items: int = 15):
+def plot_taxa_newcomers(
+    df_old: pd.DataFrame,
+    df_new: pd.DataFrame,
+    taxa_level: str,
+    output_path: Path,
+    color: str,
+    max_items: int = 15,
+):
     """Create horizontal bar chart of newcomer taxa."""
     newcomers = get_taxa_newcomers(df_old, df_new, taxa_level)
 
@@ -271,12 +293,18 @@ def main():
     if "2017" in datasets and "2025" in datasets:
         print("\nGenerating newcomer taxa plots...")
         plot_taxa_newcomers(
-            datasets["2017"], datasets["2025"], "Order",
-            FIGURES_DIR / "taxa_newcomers_order.png", "tab:green"
+            datasets["2017"],
+            datasets["2025"],
+            "Order",
+            FIGURES_DIR / "taxa_newcomers_order.png",
+            "tab:green",
         )
         plot_taxa_newcomers(
-            datasets["2017"], datasets["2025"], "Family",
-            FIGURES_DIR / "taxa_newcomers_family.png", "tab:blue"
+            datasets["2017"],
+            datasets["2025"],
+            "Family",
+            FIGURES_DIR / "taxa_newcomers_family.png",
+            "tab:blue",
         )
 
     print("\nDone!")

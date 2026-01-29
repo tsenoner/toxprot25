@@ -127,8 +127,7 @@ def analyze_variants(base_dir: Path, year: str = "2025") -> pd.DataFrame:
         {
             "name": "Top 15\nmature\nno fragments",
             "description": "Top 15 families, mature, no fragments",
-            "json": protspace_dir
-            / f"protspace_{year}_top15_mature_no_fragments_style.json",
+            "json": protspace_dir / f"protspace_{year}_top15_mature_no_fragments_style.json",
         },
     ]
 
@@ -167,9 +166,7 @@ def analyze_variants(base_dir: Path, year: str = "2025") -> pd.DataFrame:
         print(f"  Proteins: {n_proteins}")
         print(f"  Families: {n_families}")
         print(
-            f"  Silhouette score: {score:.2f}"
-            if not np.isnan(score)
-            else "  Silhouette score: N/A"
+            f"  Silhouette score: {score:.2f}" if not np.isnan(score) else "  Silhouette score: N/A"
         )
 
         results.append(

@@ -98,18 +98,12 @@ def create_h5_variants(base_dir: Path, year: str = "2025"):
     print("\n3. Top 15 mature sequences variant (using mature sequence embeddings):")
     metadata_top15_mature = protspace_dir / f"metadata_{year}_top15_mature.csv"
     h5_top15_mature = protspace_dir / f"toxprot_{year}_top15_mature.h5"
-    filter_h5_by_metadata(
-        h5_mature, metadata_top15_mature, h5_top15_mature, "Top 15 mature"
-    )
+    filter_h5_by_metadata(h5_mature, metadata_top15_mature, h5_top15_mature, "Top 15 mature")
 
     # Variant 4: Top 15 mature no fragments (using mature sequences, excluding fragments)
     print("\n4. Top 15 mature no fragments variant (using mature sequence embeddings):")
-    metadata_top15_mature_no_frag = (
-        protspace_dir / f"metadata_{year}_top15_mature_no_fragments.csv"
-    )
-    h5_top15_mature_no_frag = (
-        protspace_dir / f"toxprot_{year}_top15_mature_no_fragments.h5"
-    )
+    metadata_top15_mature_no_frag = protspace_dir / f"metadata_{year}_top15_mature_no_fragments.csv"
+    h5_top15_mature_no_frag = protspace_dir / f"toxprot_{year}_top15_mature_no_fragments.h5"
     filter_h5_by_metadata(
         h5_mature,
         metadata_top15_mature_no_frag,

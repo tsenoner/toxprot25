@@ -164,7 +164,9 @@ def extract_xml_file(archive_path: Path, output_dir: Path, year: int) -> Path | 
         return None
 
 
-def download_release(year: int, output_dir: Path, keep_archive: bool = False, file_format: str = "xml") -> bool:
+def download_release(
+    year: int, output_dir: Path, keep_archive: bool = False, file_format: str = "xml"
+) -> bool:
     """Download and extract a single year's release.
 
     Args:
@@ -217,9 +219,7 @@ def download_release(year: int, output_dir: Path, keep_archive: bool = False, fi
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Download UniProt Swiss-Prot releases (2005-2025)"
-    )
+    parser = argparse.ArgumentParser(description="Download UniProt Swiss-Prot releases (2005-2025)")
     parser.add_argument(
         "--output-dir",
         type=Path,

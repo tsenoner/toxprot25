@@ -90,12 +90,8 @@ class PTMVocabulary:
                             self._map_description_to_keyword(current_entry, current_kw)
                             current_entry = {}
                             current_kw = None
-            logger.info(
-                f"Loaded {len(self.ptm_vocab)} PTM definitions from {self.ptmlist_path}"
-            )
-            logger.info(
-                f"Built {len(self.description_to_keyword)} description→keyword mappings"
-            )
+            logger.info(f"Loaded {len(self.ptm_vocab)} PTM definitions from {self.ptmlist_path}")
+            logger.info(f"Built {len(self.description_to_keyword)} description→keyword mappings")
         except Exception as e:
             logger.error(f"Error loading ptmlist.txt: {e}")
 
@@ -212,9 +208,7 @@ class SwissProtParser:
                 if not note_parts[0].rstrip().endswith('"'):
                     # Multi-line note - keep reading
                     i += 1
-                    while i < len(lines) and lines[i].startswith(
-                        "FT                   "
-                    ):
+                    while i < len(lines) and lines[i].startswith("FT                   "):
                         next_content = lines[i][21:].strip()
                         # Check if this is a new qualifier
                         if next_content.startswith("/"):
@@ -239,9 +233,7 @@ class SwissProtParser:
                 if not evidence_parts[0].rstrip().endswith('"'):
                     # Multi-line evidence - keep reading
                     i += 1
-                    while i < len(lines) and lines[i].startswith(
-                        "FT                   "
-                    ):
+                    while i < len(lines) and lines[i].startswith("FT                   "):
                         next_content = lines[i][21:].strip()
                         # Check if this is a new qualifier
                         if next_content.startswith("/"):
@@ -350,13 +342,10 @@ class SwissProtParser:
                     if not content.endswith(";"):
                         processing_de_flags = False
                 elif any(
-                    x in content
-                    for x in ["RecName: Full=", "AltName: Full=", "SubName: Full="]
+                    x in content for x in ["RecName: Full=", "AltName: Full=", "SubName: Full="]
                 ):
                     processing_de_flags = False
-                    name = re.search(
-                        r"(?:RecName|AltName|SubName): Full=([^;]+)", content
-                    )
+                    name = re.search(r"(?:RecName|AltName|SubName): Full=([^;]+)", content)
                     if name:
                         if entry_data["Protein names"]:
                             entry_data["Protein names"] += "; " + name.group(1)
@@ -394,9 +383,7 @@ class SwissProtParser:
                     current_section = None
                 elif "-!- FUNCTION:" in content:
                     current_section = "Function [CC]"
-                    entry_data[current_section] = content.replace(
-                        "-!- FUNCTION:", ""
-                    ).strip()
+                    entry_data[current_section] = content.replace("-!- FUNCTION:", "").strip()
                 elif "-!- TISSUE SPECIFICITY:" in content:
                     current_section = "Tissue specificity"
                     entry_data[current_section] = content.replace(
@@ -404,14 +391,10 @@ class SwissProtParser:
                     ).strip()
                 elif "-!- TOXIC DOSE:" in content:
                     current_section = "Toxic dose"
-                    entry_data[current_section] = content.replace(
-                        "-!- TOXIC DOSE:", ""
-                    ).strip()
+                    entry_data[current_section] = content.replace("-!- TOXIC DOSE:", "").strip()
                 elif "-!- PTM:" in content:
                     current_section = "Post-translational modification"
-                    entry_data[current_section] = content.replace(
-                        "-!- PTM:", ""
-                    ).strip()
+                    entry_data[current_section] = content.replace("-!- PTM:", "").strip()
                 elif "-!- MASS SPECTROMETRY:" in content:
                     current_section = "Mass spectrometry"
                     entry_data[current_section] = content.replace(
@@ -419,9 +402,7 @@ class SwissProtParser:
                     ).strip()
                 elif "-!- SIMILARITY:" in content:
                     current_section = "Protein families"
-                    entry_data[current_section] = content.replace(
-                        "-!- SIMILARITY:", ""
-                    ).strip()
+                    entry_data[current_section] = content.replace("-!- SIMILARITY:", "").strip()
                 elif content.startswith("-!-"):
                     current_section = None
                 elif line.startswith("CC       ") and current_section:
@@ -441,14 +422,8 @@ class SwissProtParser:
                         )
                     else:
                         parts = content.split()
-                        if (
-                            len(parts) >= 3
-                            and parts[1].isdigit()
-                            and parts[2].isdigit()
-                        ):
-                            entry_data["Signal peptide (range)"] = (
-                                f"{parts[1]}-{parts[2]}"
-                            )
+                        if len(parts) >= 3 and parts[1].isdigit() and parts[2].isdigit():
+                            entry_data["Signal peptide (range)"] = f"{parts[1]}-{parts[2]}"
 
                 elif feature_key == "PROPEP":
                     entry_data["Propeptide"] = "Yes"
@@ -456,9 +431,7 @@ class SwissProtParser:
                 # PTM features
                 elif feature_key in ptm_features:
                     position = self.parse_position(
-                        content.split(None, 1)[1]
-                        if len(content.split(None, 1)) > 1
-                        else ""
+                        content.split(None, 1)[1] if len(content.split(None, 1)) > 1 else ""
                     )
                     note, evidence = self.extract_ptm_details(entry_lines, idx)
 
@@ -493,16 +466,12 @@ class SwissProtParser:
                 elif "Pfam" in content:
                     pfam_id = content.split(";")[1].strip()
                     entry_data["Pfam"] = (
-                        (entry_data["Pfam"] + "; " + pfam_id)
-                        if entry_data["Pfam"]
-                        else pfam_id
+                        (entry_data["Pfam"] + "; " + pfam_id) if entry_data["Pfam"] else pfam_id
                     )
                 elif "KEGG" in content:
                     kegg_id = content.split(";")[1].strip()
                     entry_data["KEGG"] = (
-                        (entry_data["KEGG"] + "; " + kegg_id)
-                        if entry_data["KEGG"]
-                        else kegg_id
+                        (entry_data["KEGG"] + "; " + kegg_id) if entry_data["KEGG"] else kegg_id
                     )
                 elif "GO;" in content:
                     go_match = re.search(r"GO:(\d+); ([CPF]):(.+?);", content)
@@ -651,9 +620,7 @@ class SwissProtParser:
             family_text = re.sub(
                 r"\s*\{ECO:[^\}]+\}\.?", "", entry_data["Protein families"]
             ).strip()
-            match_belongs = re.search(
-                r"belongs to the\s+(.+)", family_text, re.IGNORECASE
-            )
+            match_belongs = re.search(r"belongs to the\s+(.+)", family_text, re.IGNORECASE)
             if match_belongs:
                 processed_family_text = match_belongs.group(1)
             else:
@@ -666,9 +633,7 @@ class SwissProtParser:
 
             stripped_text = processed_family_text.strip()
             if stripped_text:
-                entry_data["Protein families"] = (
-                    stripped_text[0].upper() + stripped_text[1:]
-                )
+                entry_data["Protein families"] = stripped_text[0].upper() + stripped_text[1:]
             else:
                 entry_data["Protein families"] = stripped_text
 
@@ -855,9 +820,7 @@ def main():
     logger.info("=" * 60)
     logger.info(f"Input files: {len(input_files)}")
     logger.info(f"Output directory: {args.output_dir}")
-    logger.info(
-        "Query: (taxonomy_id:33208) AND (cc_tissue_specificity:venom OR keyword:KW-0800)"
-    )
+    logger.info("Query: (taxonomy_id:33208) AND (cc_tissue_specificity:venom OR keyword:KW-0800)")
     logger.info("=" * 60)
 
     # Initialize PTM vocabulary (once for all files)
@@ -889,7 +852,9 @@ def main():
                 input_path.unlink()
 
     logger.info("=" * 60)
-    logger.info(f"Processing complete! {successful}/{len(input_files)} file(s) processed successfully")
+    logger.info(
+        f"Processing complete! {successful}/{len(input_files)} file(s) processed successfully"
+    )
     logger.info("=" * 60)
 
 

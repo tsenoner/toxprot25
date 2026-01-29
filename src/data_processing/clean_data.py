@@ -248,9 +248,7 @@ def process_toxprot_tsv(tsv_input_path: Path, update_protfams_func, create_fasta
         signal_peptide_col = (
             "Signal peptide (range)" if "Signal peptide (range)" in df.columns else None
         )
-        create_fasta_func(
-            df, "Entry", "Sequence", fasta_output_path, signal_peptide_col
-        )
+        create_fasta_func(df, "Entry", "Sequence", fasta_output_path, signal_peptide_col)
 
     # Prepare columns for CSV output: remove columns not needed in final CSV
     # Keep 'Gene Ontology (molecular function)' from GO columns
@@ -417,9 +415,7 @@ def determine_habitat_detailed(row, habitat_mapping):
     if order in habitat_mapping["ambiguous_orders"]:
         # Check each habitat type for this order
         for habitat_type in ["terrestrial", "freshwater", "estuarine", "marine"]:
-            if genus in habitat_mapping["ambiguous_orders"][order].get(
-                habitat_type, {}
-            ):
+            if genus in habitat_mapping["ambiguous_orders"][order].get(habitat_type, {}):
                 return habitat_type
 
     # If we can't determine, return 'unknown'
@@ -440,9 +436,7 @@ def add_habitat_classification(csv_path, habitat_mapping_path, habitat_detailed_
     df = pd.read_csv(csv_path)
 
     # Add habitat column (simple: marine/terrestrial)
-    df["Habitat"] = df.apply(
-        lambda row: determine_habitat(row, habitat_mapping), axis=1
-    )
+    df["Habitat"] = df.apply(lambda row: determine_habitat(row, habitat_mapping), axis=1)
 
     # Add detailed habitat column (terrestrial/freshwater/estuarine/marine)
     df["Habitat_Detailed"] = df.apply(
@@ -458,6 +452,7 @@ def add_habitat_classification(csv_path, habitat_mapping_path, habitat_detailed_
 def get_year_from_filename(filepath: Path) -> str:
     """Extract year from filename like toxprot_2005.tsv -> 2005"""
     import re
+
     match = re.search(r"toxprot_(\d{4})", filepath.stem)
     return match.group(1) if match else filepath.stem
 
@@ -563,9 +558,7 @@ def main():
 
         # Step 2: Add taxonomic information
         logger.info("  Adding taxonomy...")
-        df = process_dataframe_with_taxonomy(
-            interim_csv_path, processed_csv_path, taxdb
-        )
+        df = process_dataframe_with_taxonomy(interim_csv_path, processed_csv_path, taxdb)
 
         # Step 3: Add habitat classification
         logger.info("  Adding habitat classification...")

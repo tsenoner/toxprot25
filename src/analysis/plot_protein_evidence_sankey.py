@@ -59,9 +59,7 @@ def hex_to_rgba(hex_color, alpha=0.4):
         return f"rgba(200,200,200,{alpha})"
 
 
-def calculate_node_positions(
-    categories_2017, categories_2025, flow_counter, has_new_node=False
-):
+def calculate_node_positions(categories_2017, categories_2025, flow_counter, has_new_node=False):
     """
     Calculate proper Y positions for nodes to avoid overlap.
 
@@ -183,9 +181,7 @@ def calculate_node_positions(
     return y_positions_2017, y_positions_2025, y_position_new
 
 
-def create_protein_evidence_sankey(
-    toxprot_2017_path, toxprot_2025_path, output_path=None
-):
+def create_protein_evidence_sankey(toxprot_2017_path, toxprot_2025_path, output_path=None):
     """
     Create a Sankey diagram showing protein evidence category transitions.
 
@@ -406,9 +402,7 @@ def create_protein_evidence_sankey(
 
     # Create node index mappings
     cat_to_2017_idx = {cat: i for i, cat in enumerate(categories_2017)}
-    cat_to_2025_idx = {
-        cat: i + len(categories_2017) for i, cat in enumerate(categories_2025)
-    }
+    cat_to_2025_idx = {cat: i + len(categories_2017) for i, cat in enumerate(categories_2025)}
     if has_new_node:
         new_node_idx = len(categories_2017) + len(categories_2025)
 
@@ -460,9 +454,7 @@ def create_protein_evidence_sankey(
                     value=values,
                     color=link_colors,
                 ),
-                textfont=dict(
-                    size=24, color="black"
-                ),  # Significantly increased font size
+                textfont=dict(size=24, color="black"),  # Significantly increased font size
             )
         ]
     )
@@ -539,9 +531,7 @@ def main():
         default="figures/protein_evidence",
         help="Output directory for the plots",
     )
-    parser.add_argument(
-        "--show", action="store_true", help="Display the plot in browser"
-    )
+    parser.add_argument("--show", action="store_true", help="Display the plot in browser")
 
     args = parser.parse_args()
 
@@ -556,9 +546,7 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Create the plot
-    fig = create_protein_evidence_sankey(
-        str(data_2017_path), str(data_2025_path), str(output_path)
-    )
+    fig = create_protein_evidence_sankey(str(data_2017_path), str(data_2025_path), str(output_path))
 
     # Show plot if requested
     if args.show:

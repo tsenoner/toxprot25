@@ -23,12 +23,8 @@ def get_all_protein_families_global(df, protein_family_col_name):
         return pd.Series(dtype="int")
 
     temp_df = df.copy()
-    temp_df[protein_family_col_name] = (
-        temp_df[protein_family_col_name].fillna("").astype(str)
-    )
-    valid_families = temp_df[protein_family_col_name][
-        temp_df[protein_family_col_name] != ""
-    ]
+    temp_df[protein_family_col_name] = temp_df[protein_family_col_name].fillna("").astype(str)
+    valid_families = temp_df[protein_family_col_name][temp_df[protein_family_col_name] != ""]
     family_counts = valid_families.value_counts()
     return family_counts.sort_index()
 
@@ -40,9 +36,7 @@ def generate_renaming_report(df_2017_orig, df_2025_orig):
     assigned to the same "Entry" identifier between the 2017 and 2025 datasets.
     Saves the findings to a TSV file.
     """
-    print(
-        "\nAnalyzing potential protein family renamings by tracking 'Entry' identifiers..."
-    )
+    print("\nAnalyzing potential protein family renamings by tracking 'Entry' identifiers...")
 
     protein_col_name = "Protein families"
     entry_col_name = "Entry"
@@ -66,19 +60,13 @@ def generate_renaming_report(df_2017_orig, df_2025_orig):
     ].rename(columns={protein_col_name: "Family_2025"})
 
     # Merge based on Entry to find common proteins
-    merged_df = pd.merge(
-        df_2017_entry_family, df_2025_entry_family, on=entry_col_name, how="inner"
-    )
+    merged_df = pd.merge(df_2017_entry_family, df_2025_entry_family, on=entry_col_name, how="inner")
 
     # Identify entries where the family name has changed
-    changed_families_df = merged_df[
-        merged_df["Family_2017"] != merged_df["Family_2025"]
-    ].copy()
+    changed_families_df = merged_df[merged_df["Family_2017"] != merged_df["Family_2025"]].copy()
 
     if changed_families_df.empty:
-        print(
-            "No protein entries found with changed family names between 2017 and 2025 datasets."
-        )
+        print("No protein entries found with changed family names between 2017 and 2025 datasets.")
         print(
             "This could mean no families were renamed for proteins present in both datasets, or 'Entry' IDs are not consistent."
         )
@@ -99,12 +87,12 @@ def generate_renaming_report(df_2017_orig, df_2025_orig):
     counts_2017_global = get_all_protein_families_global(df_2017_orig, protein_col_name)
     counts_2025_global = get_all_protein_families_global(df_2025_orig, protein_col_name)
 
-    renaming_counts["Old_Family_Global_Count_2017"] = renaming_counts[
-        "Family_2017"
-    ].apply(lambda x: counts_2017_global.get(x, 0))
-    renaming_counts["New_Family_Global_Count_2025"] = renaming_counts[
-        "Family_2025"
-    ].apply(lambda x: counts_2025_global.get(x, 0))
+    renaming_counts["Old_Family_Global_Count_2017"] = renaming_counts["Family_2017"].apply(
+        lambda x: counts_2017_global.get(x, 0)
+    )
+    renaming_counts["New_Family_Global_Count_2025"] = renaming_counts["Family_2025"].apply(
+        lambda x: counts_2025_global.get(x, 0)
+    )
 
     renaming_counts = renaming_counts.rename(
         columns={
@@ -122,12 +110,8 @@ def generate_renaming_report(df_2017_orig, df_2025_orig):
     output_filepath = OUTPUT_DIR / output_filename
     renaming_counts.to_csv(output_filepath, index=False)
 
-    print(
-        f"Generated potential family renamings (by Entry tracking) file: {output_filepath}"
-    )
-    print(
-        "This file lists protein families that changed for the same 'Entry' ID between datasets."
-    )
+    print(f"Generated potential family renamings (by Entry tracking) file: {output_filepath}")
+    print("This file lists protein families that changed for the same 'Entry' ID between datasets.")
     print(
         "Review this file to understand actual remappings. 'Entries_Supporting_Rename' indicates how many unique protein entries support each listed change.\n"
     )
@@ -143,9 +127,7 @@ if __name__ == "__main__":
         toxprot_2017_df_orig = pd.read_csv(DATA_PATH / "toxprot_2017.csv")
         toxprot_2025_df_orig = pd.read_csv(DATA_PATH / "toxprot_2025.csv")
     except FileNotFoundError as e:
-        print(
-            f"Error loading original data: {e}. Please ensure CSV files are in {DATA_PATH}"
-        )
+        print(f"Error loading original data: {e}. Please ensure CSV files are in {DATA_PATH}")
         exit()
 
     generate_renaming_report(

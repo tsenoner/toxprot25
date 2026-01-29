@@ -31,9 +31,7 @@ try:
     toxprot_2017_df_orig = pd.read_csv(DATA_PATH / "toxprot_2017.csv")
     toxprot_2025_df_orig = pd.read_csv(DATA_PATH / "toxprot_2025.csv")
 except FileNotFoundError as e:
-    print(
-        f"Error loading original data: {e}. Please ensure CSV files are in {DATA_PATH}"
-    )
+    print(f"Error loading original data: {e}. Please ensure CSV files are in {DATA_PATH}")
     exit()
 
 
@@ -41,9 +39,7 @@ except FileNotFoundError as e:
 def get_protein_family_by_habitat(df, habitat_type):
     """Extract protein family counts for a specific habitat type from a given DataFrame."""
     habitat_data = df[df["Habitat"] == habitat_type].copy()
-    habitat_data["Protein families"] = (
-        habitat_data["Protein families"].fillna("").astype(str)
-    )
+    habitat_data["Protein families"] = habitat_data["Protein families"].fillna("").astype(str)
     return (
         habitat_data[habitat_data["Protein families"] != ""]["Protein families"]
         .value_counts()
@@ -59,27 +55,17 @@ def calculate_percentage_increase(old_val, new_val):
 
 
 # --- Step 1: Identify families present in both terrestrial and marine habitats globally ---
-print(
-    "Identifying protein families present in both terrestrial and marine habitats globally..."
-)
-pf_terrestrial_2017_orig = get_protein_family_by_habitat(
-    toxprot_2017_df_orig, "terrestrial"
-)
+print("Identifying protein families present in both terrestrial and marine habitats globally...")
+pf_terrestrial_2017_orig = get_protein_family_by_habitat(toxprot_2017_df_orig, "terrestrial")
 pf_marine_2017_orig = get_protein_family_by_habitat(toxprot_2017_df_orig, "marine")
-pf_terrestrial_2025_orig = get_protein_family_by_habitat(
-    toxprot_2025_df_orig, "terrestrial"
-)
+pf_terrestrial_2025_orig = get_protein_family_by_habitat(toxprot_2025_df_orig, "terrestrial")
 pf_marine_2025_orig = get_protein_family_by_habitat(toxprot_2025_df_orig, "marine")
 
 all_terrestrial_families_orig = set(pf_terrestrial_2017_orig.index) | set(
     pf_terrestrial_2025_orig.index
 )
-all_marine_families_orig = set(pf_marine_2017_orig.index) | set(
-    pf_marine_2025_orig.index
-)
-families_in_both_habitats_globally = (
-    all_terrestrial_families_orig & all_marine_families_orig
-)
+all_marine_families_orig = set(pf_marine_2017_orig.index) | set(pf_marine_2025_orig.index)
+families_in_both_habitats_globally = all_terrestrial_families_orig & all_marine_families_orig
 
 if not families_in_both_habitats_globally:
     print(
@@ -112,34 +98,22 @@ def filter_df_by_families(df, families_to_keep):
 
 
 print("Filtering DataFrames to include only dual-habitat protein families...")
-toxprot_2017_df = filter_df_by_families(
-    toxprot_2017_df_orig, families_in_both_habitats_globally
-)
-toxprot_2025_df = filter_df_by_families(
-    toxprot_2025_df_orig, families_in_both_habitats_globally
-)
+toxprot_2017_df = filter_df_by_families(toxprot_2017_df_orig, families_in_both_habitats_globally)
+toxprot_2025_df = filter_df_by_families(toxprot_2025_df_orig, families_in_both_habitats_globally)
 
 print(f"Shape of toxprot_2017_df after filtering: {toxprot_2017_df.shape}")
 print(f"Shape of toxprot_2025_df after filtering: {toxprot_2025_df.shape}")
 
-if (
-    toxprot_2017_df.empty
-    and toxprot_2025_df.empty
-    and families_in_both_habitats_globally
-):
+if toxprot_2017_df.empty and toxprot_2025_df.empty and families_in_both_habitats_globally:
     print("Warning: Filtered DataFrames are empty.")
 
 # --- Step 3: Data Preparation (using filtered DataFrames) ---
 print("Preparing data using filtered DataFrames...")
-total_terrestrial_2017 = toxprot_2017_df[
-    toxprot_2017_df["Habitat"] == "terrestrial"
-].shape[0]
+total_terrestrial_2017 = toxprot_2017_df[toxprot_2017_df["Habitat"] == "terrestrial"].shape[0]
 total_marine_2017 = toxprot_2017_df[toxprot_2017_df["Habitat"] == "marine"].shape[0]
 total_2017_sum_filtered = total_terrestrial_2017 + total_marine_2017
 
-total_terrestrial_2025 = toxprot_2025_df[
-    toxprot_2025_df["Habitat"] == "terrestrial"
-].shape[0]
+total_terrestrial_2025 = toxprot_2025_df[toxprot_2025_df["Habitat"] == "terrestrial"].shape[0]
 total_marine_2025 = toxprot_2025_df[toxprot_2025_df["Habitat"] == "marine"].shape[0]
 total_2025_sum_filtered = total_terrestrial_2025 + total_marine_2025
 
@@ -150,9 +124,7 @@ pf_marine_2025 = get_protein_family_by_habitat(toxprot_2025_df, "marine")
 
 s_2017 = pf_terrestrial_2017.add(pf_marine_2017, fill_value=0)
 s_2025 = pf_terrestrial_2025.add(pf_marine_2025, fill_value=0)
-overall_total_counts_pf_filtered = s_2017.add(s_2025, fill_value=0).sort_values(
-    ascending=False
-)
+overall_total_counts_pf_filtered = s_2017.add(s_2025, fill_value=0).sort_values(ascending=False)
 top_families = overall_total_counts_pf_filtered.head(TOP_N_FAMILIES).index.tolist()
 
 if not top_families:
@@ -170,13 +142,9 @@ def plot_100_stacked_bar_habitat_vs_year_mpl():
     terrestrial_abs_counts = [total_terrestrial_2017, total_terrestrial_2025]
     marine_abs_counts = [total_marine_2017, total_marine_2025]
 
-    totals_for_percentages = np.array(
-        [total_2017_sum_filtered, total_2025_sum_filtered]
-    )
+    totals_for_percentages = np.array([total_2017_sum_filtered, total_2025_sum_filtered])
 
-    safe_totals_for_percentages = np.where(
-        totals_for_percentages == 0, 1, totals_for_percentages
-    )
+    safe_totals_for_percentages = np.where(totals_for_percentages == 0, 1, totals_for_percentages)
 
     terrestrial_percentages = (
         np.divide(
@@ -218,7 +186,8 @@ def plot_100_stacked_bar_habitat_vs_year_mpl():
             terrestrial_percentages,
             marine_percentages,
             terrestrial_abs_counts,
-            marine_abs_counts, strict=False,
+            marine_abs_counts,
+            strict=False,
         )
     ):
         if t_perc > 0 or t_abs > 0:
@@ -257,9 +226,7 @@ def plot_percentage_increase_by_habitat_mpl():
     abs_marine_2017 = total_marine_2017
     abs_marine_2025 = total_marine_2025
 
-    increase_terrestrial = calculate_percentage_increase(
-        abs_terrestrial_2017, abs_terrestrial_2025
-    )
+    increase_terrestrial = calculate_percentage_increase(abs_terrestrial_2017, abs_terrestrial_2025)
     increase_marine = calculate_percentage_increase(abs_marine_2017, abs_marine_2025)
 
     increases = [increase_terrestrial, increase_marine]
@@ -276,9 +243,7 @@ def plot_percentage_increase_by_habitat_mpl():
     ax.set_title(title, pad=20)
 
     for bar, inc, counts in zip(bars, increases, abs_counts_list, strict=False):
-        perc_text = (
-            f"{inc:.1f}%" if np.isfinite(inc) else "Inf" if inc == np.inf else "0%"
-        )
+        perc_text = f"{inc:.1f}%" if np.isfinite(inc) else "Inf" if inc == np.inf else "0%"
         abs_text = f"({counts[0]} → {counts[1]})"
         full_text = f"{perc_text}\n{abs_text}"
 
@@ -327,9 +292,7 @@ def plot_heatmap_percentage_increase_mpl():
         m_old = pf_marine_2017.get(family, 0)
         m_new = pf_marine_2025.get(family, 0)
 
-        heatmap_data.loc[family, "Terrestrial"] = calculate_percentage_increase(
-            t_old, t_new
-        )
+        heatmap_data.loc[family, "Terrestrial"] = calculate_percentage_increase(t_old, t_new)
         heatmap_data.loc[family, "Marine"] = calculate_percentage_increase(m_old, m_new)
 
     heatmap_data_numeric = heatmap_data.apply(pd.to_numeric, errors="coerce").fillna(0)
@@ -346,9 +309,7 @@ def plot_heatmap_percentage_increase_mpl():
 
     cell_size = 0.9
     max_family_name_len = (
-        max(len(name) for name in heatmap_plot_data.index)
-        if not heatmap_plot_data.empty
-        else 10
+        max(len(name) for name in heatmap_plot_data.index) if not heatmap_plot_data.empty else 10
     )
     estimated_y_label_width = max_family_name_len * 0.15
     fig_width = num_cols * cell_size + estimated_y_label_width + 5.0
@@ -451,19 +412,14 @@ def plot_diverging_bar_charts_protein_family_mpl():
     protein_family_summary["Terrestrial_2017"] = pf_terrestrial_2017.reindex(
         top_families, fill_value=0
     )
-    protein_family_summary["Marine_2017"] = pf_marine_2017.reindex(
-        top_families, fill_value=0
-    )
+    protein_family_summary["Marine_2017"] = pf_marine_2017.reindex(top_families, fill_value=0)
     protein_family_summary["Terrestrial_2025"] = pf_terrestrial_2025.reindex(
         top_families, fill_value=0
     )
-    protein_family_summary["Marine_2025"] = pf_marine_2025.reindex(
-        top_families, fill_value=0
-    )
+    protein_family_summary["Marine_2025"] = pf_marine_2025.reindex(top_families, fill_value=0)
 
     protein_family_summary["Terrestrial_Change_Abs"] = (
-        protein_family_summary["Terrestrial_2025"]
-        - protein_family_summary["Terrestrial_2017"]
+        protein_family_summary["Terrestrial_2025"] - protein_family_summary["Terrestrial_2017"]
     )
     protein_family_summary["Marine_Change_Abs"] = (
         protein_family_summary["Marine_2025"] - protein_family_summary["Marine_2017"]
@@ -473,13 +429,16 @@ def plot_diverging_bar_charts_protein_family_mpl():
         calculate_percentage_increase(old, new)
         for old, new in zip(
             protein_family_summary["Terrestrial_2017"],
-            protein_family_summary["Terrestrial_2025"], strict=False,
+            protein_family_summary["Terrestrial_2025"],
+            strict=False,
         )
     ]
     protein_family_summary["Marine_Change_Perc"] = [
         calculate_percentage_increase(old, new)
         for old, new in zip(
-            protein_family_summary["Marine_2017"], protein_family_summary["Marine_2025"], strict=False
+            protein_family_summary["Marine_2017"],
+            protein_family_summary["Marine_2025"],
+            strict=False,
         )
     ]
 
@@ -527,7 +486,9 @@ def plot_diverging_bar_charts_protein_family_mpl():
 
     ax_abs.xaxis.set_major_formatter(mticker.FuncFormatter(abs_formatter))
 
-    for i, (t_val, m_val) in enumerate(zip(terrestrial_values_abs, marine_values_abs, strict=False)):
+    for i, (t_val, m_val) in enumerate(
+        zip(terrestrial_values_abs, marine_values_abs, strict=False)
+    ):
         # Always draw text for t_val, even if 0
         ax_abs.text(
             t_val
@@ -549,8 +510,7 @@ def plot_diverging_bar_charts_protein_family_mpl():
                 0.01 * ax_abs.get_xlim()[1]
                 if m_val
                 >= 0  # Position to the left for 0 and positive marine values (plotted on negative side)
-                else -0.03
-                * ax_abs.get_xlim()[1]  # Further right for negative marine values
+                else -0.03 * ax_abs.get_xlim()[1]  # Further right for negative marine values
             ),
             y_pos_abs[i],
             f"{m_val}",
@@ -567,9 +527,7 @@ def plot_diverging_bar_charts_protein_family_mpl():
     )
 
     plt.tight_layout()
-    filepath_abs = (
-        FIGURE_OUTPUT_PATH / "6a_diverging_bar_abs_change_protein_family_mpl.png"
-    )
+    filepath_abs = FIGURE_OUTPUT_PATH / "6a_diverging_bar_abs_change_protein_family_mpl.png"
     plt.savefig(filepath_abs)
     print(f"Generated: {filepath_abs}")
     plt.close(fig_abs)
@@ -627,12 +585,11 @@ def plot_diverging_bar_charts_protein_family_mpl():
             terrestrial_original_perc,
             marine_original_perc,
             terrestrial_values_perc,
-            marine_values_perc, strict=False,
+            marine_values_perc,
+            strict=False,
         )
     ):
-        if pd.notna(
-            t_orig_perc
-        ):  # Draw if t_orig_perc is a valid number (including 0.0)
+        if pd.notna(t_orig_perc):  # Draw if t_orig_perc is a valid number (including 0.0)
             t_text = (
                 "Inf"
                 if np.isinf(t_orig_perc)
@@ -656,9 +613,7 @@ def plot_diverging_bar_charts_protein_family_mpl():
                 fontsize=8,
             )
 
-        if pd.notna(
-            m_orig_perc
-        ):  # Draw if m_orig_perc is a valid number (including 0.0)
+        if pd.notna(m_orig_perc):  # Draw if m_orig_perc is a valid number (including 0.0)
             m_text = (
                 "Inf"
                 if np.isinf(m_orig_perc)
@@ -670,17 +625,13 @@ def plot_diverging_bar_charts_protein_family_mpl():
                 -m_plot_perc  # Use plot_perc for position
                 - (
                     0.01 * ax_perc.get_xlim()[1]
-                    if m_plot_perc
-                    >= 0  # Position to the left for 0 and positive marine values
-                    else -0.03
-                    * ax_perc.get_xlim()[1]  # Further right for negative marine values
+                    if m_plot_perc >= 0  # Position to the left for 0 and positive marine values
+                    else -0.03 * ax_perc.get_xlim()[1]  # Further right for negative marine values
                 ),
                 y_pos_perc[i],
                 m_text,
                 va="center",
-                ha="right"
-                if m_plot_perc >= 0
-                else "left",  # Adjust ha for 0 on marine side
+                ha="right" if m_plot_perc >= 0 else "left",  # Adjust ha for 0 on marine side
                 fontsize=8,
             )
 
@@ -692,15 +643,15 @@ def plot_diverging_bar_charts_protein_family_mpl():
     )
 
     plt.tight_layout()
-    filepath_perc = (
-        FIGURE_OUTPUT_PATH / "6b_diverging_bar_perc_change_protein_family_mpl.png"
-    )
+    filepath_perc = FIGURE_OUTPUT_PATH / "6b_diverging_bar_perc_change_protein_family_mpl.png"
     plt.savefig(filepath_perc)
     print(f"Generated: {filepath_perc}")
     plt.close(fig_perc)
 
     # --- Plot 6c: Current Absolute Numbers (2025) with 2017 context ---
-    title_c = f"Top {len(protein_family_summary)} Protein Families: Absolute Numbers 2025 (Dual-Habitat)"
+    title_c = (
+        f"Top {len(protein_family_summary)} Protein Families: Absolute Numbers 2025 (Dual-Habitat)"
+    )
     y_labels_c = protein_family_summary.index  # Same sorted order
 
     terrestrial_values_2017 = protein_family_summary["Terrestrial_2017"]
@@ -717,13 +668,9 @@ def plot_diverging_bar_charts_protein_family_mpl():
 
     # Terrestrial bars (right side)
     # Portion of 2025 bar that was effectively present in 2017 (or full 2025 bar if count decreased)
-    t_existing_or_total_if_decrease = np.minimum(
-        terrestrial_values_2017, terrestrial_values_2025
-    )
+    t_existing_or_total_if_decrease = np.minimum(terrestrial_values_2017, terrestrial_values_2025)
     # Portion of 2025 bar that is new/added since 2017 (will be 0 if count decreased)
-    t_added_since_2017 = np.maximum(
-        0, terrestrial_values_2025 - terrestrial_values_2017
-    )
+    t_added_since_2017 = np.maximum(0, terrestrial_values_2025 - terrestrial_values_2017)
 
     ax_c.barh(
         y_pos_c,
@@ -741,9 +688,7 @@ def plot_diverging_bar_charts_protein_family_mpl():
 
     # Marine bars (left side, plotted with negative values)
     # Portion of 2025 bar that was effectively present in 2017 (or full 2025 bar if count decreased) - positive value
-    m_existing_or_total_if_decrease_positive = np.minimum(
-        marine_values_2017, marine_values_2025
-    )
+    m_existing_or_total_if_decrease_positive = np.minimum(marine_values_2017, marine_values_2025)
     # Portion of 2025 bar that is new/added since 2017 - positive value
     m_added_since_2017_positive = np.maximum(0, marine_values_2025 - marine_values_2017)
 
@@ -785,10 +730,7 @@ def plot_diverging_bar_charts_protein_family_mpl():
 
         # Terrestrial text (right)
         ax_c.text(
-            t_2025
-            + (
-                0.01 * ax_c.get_xlim()[1] if t_2025 >= 0 else -0.03 * ax_c.get_xlim()[1]
-            ),
+            t_2025 + (0.01 * ax_c.get_xlim()[1] if t_2025 >= 0 else -0.03 * ax_c.get_xlim()[1]),
             y_pos_c[i],
             f"{t_2017}→{t_2025}",
             va="center",
@@ -798,10 +740,7 @@ def plot_diverging_bar_charts_protein_family_mpl():
         )
         # Marine text (left)
         ax_c.text(
-            -m_2025
-            - (
-                0.01 * ax_c.get_xlim()[1] if m_2025 >= 0 else -0.03 * ax_c.get_xlim()[1]
-            ),
+            -m_2025 - (0.01 * ax_c.get_xlim()[1] if m_2025 >= 0 else -0.03 * ax_c.get_xlim()[1]),
             y_pos_c[i],
             f"{m_2017}→{m_2025}",
             va="center",
@@ -819,9 +758,7 @@ def plot_diverging_bar_charts_protein_family_mpl():
     )
 
     plt.tight_layout()
-    filepath_c = (
-        FIGURE_OUTPUT_PATH / "6c_diverging_bar_abs_numbers_protein_family_mpl.png"
-    )
+    filepath_c = FIGURE_OUTPUT_PATH / "6c_diverging_bar_abs_numbers_protein_family_mpl.png"
     plt.savefig(filepath_c)
     print(f"Generated: {filepath_c}")
     plt.close(fig_c)
@@ -841,9 +778,7 @@ def generate_dual_habitat_protein_counts_summary():
 
     summary_df = pd.concat([s_t_2017, s_m_2017, s_t_2025, s_m_2025], axis=1)
     summary_df = summary_df.fillna(0).astype(int)
-    summary_df = summary_df.reset_index().rename(
-        columns={"Protein families": "ProteinFamily"}
-    )
+    summary_df = summary_df.reset_index().rename(columns={"Protein families": "ProteinFamily"})
 
     if summary_df.empty:
         print(
@@ -863,11 +798,7 @@ def generate_dual_habitat_protein_counts_summary():
 if __name__ == "__main__":
     if not families_in_both_habitats_globally:
         print("Halting script: No dual-habitat protein families identified.")
-    elif (
-        toxprot_2017_df.empty
-        and toxprot_2025_df.empty
-        and families_in_both_habitats_globally
-    ):
+    elif toxprot_2017_df.empty and toxprot_2025_df.empty and families_in_both_habitats_globally:
         print(
             "Halting script: Filtered DataFrames for dual-habitat families are empty. Cannot generate meaningful plots."
         )

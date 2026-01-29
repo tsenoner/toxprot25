@@ -265,9 +265,7 @@ def _calculate_statistics(df):
     # Fragments
     df_copy = df.copy()
     df_copy["Fragment"] = df_copy["Fragment"].astype(str)
-    fragment_count = (
-        df_copy["Fragment"].str.contains("fragment", case=False, na=False).sum()
-    )
+    fragment_count = df_copy["Fragment"].str.contains("fragment", case=False, na=False).sum()
     fragment_percentage = (fragment_count / total_count) * 100 if total_count > 0 else 0
 
     # PTM annotations

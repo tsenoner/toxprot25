@@ -54,9 +54,7 @@ def generate_fasta_files(interim_tsv: Path, output_dir: Path, year: str = "2025"
 
     # Read interim TSV
     print(f"Reading {interim_tsv}...")
-    df = pd.read_csv(
-        interim_tsv, sep="\t", usecols=["Entry", "Sequence", "Signal peptide (range)"]
-    )
+    df = pd.read_csv(interim_tsv, sep="\t", usecols=["Entry", "Sequence", "Signal peptide (range)"])
     print(f"Loaded {len(df)} entries")
 
     # Output files

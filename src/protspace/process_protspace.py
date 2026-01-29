@@ -110,8 +110,7 @@ def process_variant(
         return False
 
     cmd_style = (
-        f"protspace-feature-colors --feature_styles {style_file} "
-        f"{output_json} {styled_json}"
+        f"protspace-feature-colors --feature_styles {style_file} {output_json} {styled_json}"
     )
 
     if not run_command(cmd_style):
@@ -172,12 +171,9 @@ def main():
         {
             "name": "Top 15 families (mature, no fragments)",
             "h5": protspace_dir / f"toxprot_{year}_top15_mature_no_fragments.h5",
-            "metadata": protspace_dir
-            / f"metadata_{year}_top15_mature_no_fragments.csv",
-            "output": protspace_dir
-            / f"protspace_{year}_top15_mature_no_fragments.json",
-            "styled": protspace_dir
-            / f"protspace_{year}_top15_mature_no_fragments_style.json",
+            "metadata": protspace_dir / f"metadata_{year}_top15_mature_no_fragments.csv",
+            "output": protspace_dir / f"protspace_{year}_top15_mature_no_fragments.json",
+            "styled": protspace_dir / f"protspace_{year}_top15_mature_no_fragments_style.json",
         },
     ]
 

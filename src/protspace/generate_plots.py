@@ -100,8 +100,7 @@ def main():
         },
         {
             "title": "ToxProt 2025 - Top 15 Families (Mature, No Fragments)",
-            "input": protspace_dir
-            / f"protspace_{year}_top15_mature_no_fragments_style.json",
+            "input": protspace_dir / f"protspace_{year}_top15_mature_no_fragments_style.json",
             "output": figures_dir / f"{year}_top15_mature_no_fragments.png",
         },
     ]

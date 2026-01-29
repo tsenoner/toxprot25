@@ -6,7 +6,7 @@ from src.analysis.cli import analysis
 from src.data_processing.cli import data
 
 
-@click.group(context_settings={'help_option_names': ['-h', '--help']})
+@click.group(context_settings={"help_option_names": ["-h", "--help"]})
 @click.version_option(version="0.1.0", prog_name="toxprot")
 def cli():
     """ToxProt - Animal toxin protein data processing toolkit.

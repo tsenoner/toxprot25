@@ -38,7 +38,7 @@ def validate_years(ctx, param, value):
     return sorted(set(years))
 
 
-@click.group(context_settings={'help_option_names': ['-h', '--help']})
+@click.group(context_settings={"help_option_names": ["-h", "--help"]})
 def data():
     """Data processing commands."""
     pass
@@ -106,7 +106,9 @@ def data():
     default=False,
     help="Enable verbose logging.",
 )
-def pipeline(years, raw_dir, interim_dir, processed_dir, data_dir, keep_raw, keep_tsv, force, verbose):
+def pipeline(
+    years, raw_dir, interim_dir, processed_dir, data_dir, keep_raw, keep_tsv, force, verbose
+):
     """Run the unified data processing pipeline.
 
     Downloads UniProt releases, parses them to extract toxin proteins,
@@ -439,7 +441,9 @@ def clean(input_dir, output_dir, years, data_dir):
         df = process_dataframe_with_taxonomy(interim_csv_path, processed_csv_path, taxdb)
 
         # Step 3: Add habitat classification
-        df = add_habitat_classification(processed_csv_path, habitat_mapping_path, habitat_detailed_path)
+        df = add_habitat_classification(
+            processed_csv_path, habitat_mapping_path, habitat_detailed_path
+        )
 
         # Move FASTA to output directory
         interim_fasta_path.rename(processed_fasta_path)

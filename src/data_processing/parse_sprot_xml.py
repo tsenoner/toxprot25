@@ -165,9 +165,7 @@ class SwissProtXMLParser:
                 entry_data["Organism"] = org_str
 
             # Taxonomy ID
-            tax_ref = organism_elem.find(
-                self._tag("dbReference") + "[@type='NCBI Taxonomy']"
-            )
+            tax_ref = organism_elem.find(self._tag("dbReference") + "[@type='NCBI Taxonomy']")
             if tax_ref is not None:
                 entry_data["Organism (ID)"] = tax_ref.get("id", "")
 
@@ -327,16 +325,16 @@ class SwissProtXMLParser:
             ptm_name = FEATURE_TYPE_MAP.get(ftype)
             if ptm_name:
                 description = feature.get("description", "")
-                evidence_str = self._resolve_evidence(
-                    feature.get("evidence", ""), evidence_map
-                )
+                evidence_str = self._resolve_evidence(feature.get("evidence", ""), evidence_map)
                 position = self._extract_position(feature)
 
-                ptm_features[ptm_name].append({
-                    "position": position,
-                    "note": description,
-                    "evidence": evidence_str,
-                })
+                ptm_features[ptm_name].append(
+                    {
+                        "position": position,
+                        "note": description,
+                        "evidence": evidence_str,
+                    }
+                )
 
         # Process PTM data
         self._process_ptm_data(entry_data, ptm_features)
@@ -493,9 +491,7 @@ class SwissProtXMLParser:
             family_text = re.sub(
                 r"\s*\{ECO:[^\}]+\}\.?", "", entry_data["Protein families"]
             ).strip()
-            match_belongs = re.search(
-                r"belongs to the\s+(.+)", family_text, re.IGNORECASE
-            )
+            match_belongs = re.search(r"belongs to the\s+(.+)", family_text, re.IGNORECASE)
             if match_belongs:
                 processed_family_text = match_belongs.group(1)
             else:
@@ -508,9 +504,7 @@ class SwissProtXMLParser:
 
             stripped_text = processed_family_text.strip()
             if stripped_text:
-                entry_data["Protein families"] = (
-                    stripped_text[0].upper() + stripped_text[1:]
-                )
+                entry_data["Protein families"] = stripped_text[0].upper() + stripped_text[1:]
             else:
                 entry_data["Protein families"] = stripped_text
 
@@ -527,10 +521,10 @@ def detect_namespace(input_file):
     Returns:
         Namespace string in "{uri}" format, or "" if none found.
     """
-    for event, elem in ET.iterparse(str(input_file), events=("start",)):
+    for _event, elem in ET.iterparse(str(input_file), events=("start",)):
         tag = elem.tag
         if tag.startswith("{"):
-            ns_uri = tag[1:tag.index("}")]
+            ns_uri = tag[1 : tag.index("}")]
             return f"{{{ns_uri}}}"
         return ""
     return ""

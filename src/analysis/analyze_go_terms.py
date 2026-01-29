@@ -186,15 +186,9 @@ def generate_go_counts_comparison_table():
 
     # Create comparison DataFrame
     comparison_df = pd.DataFrame(index=sorted(all_terms))
-    comparison_df["2017_count"] = go_counts_2017.reindex(
-        comparison_df.index, fill_value=0
-    )
-    comparison_df["2025_count"] = go_counts_2025.reindex(
-        comparison_df.index, fill_value=0
-    )
-    comparison_df["absolute_change"] = (
-        comparison_df["2025_count"] - comparison_df["2017_count"]
-    )
+    comparison_df["2017_count"] = go_counts_2017.reindex(comparison_df.index, fill_value=0)
+    comparison_df["2025_count"] = go_counts_2025.reindex(comparison_df.index, fill_value=0)
+    comparison_df["absolute_change"] = comparison_df["2025_count"] - comparison_df["2017_count"]
     comparison_df["percentage_change"] = [
         calculate_percentage_change(old, new)
         for old, new in zip(comparison_df["2017_count"], comparison_df["2025_count"], strict=False)

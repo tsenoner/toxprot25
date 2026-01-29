@@ -73,9 +73,7 @@ def create_metadata_variants(
 
     # Read interim TSV to get signal peptide information
     print(f"Reading signal peptide info from {interim_tsv}...")
-    df_interim = pd.read_csv(
-        interim_tsv, sep="\t", usecols=["Entry", "Signal peptide (range)"]
-    )
+    df_interim = pd.read_csv(interim_tsv, sep="\t", usecols=["Entry", "Signal peptide (range)"])
 
     # Merge signal peptide information
     df = df.merge(df_interim, on="Entry", how="left")
@@ -84,14 +82,10 @@ def create_metadata_variants(
     df = df.rename(columns={"Entry": "identifier"})
 
     # Add 'has_signal_peptide' column (yes/no)
-    df["has_signal_peptide"] = (
-        df["Signal peptide (range)"].notna().map({True: "yes", False: "no"})
-    )
+    df["has_signal_peptide"] = df["Signal peptide (range)"].notna().map({True: "yes", False: "no"})
 
     # Add 'has_fragment' column (yes/no)
-    df["has_fragment"] = (df["Fragment"].astype(str) == "fragment").map(
-        {True: "yes", False: "no"}
-    )
+    df["has_fragment"] = (df["Fragment"].astype(str) == "fragment").map({True: "yes", False: "no"})
 
     # Process protein families to get top 15
     df = process_top_n_families(df, "Protein families", top_n=15)
@@ -112,9 +106,7 @@ def create_metadata_variants(
     print(f"\n1. All data: {len(df_all)} entries → {output_all}")
 
     # Variant 2: Top 15 only (exclude NaN and Other)
-    df_top15 = df[
-        df["Protein families"].notna() & (df["Protein families"] != "Other")
-    ].copy()
+    df_top15 = df[df["Protein families"].notna() & (df["Protein families"] != "Other")].copy()
     output_top15 = output_dir / f"metadata_{year}_top15.csv"
 
     # Keep columns (still has has_fragment and has_signal_peptide as filtering hasn't been applied yet)
@@ -153,9 +145,7 @@ def create_metadata_variants(
         & (df["Protein families"] != "Other")
         & (df["has_fragment"] == "no")
     ].copy()
-    output_top15_mature_no_frag = (
-        output_dir / f"metadata_{year}_top15_mature_no_fragments.csv"
-    )
+    output_top15_mature_no_frag = output_dir / f"metadata_{year}_top15_mature_no_fragments.csv"
 
     # Remove has_fragment since filtered, keep has_signal_peptide for reference
     columns_top15_mature_no_frag = [
