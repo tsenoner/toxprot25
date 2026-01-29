@@ -218,3 +218,66 @@ def families(data_dir, output_dir, definition, top_n):
     generate_summary_table(datasets, summary_table_path)
 
     click.echo("\nDone!")
+
+
+@analysis.command()
+@click.option(
+    "--data-dir",
+    type=click.Path(exists=True, path_type=Path),
+    default=Path("data/processed/toxprot"),
+    show_default=True,
+    help="Directory containing processed CSV files.",
+)
+@click.option(
+    "--output-dir",
+    "-o",
+    type=click.Path(path_type=Path),
+    default=Path("figures/ptm"),
+    show_default=True,
+    help="Directory to save output figures.",
+)
+@click.option(
+    "--year-old",
+    type=int,
+    default=2017,
+    show_default=True,
+    help="Older year for comparison.",
+)
+@click.option(
+    "--year-new",
+    type=int,
+    default=2025,
+    show_default=True,
+    help="Newer year for comparison.",
+)
+@click.option(
+    "--top-n",
+    type=int,
+    default=5,
+    show_default=True,
+    help="Number of top PTM types to show in bar chart.",
+)
+def ptm(data_dir, output_dir, year_old, year_new, top_n):
+    """Run PTM (post-translational modification) analysis.
+
+    Compares PTM frequencies and distributions between two years.
+
+    \b
+    Examples:
+        toxprot analysis ptm
+        toxprot analysis ptm --year-old 2010 --year-new 2020
+        toxprot analysis ptm --top-n 8
+    """
+    from .analyze_ptm import create_combined_figure, generate_summary_table, load_data
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    click.echo(f"Loading {year_old} and {year_new} datasets...")
+    df_old = load_data(data_dir / f"toxprot_{year_old}.csv")
+    df_new = load_data(data_dir / f"toxprot_{year_new}.csv")
+
+    click.echo("Generating PTM analysis figures...")
+    create_combined_figure(df_old, df_new, output_dir, year_old, year_new, top_n=top_n)
+    generate_summary_table(df_old, df_new, output_dir, year_old, year_new)
+
+    click.echo(f"Done! Output saved to {output_dir}")
