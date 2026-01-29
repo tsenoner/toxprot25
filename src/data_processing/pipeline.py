@@ -22,6 +22,7 @@ Usage:
 
 import logging
 import sys
+from concurrent.futures import Future, ThreadPoolExecutor
 
 from .clean_data import (
     add_habitat_classification,
@@ -74,11 +75,12 @@ def setup_logging(verbose: bool = False) -> None:
 
     # Configure handler
     handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(logging.Formatter(
-        "%(asctime)s %(levelname)s [%(name)s] - %(message)s" if verbose
-        else "%(message)s",
-        datefmt="%H:%M:%S"
-    ))
+    handler.setFormatter(
+        logging.Formatter(
+            "%(asctime)s %(levelname)s [%(name)s] - %(message)s" if verbose else "%(message)s",
+            datefmt="%H:%M:%S",
+        )
+    )
     root_logger.addHandler(handler)
 
     # Set pipeline logger to INFO by default, DEBUG if verbose
@@ -138,7 +140,9 @@ def process_single_year(
         # Stage 1: Download
         if not xml_path.exists():
             if not download_release(year, config.raw_dir, keep_archive=False, file_format="xml"):
-                return YearResult(year=year, success=False, stage_completed="download", error="Download failed")
+                return YearResult(
+                    year=year, success=False, stage_completed="download", error="Download failed"
+                )
         else:
             log.debug("Using existing .xml file")
 
@@ -146,7 +150,9 @@ def process_single_year(
         if not tsv_path.exists() or not config.skip_existing:
             config.interim_dir.mkdir(parents=True, exist_ok=True)
             if not process_xml_file(xml_path, tsv_path):
-                return YearResult(year=year, success=False, stage_completed="parse", error="Parsing failed")
+                return YearResult(
+                    year=year, success=False, stage_completed="parse", error="Parsing failed"
+                )
         else:
             log.debug("Using existing .tsv file")
 
@@ -182,7 +188,9 @@ def process_single_year(
         entries_count = len(df) if df is not None else 0
         log.info(f"✓ {entries_count:,} entries")
 
-        return YearResult(year=year, success=True, stage_completed="complete", entries_count=entries_count)
+        return YearResult(
+            year=year, success=True, stage_completed="complete", entries_count=entries_count
+        )
 
     except Exception as e:
         log.error(f"Error: {e}")
@@ -215,32 +223,78 @@ def run_pipeline(config: PipelineConfig) -> list[YearResult]:
     year_range = f"{min(config.years)}-{max(config.years)}"
     logger.info(f"ToxProt Pipeline: Processing {len(config.years)} years ({year_range})")
     logger.debug("=" * 60)
-    logger.debug(f"Directories: raw={config.raw_dir}, interim={config.interim_dir}, processed={config.processed_dir}")
-    logger.debug(f"Options: delete_raw={config.delete_raw_files}, delete_tsv={config.delete_tsv_files}, skip_existing={config.skip_existing}")
+    logger.debug(
+        f"Directories: raw={config.raw_dir}, interim={config.interim_dir}, processed={config.processed_dir}"
+    )
+    logger.debug(
+        f"Options: delete_raw={config.delete_raw_files}, delete_tsv={config.delete_tsv_files}, skip_existing={config.skip_existing}"
+    )
     logger.debug("=" * 60)
 
     # Initialize shared resources
     logger.debug("Initializing taxonomy database...")
     taxdb = initialize_taxdb()
 
-    # Process each year
+    # Process each year with parallel download-ahead
     results = []
-    for year in sorted(config.years):
-        if config.skip_existing and is_year_complete(year, config):
-            # Read cached entry count
-            csv_path = config.processed_dir / f"toxprot_{year}.csv"
-            try:
-                import pandas as pd
-                entries_count = len(pd.read_csv(csv_path))
-                logger.info(f"[{year}] ✓ {entries_count:,} entries (cached)")
-            except Exception:
-                entries_count = None
-                logger.info(f"[{year}] ✓ cached")
+    years = sorted(config.years)
 
-            results.append(YearResult(year=year, success=True, stage_completed="complete", entries_count=entries_count))
-            continue
+    # Single-thread executor for download-ahead
+    with ThreadPoolExecutor(max_workers=1) as download_executor:
+        pending_download: Future | None = None
 
-        results.append(process_single_year(year, config, taxdb))
+        for i, year in enumerate(years):
+            # Wait for this year's download if it was started ahead
+            if pending_download is not None:
+                try:
+                    pending_download.result()  # Block until download complete
+                except Exception as e:
+                    logger.debug(
+                        f"[{years[i]}] Pre-download failed: {e}, will retry in process_single_year"
+                    )
+                pending_download = None
+
+            # Start download for NEXT year in background (if exists and not cached)
+            if i + 1 < len(years):
+                next_year = years[i + 1]
+                # Only pre-download if next year needs processing
+                if not (config.skip_existing and is_year_complete(next_year, config)):
+                    next_xml_path = config.raw_dir / f"{next_year}_sprot.xml"
+                    if not next_xml_path.exists():
+                        logger.debug(f"[{next_year}] Pre-downloading in background...")
+                        pending_download = download_executor.submit(
+                            download_release,
+                            next_year,
+                            config.raw_dir,
+                            keep_archive=False,
+                            file_format="xml",
+                        )
+
+            # Check if year is already complete (cached)
+            if config.skip_existing and is_year_complete(year, config):
+                # Read cached entry count
+                csv_path = config.processed_dir / f"toxprot_{year}.csv"
+                try:
+                    import pandas as pd
+
+                    entries_count = len(pd.read_csv(csv_path))
+                    logger.info(f"[{year}] ✓ {entries_count:,} entries (cached)")
+                except Exception:
+                    entries_count = None
+                    logger.info(f"[{year}] ✓ cached")
+
+                results.append(
+                    YearResult(
+                        year=year,
+                        success=True,
+                        stage_completed="complete",
+                        entries_count=entries_count,
+                    )
+                )
+                continue
+
+            # Process current year (download if needed, then parse, then clean)
+            results.append(process_single_year(year, config, taxdb))
 
     # Summary
     successful = sum(1 for r in results if r.success)
@@ -262,4 +316,5 @@ def run_pipeline(config: PipelineConfig) -> list[YearResult]:
 if __name__ == "__main__":
     # When run as module, use the click CLI
     from .cli import pipeline as pipeline_cmd
+
     pipeline_cmd()
