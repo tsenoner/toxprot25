@@ -82,7 +82,6 @@ def taxa(ctx, data_dir, output_dir):
         load_datasets,
         plot_taxa_newcomers,
         plot_top_taxa_area,
-        plot_top_taxa_distribution,
         plot_top_taxa_trend,
     )
 
@@ -100,9 +99,6 @@ def taxa(ctx, data_dir, output_dir):
 
     if len(datasets) < 2:
         raise click.ClickException("Need at least 2 datasets to generate plots")
-
-    click.echo("\nGenerating top taxa distribution plot...")
-    plot_top_taxa_distribution(datasets, output_dir / "top_taxa_distribution")
 
     click.echo("\nGenerating top taxa trend plot...")
     plot_top_taxa_trend(datasets, output_dir / "top_taxa_trend")
@@ -326,3 +322,52 @@ def ptm(ctx, data_dir, output_dir, years, top_n, trends):
         plot_ptm_trends(all_datasets, output_dir, top_n=top_n)
 
     click.echo(f"Done! Output saved to {output_dir}")
+
+
+@analysis.command()
+@click.option(
+    "--data-dir",
+    type=click.Path(exists=True, path_type=Path),
+    default=Path("data/processed/toxprot"),
+    show_default=True,
+    help="Directory containing processed CSV files.",
+)
+@click.option(
+    "--output-dir",
+    "-o",
+    type=click.Path(path_type=Path),
+    default=Path("figures/definitions"),
+    show_default=True,
+    help="Directory to save output figures.",
+)
+@click.option(
+    "--year",
+    type=int,
+    default=2025,
+    show_default=True,
+    help="Year of dataset to analyze.",
+)
+def definitions(data_dir, output_dir, year):
+    """Compare ToxProt definition categories.
+
+    Creates a two-panel figure comparing entries by their ToxProt definition:
+    - Panel A: Alluvial diagram showing taxonomic coverage
+    - Panel B: Venn diagram showing entry overlap
+
+    \b
+    Examples:
+        toxprot analysis definitions
+        toxprot analysis definitions --year 2024
+        toxprot analysis definitions -o figures/custom_dir
+    """
+    from .analyze_definitions import create_definition_comparison_figure
+
+    filepath = data_dir / f"toxprot_{year}.csv"
+    if not filepath.exists():
+        raise click.ClickException(f"File not found: {filepath}")
+
+    df = pd.read_csv(filepath)
+    click.echo(f"Loaded {len(df):,} entries from {year}")
+
+    create_definition_comparison_figure(df, output_dir)
+    click.echo(f"Saved to {output_dir}")
