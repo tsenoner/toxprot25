@@ -239,89 +239,43 @@ def families(ctx, data_dir, output_dir, top_n):
     show_default=True,
     help="Comma-separated years for comparison (e.g., '2005,2015,2025').",
 )
-@click.option(
-    "--top-n",
-    type=int,
-    default=10,
-    show_default=True,
-    help="Number of top PTM types to show in bar chart.",
-)
-@click.option(
-    "--trends/--no-trends",
-    default=True,
-    show_default=True,
-    help="Generate trend plot across all years (2005-2025).",
-)
 @click.pass_context
-def ptm(ctx, data_dir, output_dir, years, top_n, trends):
+def ptm(ctx, data_dir, output_dir, years):
     """Run PTM (post-translational modification) analysis.
 
-    Compares PTM frequencies and distributions across multiple time points
-    (default: 2005, 2015, 2025 for 10-year intervals). Optionally generates
-    a trend plot showing PTM changes across all available years.
+    Creates a two-panel overview figure comparing PTM frequencies and
+    distributions across multiple time points (default: 2005, 2015, 2025).
 
     \b
     Examples:
         toxprot analysis ptm
         toxprot analysis -d all ptm
         toxprot analysis ptm --years 2010,2020
-        toxprot analysis ptm --no-trends
     """
-    from .analyze_ptm import (
-        YEARS,
-        create_combined_figure,
-        generate_summary_table,
-        load_data,
-        plot_ptm_trends,
-    )
+    from .analyze_ptm import create_combined_figure, load_data
 
     definition = ctx.obj["definition"]
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Parse years for main comparison
     year_list = [int(y.strip()) for y in years.split(",")]
 
-    click.echo(f"Loading datasets for years: {', '.join(str(y) for y in year_list)}...")
     datasets = {}
     for year in year_list:
         filepath = data_dir / f"toxprot_{year}.csv"
         if not filepath.exists():
             raise click.ClickException(f"File not found: {filepath}")
         datasets[year] = load_data(filepath)
-        click.echo(f"  {year}: {len(datasets[year]):,} entries")
 
     if definition != "all":
-        click.echo(f"Filtering by definition: {definition}")
         datasets = {year: filter_by_definition(df, definition) for year, df in datasets.items()}
         datasets = {year: df for year, df in datasets.items() if len(df) > 0}
 
     if len(datasets) < 2:
         raise click.ClickException("Need at least 2 datasets after filtering")
 
-    click.echo("Generating PTM analysis figures...")
-    create_combined_figure(datasets, output_dir, top_n=top_n)
-    generate_summary_table(datasets, output_dir)
-
-    # Generate trend plot with all years
-    if trends:
-        click.echo("Loading all years for trend plot...")
-        all_datasets = {}
-        for year_str in YEARS:
-            year = int(year_str)
-            filepath = data_dir / f"toxprot_{year}.csv"
-            if filepath.exists():
-                if year in datasets:
-                    all_datasets[year] = datasets[year]  # Reuse already loaded (already filtered)
-                else:
-                    df = load_data(filepath)
-                    if definition != "all":
-                        df = filter_by_definition(df, definition)
-                    if len(df) > 0:
-                        all_datasets[year] = df
-        click.echo(f"  Loaded {len(all_datasets)} years")
-        plot_ptm_trends(all_datasets, output_dir, top_n=top_n)
-
-    click.echo(f"Done! Output saved to {output_dir}")
+    click.echo(f"Loaded {sum(len(df) for df in datasets.values()):,} entries")
+    create_combined_figure(datasets, output_dir)
+    click.echo(f"Saved to {output_dir}")
 
 
 @analysis.command()
