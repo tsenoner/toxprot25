@@ -5,14 +5,29 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
+from matplotlib.offsetbox import AnnotationBbox, OffsetImage
+from PIL import Image
 
 # --- Configuration ---
 DATA_DIR = Path("data/processed/toxprot")
 FIGURES_DIR = Path("figures/taxa")
+SILHOUETTE_DIR = Path("data/raw/PhyloPic/png")
 YEARS = [str(y) for y in range(2005, 2026)]
 
 # Colors for stacked bar chart
 COLORS = ["tab:blue", "tab:orange", "tab:green", "tab:red", "tab:purple", "silver"]
+
+# Silhouette mapping: taxa order -> image base name
+SILHOUETTE_MAP = {
+    "Squamata": "Cobra",
+    "Araneae": "Spider",
+    "Neogastropoda": "Conus",
+    "Scorpiones": "Scorpion",
+    "Hymenoptera": "Hymenoptera",
+}
+
+# Silhouettes for "Others" category
+OTHERS_SILHOUETTES = ["Medusa2", "Annelida", "Scolopendra", "Moth"]
 
 # Common names for newcomer taxa orders
 ORDER_COMMON_NAMES = {
@@ -31,6 +46,25 @@ ORDER_COMMON_NAMES = {
 }
 
 
+def load_silhouette(name: str, color: str = "black") -> Image.Image | None:
+    """Load a silhouette PNG image by name."""
+    candidates = [
+        SILHOUETTE_DIR / f"{name}.png",
+        SILHOUETTE_DIR / f"{name}_{color}.png",
+    ]
+    for path in candidates:
+        if path.exists():
+            return Image.open(path)
+    return None
+
+
+def get_silhouette(order: str, color: str = "black") -> Image.Image | None:
+    """Get silhouette image for a taxa order."""
+    if order not in SILHOUETTE_MAP:
+        return None
+    return load_silhouette(SILHOUETTE_MAP[order], color)
+
+
 def load_datasets(years: list[str], data_dir: Path = DATA_DIR) -> dict[str, pd.DataFrame]:
     """Load ToxProt datasets for specified years."""
     datasets = {}
@@ -42,14 +76,6 @@ def load_datasets(years: list[str], data_dir: Path = DATA_DIR) -> dict[str, pd.D
         else:
             print(f"  Warning: {filepath} not found, skipping")
     return datasets
-
-
-def get_top_taxa_counts(df: pd.DataFrame, taxa_column: str = "Order", top_n: int = 5) -> dict:
-    """Get top N taxa counts with remaining grouped as 'Others'."""
-    taxa_counts = df[taxa_column].value_counts()
-    top_taxa = taxa_counts.nlargest(top_n)
-    others_count = taxa_counts[~taxa_counts.index.isin(top_taxa.index)].sum()
-    return {**top_taxa.to_dict(), "Others": others_count}
 
 
 def get_taxa_newcomers(
@@ -66,11 +92,9 @@ def plot_top_taxa_distribution(
     datasets: dict[str, pd.DataFrame], output_path: Path, reference_year: str = "2025"
 ):
     """Create stacked bar chart of top taxa distribution across years."""
-    # Get top 5 orders from reference year (2025) for consistency
     ref_df = datasets[reference_year]
     top_orders = ref_df["Order"].value_counts().nlargest(5).index.tolist()
 
-    # Calculate counts for each year using consistent categories
     taxa_data = {}
     for year, df in datasets.items():
         counts = df["Order"].value_counts()
@@ -87,7 +111,7 @@ def plot_top_taxa_distribution(
     ax.set_ylabel("Count", fontsize=18)
     ax.tick_params(axis="x", rotation=45, labelsize=14)
     ax.tick_params(axis="y", labelsize=16)
-    # Show every second x-tick label to avoid overlap
+
     for i, label in enumerate(ax.get_xticklabels()):
         if i % 2 != 0:
             label.set_visible(False)
@@ -100,7 +124,6 @@ def plot_top_taxa_distribution(
         title_fontsize=16,
     )
 
-    # Add percentage labels to each segment
     total_counts = plot_df.sum(axis=1)
     for container in ax.containers:
         percentages = []
@@ -118,7 +141,6 @@ def plot_top_taxa_distribution(
     ax.grid(axis="y", linestyle="--", alpha=0.7, zorder=0)
     fig.tight_layout()
 
-    # Save both formats
     plt.savefig(output_path.with_suffix(".png"), dpi=300, bbox_inches="tight")
     plt.savefig(output_path.with_suffix(".svg"), bbox_inches="tight")
     plt.close()
@@ -128,14 +150,14 @@ def plot_top_taxa_distribution(
 
 
 def plot_top_taxa_trend(
-    datasets: dict[str, pd.DataFrame], output_path: Path, reference_year: str = "2025"
+    datasets: dict[str, pd.DataFrame],
+    output_path: Path,
+    reference_year: str = "2025",
 ):
-    """Create line plot showing taxa trends over time."""
-    # Get top 5 orders from reference year for consistency
+    """Create line plot showing taxa trends over time with silhouettes."""
     ref_df = datasets[reference_year]
     top_orders = ref_df["Order"].value_counts().nlargest(5).index.tolist()
 
-    # Calculate counts for each year
     taxa_data = {}
     for year, df in datasets.items():
         counts = df["Order"].value_counts()
@@ -146,16 +168,36 @@ def plot_top_taxa_trend(
     plot_df.index = plot_df.index.astype(int)
 
     fig, ax = plt.subplots(figsize=(10, 7))
-    fig.subplots_adjust(right=0.78)
+    fig.subplots_adjust(right=0.72)
 
-    # Plot each order as a line
+    # =================================================================
+    # SILHOUETTE CONFIGURATION
+    # x_offset/y_offset: position in points, zoom: scale, rotation: degrees
+    # =================================================================
+    silhouette_config = {
+        "Squamata": {"x_offset": 80, "y_offset": -10, "zoom": 0.04, "rotation": 0},
+        "Araneae": {"x_offset": 45, "y_offset": 35, "zoom": 0.25, "rotation": -90},
+        "Neogastropoda": {"x_offset": 45, "y_offset": -20, "zoom": 0.045, "rotation": 90},
+        "Scorpiones": {"x_offset": 100, "y_offset": 0, "zoom": 0.175, "rotation": 0},
+        "Hymenoptera": {"x_offset": 45, "y_offset": -35, "zoom": 0.35, "rotation": -15},
+        # Others silhouettes
+        "Medusa2": {"x_offset": 15, "y_offset": -35, "zoom": 0.030, "rotation": 0},
+        "Annelida": {"x_offset": 45, "y_offset": -35, "zoom": 0.020, "rotation": 0},
+        "Scolopendra": {"x_offset": 60, "y_offset": -35, "zoom": 0.030, "rotation": 0},
+        "Moth": {"x_offset": 90, "y_offset": -35, "zoom": 0.025, "rotation": 0},
+    }
+
     for i, order in enumerate(plot_df.columns):
         color = COLORS[i] if i < len(COLORS) else f"C{i}"
         ax.plot(plot_df.index, plot_df[order], marker="o", markersize=8, linewidth=2.5, color=color)
-        # Add label outside the axes, aligned to the last data point
+
+        last_value = plot_df[order].iloc[-1]
+        config = silhouette_config.get(order, {"x_offset": 45, "y_offset": -35, "zoom": 0.045})
+
+        # Add text label
         ax.annotate(
             order,
-            xy=(1.0, plot_df[order].iloc[-1]),
+            xy=(1.0, last_value),
             xycoords=("axes fraction", "data"),
             xytext=(8, 0),
             textcoords="offset points",
@@ -166,13 +208,52 @@ def plot_top_taxa_trend(
             clip_on=False,
         )
 
+        # Add silhouette
+        silhouette = get_silhouette(order, "black")
+        if silhouette is not None:
+            rotation = config.get("rotation", 0)
+            if rotation != 0:
+                silhouette = silhouette.rotate(rotation, expand=True, resample=Image.BICUBIC)
+            imagebox = OffsetImage(silhouette, zoom=config["zoom"])
+            ab = AnnotationBbox(
+                imagebox,
+                (1.0, last_value),
+                xycoords=("axes fraction", "data"),
+                xybox=(config["x_offset"], config["y_offset"]),
+                boxcoords="offset points",
+                frameon=False,
+                box_alignment=(0.5, 0.5),
+                clip_on=False,
+            )
+            ax.add_artist(ab)
+        elif order == "Others":
+            # Display multiple silhouettes for "Others"
+            for name in OTHERS_SILHOUETTES:
+                cfg = silhouette_config.get(name, {"x_offset": 45, "y_offset": -30, "zoom": 0.025})
+                other_img = load_silhouette(name, "black")
+                if other_img is not None:
+                    rotation = cfg.get("rotation", 0)
+                    if rotation != 0:
+                        other_img = other_img.rotate(rotation, expand=True, resample=Image.BICUBIC)
+                    imagebox = OffsetImage(other_img, zoom=cfg["zoom"])
+                    ab = AnnotationBbox(
+                        imagebox,
+                        (1.0, last_value),
+                        xycoords=("axes fraction", "data"),
+                        xybox=(cfg["x_offset"], cfg["y_offset"]),
+                        boxcoords="offset points",
+                        frameon=False,
+                        box_alignment=(0.5, 0.5),
+                        clip_on=False,
+                    )
+                    ax.add_artist(ab)
+
     ax.set_title("Growth of Top Taxa Orders in ToxProt Over Time", fontsize=18)
     ax.set_xlabel("Year", fontsize=14)
     ax.set_ylabel("Number of Entries", fontsize=14)
     ax.set_xticks(plot_df.index[::2])
     ax.set_ylim(bottom=0)
     ax.tick_params(axis="both", labelsize=12)
-
     ax.grid(axis="y", linestyle="--", alpha=0.7)
 
     plt.savefig(output_path.with_suffix(".png"), dpi=300, bbox_inches="tight")
@@ -187,11 +268,9 @@ def plot_top_taxa_area(
     datasets: dict[str, pd.DataFrame], output_path: Path, reference_year: str = "2025"
 ):
     """Create stacked area plot showing taxa composition over time."""
-    # Get top 5 orders from reference year for consistency
     ref_df = datasets[reference_year]
     top_orders = ref_df["Order"].value_counts().nlargest(5).index.tolist()
 
-    # Calculate counts for each year
     taxa_data = {}
     for year, df in datasets.items():
         counts = df["Order"].value_counts()
@@ -211,7 +290,6 @@ def plot_top_taxa_area(
     ax.set_xticks(plot_df.index[::2])
     ax.set_ylim(bottom=0)
     ax.tick_params(axis="both", labelsize=12)
-
     ax.legend(title="Order", fontsize=11, title_fontsize=13, loc="upper left")
     ax.grid(axis="y", linestyle="--", alpha=0.7)
 
@@ -246,7 +324,6 @@ def plot_taxa_newcomers(
     fig, ax = plt.subplots(figsize=(12, max(6, len(plot_data) * 0.5)))
     plot_data.plot(kind="barh", color=color, ax=ax, zorder=3)
 
-    # Add common names for Order level
     if taxa_level == "Order":
         labels = [f"{name} ({ORDER_COMMON_NAMES.get(name, '')})" for name in plot_data.index]
         ax.set_yticks(range(len(labels)))
@@ -256,7 +333,6 @@ def plot_taxa_newcomers(
     ax.set_xlabel("Number of Entries", fontsize=14)
     ax.set_ylabel(taxa_level, fontsize=14)
 
-    # Add value labels
     for i, v in enumerate(plot_data):
         ax.text(v + 0.5, i, str(v), va="center", fontsize=10)
 
@@ -289,7 +365,6 @@ def main():
     print("\nGenerating top taxa area plot...")
     plot_top_taxa_area(datasets, FIGURES_DIR / "top_taxa_area")
 
-    # Newcomer plots (comparing 2017 to 2025)
     if "2017" in datasets and "2025" in datasets:
         print("\nGenerating newcomer taxa plots...")
         plot_taxa_newcomers(
