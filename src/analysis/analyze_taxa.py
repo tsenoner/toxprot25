@@ -8,14 +8,13 @@ import pandas as pd
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage
 from PIL import Image
 
+from .colors import TAXA_ORDER_COLORS, TAXA_ORDER_COLORS_LIST
+
 # --- Configuration ---
 DATA_DIR = Path("data/processed/toxprot")
 FIGURES_DIR = Path("figures/taxa")
 SILHOUETTE_DIR = Path("data/raw/PhyloPic/png")
 YEARS = [str(y) for y in range(2005, 2026)]
-
-# Colors for stacked bar chart
-COLORS = ["tab:blue", "tab:orange", "tab:green", "tab:red", "tab:purple", "silver"]
 
 # Silhouette mapping: taxa order -> image base name
 SILHOUETTE_MAP = {
@@ -88,67 +87,6 @@ def get_taxa_newcomers(
     return df_new[df_new[taxa_level].isin(newcomers)][taxa_level].value_counts()
 
 
-def plot_top_taxa_distribution(
-    datasets: dict[str, pd.DataFrame], output_path: Path, reference_year: str = "2025"
-):
-    """Create stacked bar chart of top taxa distribution across years."""
-    ref_df = datasets[reference_year]
-    top_orders = ref_df["Order"].value_counts().nlargest(5).index.tolist()
-
-    taxa_data = {}
-    for year, df in datasets.items():
-        counts = df["Order"].value_counts()
-        taxa_data[year] = {order: counts.get(order, 0) for order in top_orders}
-        taxa_data[year]["Others"] = counts[~counts.index.isin(top_orders)].sum()
-
-    plot_df = pd.DataFrame(taxa_data).T
-
-    fig, ax = plt.subplots(figsize=(12, 8))
-    plot_df.plot(kind="bar", stacked=True, color=COLORS, ax=ax, zorder=3)
-
-    ax.set_title("Distribution of Top 5 Taxa Orders in ToxProt Datasets", fontsize=20)
-    ax.set_xlabel("Year", fontsize=18)
-    ax.set_ylabel("Count", fontsize=18)
-    ax.tick_params(axis="x", rotation=45, labelsize=14)
-    ax.tick_params(axis="y", labelsize=16)
-
-    for i, label in enumerate(ax.get_xticklabels()):
-        if i % 2 != 0:
-            label.set_visible(False)
-
-    ax.legend(
-        title="Order",
-        bbox_to_anchor=(1.05, 1),
-        loc="upper left",
-        fontsize=14,
-        title_fontsize=16,
-    )
-
-    total_counts = plot_df.sum(axis=1)
-    for container in ax.containers:
-        percentages = []
-        for i, bar in enumerate(container):
-            height = bar.get_height()
-            if height > 0:
-                pct = (height / total_counts.iloc[i]) * 100
-                percentages.append(f"{int(height):,} ({pct:.0f}%)")
-            else:
-                percentages.append("")
-        ax.bar_label(
-            container, labels=percentages, label_type="center", fontsize=12, fontfamily="monospace"
-        )
-
-    ax.grid(axis="y", linestyle="--", alpha=0.7, zorder=0)
-    fig.tight_layout()
-
-    plt.savefig(output_path.with_suffix(".png"), dpi=300, bbox_inches="tight")
-    plt.savefig(output_path.with_suffix(".svg"), bbox_inches="tight")
-    plt.close()
-
-    print(f"  Saved: {output_path.with_suffix('.png')}")
-    print(f"  Saved: {output_path.with_suffix('.svg')}")
-
-
 def plot_top_taxa_trend(
     datasets: dict[str, pd.DataFrame],
     output_path: Path,
@@ -179,7 +117,8 @@ def plot_top_taxa_trend(
         "Araneae": {"x_offset": 45, "y_offset": 35, "zoom": 0.25, "rotation": -90},
         "Neogastropoda": {"x_offset": 45, "y_offset": -20, "zoom": 0.045, "rotation": 90},
         "Scorpiones": {"x_offset": 100, "y_offset": 0, "zoom": 0.175, "rotation": 0},
-        "Hymenoptera": {"x_offset": 45, "y_offset": -35, "zoom": 0.35, "rotation": -15},
+        # "Hymenoptera": {"x_offset": 45, "y_offset": -35, "zoom": 0.35, "rotation": -15},
+        "Hymenoptera": {"x_offset": 45, "y_offset": 35, "zoom": 0.35, "rotation": -15},
         # Others silhouettes
         "Medusa2": {"x_offset": 15, "y_offset": -35, "zoom": 0.030, "rotation": 0},
         "Annelida": {"x_offset": 45, "y_offset": -35, "zoom": 0.020, "rotation": 0},
@@ -188,7 +127,9 @@ def plot_top_taxa_trend(
     }
 
     for i, order in enumerate(plot_df.columns):
-        color = COLORS[i] if i < len(COLORS) else f"C{i}"
+        color = TAXA_ORDER_COLORS.get(
+            order, TAXA_ORDER_COLORS_LIST[i % len(TAXA_ORDER_COLORS_LIST)]
+        )
         ax.plot(plot_df.index, plot_df[order], marker="o", markersize=8, linewidth=2.5, color=color)
 
         last_value = plot_df[order].iloc[-1]
@@ -282,7 +223,13 @@ def plot_top_taxa_area(
 
     fig, ax = plt.subplots(figsize=(10, 7))
 
-    ax.stackplot(plot_df.index, plot_df.T.values, labels=plot_df.columns, colors=COLORS, alpha=0.85)
+    ax.stackplot(
+        plot_df.index,
+        plot_df.T.values,
+        labels=plot_df.columns,
+        colors=TAXA_ORDER_COLORS_LIST,
+        alpha=0.85,
+    )
 
     ax.set_title("ToxProt Database Growth by Taxa Order", fontsize=18)
     ax.set_xlabel("Year", fontsize=14)
@@ -355,9 +302,6 @@ def main():
     if len(datasets) < 2:
         print("Error: Need at least 2 datasets to generate plots")
         return
-
-    print("\nGenerating top taxa distribution plot...")
-    plot_top_taxa_distribution(datasets, FIGURES_DIR / "top_taxa_distribution")
 
     print("\nGenerating top taxa trend plot...")
     plot_top_taxa_trend(datasets, FIGURES_DIR / "top_taxa_trend")

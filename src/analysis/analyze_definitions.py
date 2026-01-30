@@ -15,12 +15,7 @@ from matplotlib.patches import PathPatch, Rectangle
 from matplotlib.path import Path as MplPath
 from matplotlib_venn import venn2
 
-# Color scheme for definitions
-DEFINITION_COLORS = {
-    "venom_tissue": "#4C78A8",  # Blue
-    "kw_toxin": "#F58518",  # Orange
-    "both": "#54A24B",  # Green
-}
+from .colors import DEFINITION_COLORS
 
 # Display labels
 CRITERIA_LABELS = {
@@ -105,9 +100,9 @@ def plot_alluvial_panel(df: pd.DataFrame, ax: plt.Axes) -> None:
     levels = ["Phylum", "Order", "Family"]
     categories = ["Shared", "Venom", "Keyword"]
     colors = {
-        "Shared": "#54A24B",
-        "Venom": "#4C78A8",
-        "Keyword": "#F58518",
+        "Shared": DEFINITION_COLORS["both"],
+        "Venom": DEFINITION_COLORS["venom_tissue"],
+        "Keyword": DEFINITION_COLORS["kw_toxin"],
     }
 
     # Get values as dict

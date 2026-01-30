@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from .colors import YEAR_COLORS
+
 # Default comparison years (10-year intervals)
 DEFAULT_YEARS = [2005, 2015, 2025]
 
@@ -32,13 +34,6 @@ PTM_TYPES = [
 # Display labels (pluralized)
 PTM_LABELS = {ptm: ptm + "s" if not ptm.endswith("acid") else ptm for ptm in PTM_TYPES}
 PTM_LABELS["Disulfide bond"] = "Disulfide bonds"
-
-# Colors for time points
-COLORS = {
-    0: plt.cm.tab10(0),  # Blue for earliest
-    1: plt.cm.tab10(2),  # Green for middle
-    2: plt.cm.tab10(1),  # Orange for latest
-}
 
 
 def parse_ptm_summary(ptm_str: str) -> dict[str, int]:
@@ -95,12 +90,11 @@ def create_combined_figure(datasets: dict[int, pd.DataFrame], output_dir: Path, 
     y_pos = np.arange(len(df_ptm))
 
     # Plot stacked bars (latest year at back, earliest at front)
-    for i, year in enumerate(reversed(years)):
-        color_idx = len(years) - 1 - i
+    for year in reversed(years):
         ax_a.barh(
             y_pos,
             df_ptm[f"Count {year}"],
-            color=COLORS[color_idx],
+            color=YEAR_COLORS[year],
             edgecolor="black",
             label=str(year),
         )
@@ -151,13 +145,12 @@ def create_combined_figure(datasets: dict[int, pd.DataFrame], output_dir: Path, 
         year_hists = all_hist_data[idx]
         x_pos = np.arange(1, 11)
 
-        for i, year in enumerate(reversed(years)):
-            color_idx = len(years) - 1 - i
+        for year in reversed(years):
             ax.bar(
                 x_pos,
                 year_hists[year],
                 width=0.8,
-                color=COLORS[color_idx],
+                color=YEAR_COLORS[year],
                 edgecolor="black",
                 label=str(year) if idx == 0 else None,
             )
