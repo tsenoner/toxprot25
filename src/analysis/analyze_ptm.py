@@ -154,9 +154,6 @@ def create_combined_figure(datasets: dict, output_dir: Path, top_n: int = 10):
         )
 
     ax_a.set_xlim(ax_a.get_xlim()[0], ax_a.get_xlim()[1] * 1.12)
-    # Reverse legend order so it matches visual (earliest on top)
-    handles, labels = ax_a.get_legend_handles_labels()
-    ax_a.legend(handles[::-1], labels[::-1], loc="lower right", fontsize=14)
 
     # ========== PLOT B: PTM Count Distributions (2x3 grid) ==========
     gs_b = gs[1].subgridspec(2, 3, wspace=0.15, hspace=0.35)
@@ -226,17 +223,26 @@ def create_combined_figure(datasets: dict, output_dir: Path, top_n: int = 10):
                 va="bottom",
                 ha="left",
             )
-            # Reverse legend order so it matches visual (earliest on top)
-            handles, labels = ax.get_legend_handles_labels()
-            ax.legend(handles[::-1], labels[::-1], loc="upper right", fontsize=9)
 
         ax.set_axisbelow(True)
         ax.grid(axis="y", ls="--", lw=1, alpha=0.5)
 
-    # Set shared y-axis limits
-    max_y = max(max(h.max() for h in year_hists.values()) for year_hists in all_hist_data)
-    for ax in axes_b:
+    # Set individual y-axis limits for each subplot
+    for ax, year_hists in zip(axes_b, all_hist_data):
+        max_y = max(h.max() for h in year_hists.values())
         ax.set_ylim(0, max_y * 1.05)
+
+    # Common legend for both panels A and B (horizontal, between panels)
+    handles, labels = ax_a.get_legend_handles_labels()
+    fig.legend(
+        handles[::-1],
+        labels[::-1],
+        loc="center",
+        fontsize=22,
+        ncol=len(years),
+        frameon=False,
+        bbox_to_anchor=(0.5, 0.54),
+    )
 
     # Save
     plt.savefig(output_dir / "ptm_overview.png", dpi=300, bbox_inches="tight")
