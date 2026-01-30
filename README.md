@@ -42,11 +42,25 @@ toxprot analysis taxa                            # Taxonomic distribution plots
 toxprot analysis taxa --definition venom_tissue  # Only venom-tissue entries
 toxprot analysis families                        # Protein family plots
 toxprot analysis families --top-n 20             # Custom top-N families
+toxprot analysis ptm                             # PTM analysis (2005, 2015, 2025)
+toxprot analysis ptm --years 2010,2020           # Custom year comparison
+toxprot analysis ptm --no-trends                 # Skip trend plot
 ```
 
 The `--definition` flag filters by selection criterion: `all` (default), `venom_tissue`, `kw_toxin`, or `both_only`.
 
-Additional standalone scripts in `src/analysis/` cover habitat, PTM, and GO-term analyses. ProtSpace embedding analysis lives in `src/protspace/` (see its own README).
+### PTM Analysis
+
+The PTM analysis compares post-translational modification frequencies across time points. The `PTM Summary` column in output CSVs contains aggregated counts (e.g., `Disulfide bond:5; Amidation:1`).
+
+**Data source**: PTM annotations are extracted from UniProt XML `<feature>` elements. The parser:
+1. Reads feature types: `modified residue`, `glycosylation site`, `disulfide bond`, `cross-link`, and `lipid moiety-binding region`
+2. Resolves `modified residue` descriptions (e.g., "Pyrrolidone carboxylic acid") using UniProt's [ptmlist.txt](https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/docs/ptmlist.txt) controlled vocabulary
+3. Aggregates counts into standardized categories (Disulfide bond, Amidation, Glycosylation, Hydroxylation, etc.)
+
+Output: `figures/ptm/` -- stacked bar comparisons, distribution histograms, trend lines (2005-2025), and summary statistics.
+
+Additional standalone scripts in `src/analysis/` cover habitat and GO-term analyses. ProtSpace embedding analysis lives in `src/protspace/` (see its own README).
 
 ## Data Sources
 

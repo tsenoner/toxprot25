@@ -3,7 +3,7 @@
 PTM Analysis for ToxProt Dataset
 
 Analyzes and visualizes post-translational modifications (PTMs) from the
-PTM Summary column across ToxProt datasets.
+PTM Summary column across ToxProt datasets at three time points.
 """
 
 from pathlib import Path
@@ -11,10 +11,12 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from matplotlib.patches import Patch
 
 # Years available in the dataset
 YEARS = [str(y) for y in range(2005, 2026)]
+
+# Default comparison years (10-year intervals)
+DEFAULT_YEARS = [2005, 2015, 2025]
 
 # PTM types - top 10 most common, ordered by frequency
 PTM_TYPES = [
@@ -34,9 +36,12 @@ PTM_TYPES = [
 PTM_LABELS = {ptm: ptm + "s" if not ptm.endswith("acid") else ptm for ptm in PTM_TYPES}
 PTM_LABELS["Disulfide bond"] = "Disulfide bonds"
 
-# Colors (using tab10 colormap for consistency)
-COLOR_OLD = plt.cm.tab10(0)
-COLOR_NEW = plt.cm.tab10(1)
+# Colors for three time points
+COLORS = {
+    0: plt.cm.tab10(0),  # Blue for earliest
+    1: plt.cm.tab10(2),  # Green for middle
+    2: plt.cm.tab10(1),  # Orange for latest
+}
 
 
 def parse_ptm_summary(ptm_str):
@@ -68,55 +73,62 @@ def load_data(file_path):
     return df
 
 
-def create_combined_figure(df_old, df_new, output_dir, year_old, year_new, top_n=5):
-    """Create combined figure with Plot A (type comparison) and Plot B (distributions)."""
-    fig = plt.figure(figsize=(18, 10))
-    gs = fig.add_gridspec(2, 1, height_ratios=[1, 1], hspace=0.4)
+def create_combined_figure(datasets: dict, output_dir: Path, top_n: int = 10):
+    """Create combined figure with Plot A (type comparison) and Plot B (distributions).
 
-    # ========== PLOT A: PTM Type Frequency ==========
+    Args:
+        datasets: Dictionary mapping year (int) to DataFrame
+        output_dir: Directory to save output files
+        top_n: Number of top PTM types to show in bar chart (default 10 = all)
+    """
+    years = sorted(datasets.keys())
+    fig = plt.figure(figsize=(18, 16))
+    gs = fig.add_gridspec(2, 1, height_ratios=[1, 1.4], hspace=0.25)
+
+    # ========== PLOT A: PTM Type Frequency (stacked bars) ==========
     ax_a = fig.add_subplot(gs[0])
 
     # Prepare data for top_n PTM types
     ptm_data = []
     for ptm_type in PTM_TYPES[:top_n]:
-        count_old = df_old[f"has_{ptm_type}"].sum()
-        count_new = df_new[f"has_{ptm_type}"].sum()
-        pct_old = (count_old / len(df_old)) * 100
-        pct_new = (count_new / len(df_new)) * 100
-        ptm_data.append(
-            {
-                "PTM Type": PTM_LABELS[ptm_type],
-                f"Count {year_old}": count_old,
-                f"Count {year_new}": count_new,
-                f"Pct {year_old}": pct_old,
-                f"Pct {year_new}": pct_new,
-            }
-        )
+        row_data = {"PTM Type": PTM_LABELS[ptm_type]}
+        for year in years:
+            df = datasets[year]
+            count = df[f"has_{ptm_type}"].sum()
+            pct = (count / len(df)) * 100
+            row_data[f"Count {year}"] = count
+            row_data[f"Pct {year}"] = pct
+        ptm_data.append(row_data)
 
-    df_ptm = pd.DataFrame(ptm_data).sort_values(f"Count {year_new}", ascending=False)
+    df_ptm = pd.DataFrame(ptm_data).sort_values(f"Count {years[-1]}", ascending=False)
 
-    # Stacked bars
-    values_base = np.minimum(df_ptm[f"Count {year_old}"], df_ptm[f"Count {year_new}"])
-    values_increase = np.maximum(0, df_ptm[f"Count {year_new}"] - df_ptm[f"Count {year_old}"])
+    # Stacked bars: plot in reverse order (latest year first/back, earliest year last/front)
     y_pos = np.arange(len(df_ptm))
 
-    ax_a.barh(y_pos, values_base, color=COLOR_OLD, edgecolor="black")
-    ax_a.barh(y_pos, values_increase, left=values_base, color=COLOR_NEW, edgecolor="black")
+    # Plot years from latest to earliest so earlier years appear on top
+    for i, year in enumerate(reversed(years)):
+        color_idx = len(years) - 1 - i  # Reverse color index
+        ax_a.barh(
+            y_pos,
+            df_ptm[f"Count {year}"],
+            color=COLORS[color_idx],
+            edgecolor="black",
+            label=str(year),
+        )
 
     # Formatting
     ax_a.set_yticks(y_pos)
     ax_a.set_yticklabels(df_ptm["PTM Type"])
     ax_a.invert_yaxis()
     ax_a.set_xlabel("Number of Proteins", fontsize=14)
-    ax_a.set_title(
-        f"PTM Type Frequency ({year_old} vs {year_new})", fontsize=14, fontweight="bold", pad=10
-    )
+    years_str = ", ".join(str(y) for y in years)
+    ax_a.set_title(f"PTM Type Frequency ({years_str})", fontsize=14, fontweight="bold", pad=10)
     ax_a.tick_params(axis="both", labelsize=12)
 
     # Add panel label A
     ax_a.text(
         -0.1,
-        0.98,
+        1.02,
         "A",
         transform=ax_a.transAxes,
         fontsize=28,
@@ -127,94 +139,86 @@ def create_combined_figure(df_old, df_new, output_dir, year_old, year_new, top_n
     ax_a.set_axisbelow(True)
     ax_a.grid(axis="x", ls="--", lw=2, alpha=0.5)
 
-    # Annotations
-    for i, row in df_ptm.iterrows():
-        idx = list(df_ptm.index).index(i)
-        text_x = row[f"Count {year_new}"] + ax_a.get_xlim()[1] * 0.01
-        annotation = (
-            f"{int(row[f'Count {year_old}'])} ({row[f'Pct {year_old}']:.1f}%) → "
-            f"{int(row[f'Count {year_new}'])} ({row[f'Pct {year_new}']:.1f}%)"
-        )
+    # Annotations - show counts for each year
+    for row_idx, (_, row) in enumerate(df_ptm.iterrows()):
+        counts_str = " → ".join(f"{int(row[f'Count {y}'])}" for y in years)
+        text_x = max(row[f"Count {y}"] for y in years) + ax_a.get_xlim()[1] * 0.01
         ax_a.text(
             text_x,
-            y_pos[idx],
-            annotation,
+            y_pos[row_idx],
+            counts_str,
             va="center",
             ha="left",
             fontsize=10,
             fontweight="bold",
         )
 
-    ax_a.set_xlim(ax_a.get_xlim()[0], ax_a.get_xlim()[1] * 1.175)
+    ax_a.set_xlim(ax_a.get_xlim()[0], ax_a.get_xlim()[1] * 1.12)
+    # Reverse legend order so it matches visual (earliest on top)
+    handles, labels = ax_a.get_legend_handles_labels()
+    ax_a.legend(handles[::-1], labels[::-1], loc="lower right", fontsize=14)
 
-    # Add legend to Plot A
-    legend_elements = [
-        Patch(facecolor=COLOR_OLD, label=str(year_old), edgecolor="black"),
-        Patch(facecolor=COLOR_NEW, label=str(year_new), edgecolor="black"),
-    ]
-    ax_a.legend(handles=legend_elements, loc="lower right", fontsize=18)
-
-    # ========== PLOT B: PTM Count Distributions ==========
-    gs_b = gs[1].subgridspec(1, 3, wspace=0.15)
-    # Top 3 PTM types for distribution plots
-    ptm_types_to_plot = PTM_TYPES[:3]
+    # ========== PLOT B: PTM Count Distributions (2x3 grid) ==========
+    gs_b = gs[1].subgridspec(2, 3, wspace=0.15, hspace=0.35)
+    # Top 6 PTM types for distribution plots
+    ptm_types_to_plot = PTM_TYPES[:6]
 
     # First, collect all data to determine shared y-axis range
     all_hist_data = []
+    num_bins = 10
     for ptm_type in ptm_types_to_plot:
-        counts_old = df_old[df_old[f"count_{ptm_type}"] > 0][f"count_{ptm_type}"]
-        counts_new = df_new[df_new[f"count_{ptm_type}"] > 0][f"count_{ptm_type}"]
-
-        num_bins = 10
-        hist_old = np.array(
-            [(counts_old == i).sum() for i in range(1, num_bins)] + [(counts_old >= num_bins).sum()]
-        )
-        hist_new = np.array(
-            [(counts_new == i).sum() for i in range(1, num_bins)] + [(counts_new >= num_bins).sum()]
-        )
-        all_hist_data.append((hist_old, hist_new))
+        year_hists = {}
+        for year in years:
+            df = datasets[year]
+            counts = df[df[f"count_{ptm_type}"] > 0][f"count_{ptm_type}"]
+            hist = np.array(
+                [(counts == i).sum() for i in range(1, num_bins)] + [(counts >= num_bins).sum()]
+            )
+            year_hists[year] = hist
+        all_hist_data.append(year_hists)
 
     # Create subplots with shared y-axis
     axes_b = []
     for idx, ptm_type in enumerate(ptm_types_to_plot):
-        ax = fig.add_subplot(gs_b[idx])
+        row, col = idx // 3, idx % 3
+        ax = fig.add_subplot(gs_b[row, col])
         axes_b.append(ax)
 
-        hist_old, hist_new = all_hist_data[idx]
+        year_hists = all_hist_data[idx]
 
-        # Plot overlapping bars
+        # Plot stacked bars: latest year first (back), earliest year last (front)
         x_pos = np.arange(1, 11)
-        ax.bar(
-            x_pos,
-            hist_new,
-            width=1.0,
-            color=COLOR_NEW,
-            edgecolor="black",
-            align="edge",
-        )
-        ax.bar(
-            x_pos,
-            hist_old,
-            width=1.0,
-            color=COLOR_OLD,
-            edgecolor="black",
-            align="edge",
-        )
+        for i, year in enumerate(reversed(years)):
+            color_idx = len(years) - 1 - i
+            ax.bar(
+                x_pos,
+                year_hists[year],
+                width=0.8,
+                color=COLORS[color_idx],
+                edgecolor="black",
+                label=str(year) if idx == 0 else None,
+            )
 
         # Formatting
-        ax.set_title(PTM_LABELS[ptm_type], fontsize=14, fontweight="bold", pad=10)
-        ax.set_xlabel("Number of PTMs", fontsize=14)
-        ax.set_xlim(1, 11)
-        ax.set_xticks([i + 0.5 for i in range(1, 11)])
-        ax.set_xticklabels([str(i) for i in range(1, 10)] + ["10+"])
-        ax.tick_params(axis="both", labelsize=12)
+        ax.set_title(PTM_LABELS[ptm_type], fontsize=12, fontweight="bold", pad=8)
+        ax.set_xlim(0.5, 10.5)
+        ax.set_xticks(x_pos)
+        ax.set_xticklabels([str(i) for i in range(1, 10)] + ["10+"], fontsize=9)
+        ax.tick_params(axis="both", labelsize=10)
+
+        # Only show x-label on bottom row
+        if row == 1:
+            ax.set_xlabel("Number of PTMs", fontsize=12)
+
+        # Only show y-label on left column
+        if col == 0:
+            ax.set_ylabel("Number of Proteins", fontsize=12)
 
         if idx == 0:
-            ax.set_ylabel("Number of Proteins", fontsize=14)
-            # Add panel label B to the leftmost subplot
+            # Add panel label B to the first subplot
             ax.text(
-                -0.33,
-                1.02,
+                -0.35,
+                1.08,
                 "B",
                 transform=ax.transAxes,
                 fontsize=28,
@@ -222,12 +226,15 @@ def create_combined_figure(df_old, df_new, output_dir, year_old, year_new, top_n
                 va="bottom",
                 ha="left",
             )
+            # Reverse legend order so it matches visual (earliest on top)
+            handles, labels = ax.get_legend_handles_labels()
+            ax.legend(handles[::-1], labels[::-1], loc="upper right", fontsize=9)
 
         ax.set_axisbelow(True)
-        ax.grid(axis="y", ls="--", lw=2, alpha=0.5)
+        ax.grid(axis="y", ls="--", lw=1, alpha=0.5)
 
     # Set shared y-axis limits
-    max_y = max(max(hist_old.max(), hist_new.max()) for hist_old, hist_new in all_hist_data)
+    max_y = max(max(h.max() for h in year_hists.values()) for year_hists in all_hist_data)
     for ax in axes_b:
         ax.set_ylim(0, max_y * 1.05)
 
@@ -242,107 +249,143 @@ def create_combined_figure(df_old, df_new, output_dir, year_old, year_new, top_n
     # Distribution data
     dist_data = []
     for ptm_type in ptm_types_to_plot:
-        counts_old = df_old[df_old[f"count_{ptm_type}"] > 0][f"count_{ptm_type}"]
-        counts_new = df_new[df_new[f"count_{ptm_type}"] > 0][f"count_{ptm_type}"]
-
         for i in range(1, 10):
-            dist_data.append(
-                {
-                    "PTM_Type": PTM_LABELS[ptm_type],
-                    "PTM_Count": str(i),
-                    f"Proteins_{year_old}": (counts_old == i).sum(),
-                    f"Proteins_{year_new}": (counts_new == i).sum(),
-                }
-            )
-        dist_data.append(
-            {
-                "PTM_Type": PTM_LABELS[ptm_type],
-                "PTM_Count": "10+",
-                f"Proteins_{year_old}": (counts_old >= 10).sum(),
-                f"Proteins_{year_new}": (counts_new >= 10).sum(),
-            }
-        )
+            row_data = {"PTM_Type": PTM_LABELS[ptm_type], "PTM_Count": str(i)}
+            for year in years:
+                df = datasets[year]
+                counts = df[df[f"count_{ptm_type}"] > 0][f"count_{ptm_type}"]
+                row_data[f"Proteins_{year}"] = (counts == i).sum()
+            dist_data.append(row_data)
+        # 10+ bin
+        row_data = {"PTM_Type": PTM_LABELS[ptm_type], "PTM_Count": "10+"}
+        for year in years:
+            df = datasets[year]
+            counts = df[df[f"count_{ptm_type}"] > 0][f"count_{ptm_type}"]
+            row_data[f"Proteins_{year}"] = (counts >= 10).sum()
+        dist_data.append(row_data)
 
     pd.DataFrame(dist_data).to_csv(output_dir / "ptm_count_distribution_data.csv", index=False)
 
 
-def generate_summary_table(df_old, df_new, output_dir, year_old, year_new):
-    """Generate summary statistics table."""
-    table_data = [
-        ["Metric", str(year_old), str(year_new), "Change"],
-        [
-            "Total Proteins",
-            f"{len(df_old):,}",
-            f"{len(df_new):,}",
-            f"+{len(df_new) - len(df_old):,}",
-        ],
-        [
-            "Proteins with PTMs",
-            f"{df_old['has_any_ptm'].sum():,}",
-            f"{df_new['has_any_ptm'].sum():,}",
-            f"+{df_new['has_any_ptm'].sum() - df_old['has_any_ptm'].sum():,}",
-        ],
-        [
-            "PTM Coverage (%)",
-            f"{(df_old['has_any_ptm'].sum() / len(df_old) * 100):.2f}%",
-            f"{(df_new['has_any_ptm'].sum() / len(df_new) * 100):.2f}%",
-            f"{(df_new['has_any_ptm'].sum() / len(df_new) - df_old['has_any_ptm'].sum() / len(df_old)) * 100:+.2f}%",
-        ],
-        [
-            "Mean PTMs/Protein",
-            f"{df_old[df_old['has_any_ptm']]['total_ptm_count'].mean():.2f}",
-            f"{df_new[df_new['has_any_ptm']]['total_ptm_count'].mean():.2f}",
-            f"{df_new[df_new['has_any_ptm']]['total_ptm_count'].mean() - df_old[df_old['has_any_ptm']]['total_ptm_count'].mean():+.2f}",
-        ],
-        ["", "", "", ""],
-        ["PTM Type", str(year_old), str(year_new), "Change"],
-    ]
+def generate_summary_table(datasets: dict, output_dir: Path):
+    """Generate summary statistics table.
 
-    for ptm_type in PTM_TYPES:
-        count_old = df_old[f"has_{ptm_type}"].sum()
-        count_new = df_new[f"has_{ptm_type}"].sum()
-        pct_old = (count_old / len(df_old)) * 100
-        pct_new = (count_new / len(df_new)) * 100
-        table_data.append(
-            [
-                PTM_LABELS[ptm_type],
-                f"{count_old:,} ({pct_old:.1f}%)",
-                f"{count_new:,} ({pct_new:.1f}%)",
-                f"+{count_new - count_old:,}",
-            ]
+    Args:
+        datasets: Dictionary mapping year (int) to DataFrame
+        output_dir: Directory to save output files
+    """
+    years = sorted(datasets.keys())
+    num_cols = len(years) + 2  # Metric + years + Total Change
+
+    # Header row
+    header = ["Metric"] + [str(y) for y in years] + ["Total Change"]
+    table_data = [header]
+
+    # Helper to compute change
+    def fmt_change(new_val, old_val):
+        diff = new_val - old_val
+        return f"+{diff:,}" if diff >= 0 else f"{diff:,}"
+
+    # Total proteins
+    row = ["Total Proteins"]
+    for year in years:
+        row.append(f"{len(datasets[year]):,}")
+    row.append(fmt_change(len(datasets[years[-1]]), len(datasets[years[0]])))
+    table_data.append(row)
+
+    # Proteins with PTMs
+    row = ["Proteins with PTMs"]
+    for year in years:
+        row.append(f"{datasets[year]['has_any_ptm'].sum():,}")
+    row.append(
+        fmt_change(
+            datasets[years[-1]]["has_any_ptm"].sum(), datasets[years[0]]["has_any_ptm"].sum()
         )
+    )
+    table_data.append(row)
 
-    fig, ax = plt.subplots(figsize=(12, 10))
+    # PTM Coverage
+    row = ["PTM Coverage (%)"]
+    for year in years:
+        df = datasets[year]
+        pct = df["has_any_ptm"].sum() / len(df) * 100
+        row.append(f"{pct:.2f}%")
+    pct_first = datasets[years[0]]["has_any_ptm"].sum() / len(datasets[years[0]]) * 100
+    pct_last = datasets[years[-1]]["has_any_ptm"].sum() / len(datasets[years[-1]]) * 100
+    diff = pct_last - pct_first
+    row.append(f"{diff:+.2f}%")
+    table_data.append(row)
+
+    # Mean PTMs/Protein
+    row = ["Mean PTMs/Protein"]
+    for year in years:
+        df = datasets[year]
+        mean_ptm = df[df["has_any_ptm"]]["total_ptm_count"].mean()
+        row.append(f"{mean_ptm:.2f}")
+    mean_first = datasets[years[0]][datasets[years[0]]["has_any_ptm"]]["total_ptm_count"].mean()
+    mean_last = datasets[years[-1]][datasets[years[-1]]["has_any_ptm"]]["total_ptm_count"].mean()
+    diff = mean_last - mean_first
+    row.append(f"{diff:+.2f}")
+    table_data.append(row)
+
+    # Separator row
+    table_data.append([""] * num_cols)
+
+    # PTM Type header
+    ptm_header = ["PTM Type"] + [str(y) for y in years] + ["Total Change"]
+    table_data.append(ptm_header)
+
+    # PTM types
+    for ptm_type in PTM_TYPES:
+        row = [PTM_LABELS[ptm_type]]
+        for year in years:
+            df = datasets[year]
+            count = df[f"has_{ptm_type}"].sum()
+            pct = (count / len(df)) * 100
+            row.append(f"{count:,} ({pct:.1f}%)")
+        count_first = datasets[years[0]][f"has_{ptm_type}"].sum()
+        count_last = datasets[years[-1]][f"has_{ptm_type}"].sum()
+        row.append(fmt_change(count_last, count_first))
+        table_data.append(row)
+
+    # Create figure
+    fig, ax = plt.subplots(figsize=(14, 12))
     ax.axis("tight")
     ax.axis("off")
 
+    col_widths = [0.35] + [0.18] * len(years) + [0.15]
     table = ax.table(
         cellText=table_data,
         cellLoc="left",
         loc="center",
-        colWidths=[0.4, 0.2, 0.2, 0.2],
+        colWidths=col_widths,
     )
     table.auto_set_font_size(False)
-    table.set_fontsize(11)
+    table.set_fontsize(10)
     table.scale(1, 2.5)
 
-    for i in [0, 6]:
-        for j in range(4):
+    # Style header rows
+    header_rows = [0, 6]
+    for i in header_rows:
+        for j in range(num_cols):
             table[(i, j)].set_facecolor("#34495e")
             table[(i, j)].set_text_props(weight="bold", color="white")
 
-    for j in range(4):
+    # Style separator row
+    for j in range(num_cols):
         table[(5, j)].set_facecolor("#ecf0f1")
         table[(5, j)].set_alpha(0.3)
 
+    # Alternating row colors
     for i in range(1, len(table_data)):
         if i not in [5, 6]:
-            for j in range(4):
+            for j in range(num_cols):
                 if i % 2 == 0:
                     table[(i, j)].set_facecolor("#f8f9fa")
 
+    years_str = ", ".join(str(y) for y in years)
     plt.title(
-        f"PTM Summary Statistics ({year_old} vs {year_new})",
+        f"PTM Summary Statistics ({years_str})",
         fontsize=16,
         fontweight="bold",
         pad=20,
@@ -355,6 +398,62 @@ def generate_summary_table(df_old, df_new, output_dir, year_old, year_new):
     )
 
 
+def plot_ptm_trends(datasets: dict, output_dir: Path, top_n: int = 10):
+    """Plot PTM type trends over all years.
+
+    Args:
+        datasets: Dictionary mapping year (int) to DataFrame
+        output_dir: Directory to save output files
+        top_n: Number of top PTM types to show
+    """
+    years = sorted(datasets.keys())
+
+    # Collect data for each PTM type across years
+    trend_data = {ptm: [] for ptm in PTM_TYPES[:top_n]}
+    for year in years:
+        df = datasets[year]
+        for ptm_type in PTM_TYPES[:top_n]:
+            count = df[f"has_{ptm_type}"].sum()
+            trend_data[ptm_type].append(count)
+
+    # Create figure
+    fig, ax = plt.subplots(figsize=(12, 7))
+
+    # Plot each PTM type
+    colors = plt.cm.tab10.colors
+    for i, ptm_type in enumerate(PTM_TYPES[:top_n]):
+        ax.plot(
+            years,
+            trend_data[ptm_type],
+            marker="o",
+            linewidth=2,
+            markersize=6,
+            color=colors[i],
+            label=PTM_LABELS[ptm_type],
+        )
+
+    ax.set_xlabel("Year", fontsize=14)
+    ax.set_ylabel("Number of Proteins", fontsize=14)
+    ax.set_title("PTM Type Trends (2005-2025)", fontsize=14, fontweight="bold")
+    ax.tick_params(axis="both", labelsize=12)
+    ax.set_xticks(years)
+    ax.set_xticklabels([str(y) for y in years], rotation=45, ha="right")
+    ax.legend(loc="upper left", fontsize=10)
+    ax.set_axisbelow(True)
+    ax.grid(True, ls="--", alpha=0.5)
+
+    plt.tight_layout()
+    plt.savefig(output_dir / "ptm_trends.png", dpi=300, bbox_inches="tight")
+    plt.savefig(output_dir / "ptm_trends.pdf", bbox_inches="tight")
+    plt.close()
+
+    # Save trend data
+    trend_df = pd.DataFrame({"Year": years})
+    for ptm_type in PTM_TYPES[:top_n]:
+        trend_df[PTM_LABELS[ptm_type]] = trend_data[ptm_type]
+    trend_df.to_csv(output_dir / "ptm_trends_data.csv", index=False)
+
+
 def main():
     """Main analysis pipeline."""
     print("PTM Analysis")
@@ -365,19 +464,17 @@ def main():
     output_dir = Path("figures/ptm")
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Default years for comparison
-    year_old = 2017
-    year_new = 2025
-
-    # Load data
+    # Load data for default years
     print("Loading data...")
-    df_old = load_data(data_dir / f"toxprot_{year_old}.csv")
-    df_new = load_data(data_dir / f"toxprot_{year_new}.csv")
+    datasets = {}
+    for year in DEFAULT_YEARS:
+        datasets[year] = load_data(data_dir / f"toxprot_{year}.csv")
+        print(f"  {year}: {len(datasets[year]):,} entries")
 
     # Generate outputs
     print("Generating figures...")
-    create_combined_figure(df_old, df_new, output_dir, year_old, year_new)
-    generate_summary_table(df_old, df_new, output_dir, year_old, year_new)
+    create_combined_figure(datasets, output_dir)
+    generate_summary_table(datasets, output_dir)
 
     print(f"Complete. Output: {output_dir.absolute()}")
     print("=" * 40)
