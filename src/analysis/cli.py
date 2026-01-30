@@ -33,9 +33,19 @@ def filter_by_definition(df: pd.DataFrame, definition: str) -> pd.DataFrame:
 
 
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
-def analysis():
+@click.option(
+    "--definition",
+    "-d",
+    type=click.Choice(["all", "venom_tissue", "kw_toxin", "both_only"]),
+    default="venom_tissue",
+    show_default=True,
+    help="Filter entries by ToxProt definition.",
+)
+@click.pass_context
+def analysis(ctx, definition):
     """Analysis and visualization commands."""
-    pass
+    ctx.ensure_object(dict)
+    ctx.obj["definition"] = definition
 
 
 @analysis.command()
@@ -54,14 +64,8 @@ def analysis():
     show_default=True,
     help="Directory to save output figures.",
 )
-@click.option(
-    "--definition",
-    type=click.Choice(["all", "venom_tissue", "kw_toxin", "both_only"]),
-    default="all",
-    show_default=True,
-    help="Filter entries by ToxProt definition.",
-)
-def taxa(data_dir, output_dir, definition):
+@click.pass_context
+def taxa(ctx, data_dir, output_dir):
     """Run taxonomic distribution analysis.
 
     Generates stacked bar charts, trend lines, area plots, and newcomer
@@ -70,7 +74,7 @@ def taxa(data_dir, output_dir, definition):
     \b
     Examples:
         toxprot analysis taxa
-        toxprot analysis taxa --definition venom_tissue
+        toxprot analysis -d all taxa
         toxprot analysis taxa --output-dir figures/taxa_filtered
     """
     from .analyze_taxa import (
@@ -82,6 +86,7 @@ def taxa(data_dir, output_dir, definition):
         plot_top_taxa_trend,
     )
 
+    definition = ctx.obj["definition"]
     output_dir.mkdir(parents=True, exist_ok=True)
 
     click.echo("Loading datasets...")
@@ -143,20 +148,14 @@ def taxa(data_dir, output_dir, definition):
     help="Directory to save output figures.",
 )
 @click.option(
-    "--definition",
-    type=click.Choice(["all", "venom_tissue", "kw_toxin", "both_only"]),
-    default="all",
-    show_default=True,
-    help="Filter entries by ToxProt definition.",
-)
-@click.option(
     "--top-n",
     type=int,
     default=15,
     show_default=True,
     help="Number of top protein families to display.",
 )
-def families(data_dir, output_dir, definition, top_n):
+@click.pass_context
+def families(ctx, data_dir, output_dir, top_n):
     """Run protein family distribution analysis.
 
     Generates sequence length histograms, stacked bar charts of protein
@@ -165,7 +164,7 @@ def families(data_dir, output_dir, definition, top_n):
     \b
     Examples:
         toxprot analysis families
-        toxprot analysis families --definition kw_toxin
+        toxprot analysis -d all families
         toxprot analysis families --top-n 20
     """
     from .analyze_protein_families import (
@@ -174,6 +173,7 @@ def families(data_dir, output_dir, definition, top_n):
         plot_stacked_bar_protein_families,
     )
 
+    definition = ctx.obj["definition"]
     output_dir.mkdir(parents=True, exist_ok=True)
     protein_families_dir = output_dir / "protein_families"
     protein_families_dir.mkdir(parents=True, exist_ok=True)
@@ -256,7 +256,8 @@ def families(data_dir, output_dir, definition, top_n):
     show_default=True,
     help="Generate trend plot across all years (2005-2025).",
 )
-def ptm(data_dir, output_dir, years, top_n, trends):
+@click.pass_context
+def ptm(ctx, data_dir, output_dir, years, top_n, trends):
     """Run PTM (post-translational modification) analysis.
 
     Compares PTM frequencies and distributions across multiple time points
@@ -266,6 +267,7 @@ def ptm(data_dir, output_dir, years, top_n, trends):
     \b
     Examples:
         toxprot analysis ptm
+        toxprot analysis -d all ptm
         toxprot analysis ptm --years 2010,2020
         toxprot analysis ptm --no-trends
     """
@@ -277,6 +279,7 @@ def ptm(data_dir, output_dir, years, top_n, trends):
         plot_ptm_trends,
     )
 
+    definition = ctx.obj["definition"]
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Parse years for main comparison
@@ -291,6 +294,14 @@ def ptm(data_dir, output_dir, years, top_n, trends):
         datasets[year] = load_data(filepath)
         click.echo(f"  {year}: {len(datasets[year]):,} entries")
 
+    if definition != "all":
+        click.echo(f"Filtering by definition: {definition}")
+        datasets = {year: filter_by_definition(df, definition) for year, df in datasets.items()}
+        datasets = {year: df for year, df in datasets.items() if len(df) > 0}
+
+    if len(datasets) < 2:
+        raise click.ClickException("Need at least 2 datasets after filtering")
+
     click.echo("Generating PTM analysis figures...")
     create_combined_figure(datasets, output_dir, top_n=top_n)
     generate_summary_table(datasets, output_dir)
@@ -304,9 +315,13 @@ def ptm(data_dir, output_dir, years, top_n, trends):
             filepath = data_dir / f"toxprot_{year}.csv"
             if filepath.exists():
                 if year in datasets:
-                    all_datasets[year] = datasets[year]  # Reuse already loaded
+                    all_datasets[year] = datasets[year]  # Reuse already loaded (already filtered)
                 else:
-                    all_datasets[year] = load_data(filepath)
+                    df = load_data(filepath)
+                    if definition != "all":
+                        df = filter_by_definition(df, definition)
+                    if len(df) > 0:
+                        all_datasets[year] = df
         click.echo(f"  Loaded {len(all_datasets)} years")
         plot_ptm_trends(all_datasets, output_dir, top_n=top_n)
 
