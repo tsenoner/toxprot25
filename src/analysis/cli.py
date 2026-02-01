@@ -119,6 +119,60 @@ def taxa(ctx, data_dir, output_dir):
     click.echo("Taxa analysis complete.")
 
 
+@analysis.command("length")
+@click.option(
+    "--data-dir",
+    type=click.Path(exists=True, path_type=Path),
+    default=Path("data/processed/toxprot"),
+    show_default=True,
+    help="Directory containing processed CSV files.",
+)
+@click.option(
+    "--output-dir",
+    "-o",
+    type=click.Path(path_type=Path),
+    default=Path("figures"),
+    show_default=True,
+    help="Directory to save output figures.",
+)
+@click.pass_context
+def length(ctx, data_dir, output_dir):
+    """Run sequence length distribution analysis.
+
+    Generates a histogram comparing sequence lengths across ToxProt
+    time points (2005, 2015, 2025).
+
+    \b
+    Examples:
+        toxprot analysis length
+        toxprot analysis -d all length
+        toxprot analysis length -o figures/custom
+    """
+    from .analyze_sequence_length import plot_sequence_length_histogram
+
+    definition = ctx.obj["definition"]
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Load datasets
+    years = [2005, 2015, 2025]
+    datasets = {}
+    for year in years:
+        filepath = data_dir / f"toxprot_{year}.csv"
+        if filepath.exists():
+            datasets[year] = pd.read_csv(filepath)
+
+    if definition != "all":
+        datasets = {year: filter_by_definition(df, definition) for year, df in datasets.items()}
+        datasets = {year: df for year, df in datasets.items() if len(df) > 0}
+
+    if len(datasets) < 2:
+        raise click.ClickException("Need at least 2 datasets")
+
+    output_path = output_dir / "sequence_length_distribution.png"
+    plot_sequence_length_histogram(datasets, output_path)
+    click.echo(f"Saved {output_path} (definition: {definition})")
+
+
 @analysis.command()
 @click.option(
     "--data-dir",
@@ -146,8 +200,8 @@ def taxa(ctx, data_dir, output_dir):
 def families(ctx, data_dir, output_dir, top_n):
     """Run protein family distribution analysis.
 
-    Generates sequence length histograms, stacked bar charts of protein
-    families, and summary statistics tables.
+    Generates stacked bar charts of protein families and summary
+    statistics tables.
 
     \b
     Examples:
@@ -157,7 +211,6 @@ def families(ctx, data_dir, output_dir, top_n):
     """
     from .analyze_protein_families import (
         generate_summary_table,
-        plot_sequence_length_histogram,
         plot_stacked_bar_protein_families,
     )
 
@@ -187,16 +240,12 @@ def families(ctx, data_dir, output_dir, top_n):
         raise click.ClickException("Need at least 2 datasets")
 
     # Define output paths
-    length_hist_path = output_dir / "sequence_length_distribution.png"
     families_bar_path = protein_families_dir / "top_families_stacked_bar.png"
     summary_table_path = output_dir / "dataset_summary_statistics.png"
 
     click.echo("\nGenerating visualizations...")
 
     if "2017" in datasets and "2025" in datasets:
-        click.echo("  Sequence length distribution histogram...")
-        plot_sequence_length_histogram(datasets["2017"], datasets["2025"], length_hist_path)
-
         click.echo(f"  Top {top_n} protein families stacked bar chart...")
         plot_stacked_bar_protein_families(
             datasets["2017"], datasets["2025"], families_bar_path, top_n=top_n

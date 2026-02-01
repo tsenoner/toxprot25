@@ -3,9 +3,8 @@
 Analyze and visualize protein family distributions in ToxProt datasets.
 
 This script generates:
-1. Sequence length distribution histogram (figures/)
-2. Protein families stacked bar chart (figures/protein_families/)
-3. Summary statistics table (figures/)
+1. Protein families stacked bar chart (figures/protein_families/)
+2. Summary statistics table (figures/)
 """
 
 import argparse
@@ -51,76 +50,6 @@ def get_top_families_per_dataset(df, column, top_n=15):
     if nan_count > 0:
         result_series["NaN"] = nan_count
     return result_series
-
-
-def plot_sequence_length_histogram(df_2017, df_2025, output_path):
-    """
-    Create overlaid histogram comparing sequence lengths between datasets.
-
-    Args:
-        df_2017: DataFrame with 2017 data
-        df_2025: DataFrame with 2025 data
-        output_path: Path to save the figure
-    """
-    lengths_17 = df_2017["Length"].dropna()
-    lengths_25 = df_2025["Length"].dropna()
-
-    # Define bin edges: 25 AA bins up to 300, then 301+
-    bin_edges_up_to_300 = np.arange(1, 302, 25)
-    last_bin_edge = bin_edges_up_to_300[-1]  # 301
-    all_hist_bins = np.append(bin_edges_up_to_300, last_bin_edge + 25)
-
-    # Map all lengths >= 301 to 301 for binning
-    lengths_17_binned = lengths_17.copy()
-    lengths_25_binned = lengths_25.copy()
-    lengths_17_binned[lengths_17_binned >= last_bin_edge] = last_bin_edge
-    lengths_25_binned[lengths_25_binned >= last_bin_edge] = last_bin_edge
-
-    # Create bin labels
-    bin_labels = [
-        f"{start}-{end - 1}"
-        for start, end in zip(all_hist_bins[:-2], all_hist_bins[1:-1], strict=False)
-    ]
-    bin_labels.append(f"{all_hist_bins[-2]}+")  # "301+"
-
-    # Create figure
-    fig, ax = plt.subplots(figsize=(12, 8))
-
-    ax.hist(
-        lengths_25_binned,
-        bins=all_hist_bins,
-        color=plt.cm.tab10(1),
-        label="ToxProt 2025",
-        alpha=1,
-        edgecolor="black",
-    )
-    ax.hist(
-        lengths_17_binned,
-        bins=all_hist_bins,
-        color=plt.cm.tab10(0),
-        label="ToxProt 2017",
-        alpha=1,
-        edgecolor="black",
-    )
-
-    # Styling
-    ax.set_xlabel("Sequence Length (amino acids)", fontsize=AXIS_LABEL_FONTSIZE)
-    ax.set_ylabel("Count", fontsize=AXIS_LABEL_FONTSIZE)
-    ax.set_title("Sequence Length Distribution Comparison", fontsize=TITLE_FONTSIZE)
-
-    # Set x-axis ticks to bin centers
-    tick_centers = (all_hist_bins[:-1] + all_hist_bins[1:]) / 2.0
-    ax.set_xticks(tick_centers)
-    ax.set_xticklabels(bin_labels, fontsize=TICK_LABEL_FONTSIZE)
-    ax.tick_params(axis="y", labelsize=TICK_LABEL_FONTSIZE)
-
-    ax.set_axisbelow(True)
-    ax.grid(axis="y", linestyle="--", linewidth=2, alpha=0.5)
-    ax.legend(fontsize=LEGEND_FONTSIZE)
-
-    plt.tight_layout()
-    plt.savefig(output_path, dpi=300)
-    plt.close()
 
 
 def _create_family_order(top_17, top_25):
@@ -398,7 +327,7 @@ def main():
     args = parser.parse_args()
 
     # Load all datasets
-    years = ["2005", "2010", "2015", "2020", "2025"]
+    years = ["2005", "2015", "2025"]
     print("Loading ToxProt datasets...")
     datasets = {}
     for year in years:
@@ -419,19 +348,14 @@ def main():
     protein_families_dir.mkdir(parents=True, exist_ok=True)
 
     # Define output paths
-    length_hist_path = args.output_dir / "sequence_length_distribution.png"
     families_bar_path = protein_families_dir / "top_families_stacked_bar.png"
     summary_table_path = args.output_dir / "dataset_summary_statistics.png"
 
     # Generate visualizations
     print("\nGenerating visualizations...")
 
-    # Use 2017 and 2025 for histogram and families chart (for now)
+    # Use 2017 and 2025 for families chart
     if "2017" in datasets and "2025" in datasets:
-        print("  → Sequence length distribution histogram...")
-        plot_sequence_length_histogram(datasets["2017"], datasets["2025"], length_hist_path)
-        print(f"    ✓ {length_hist_path}")
-
         print(f"  → Top {args.top_n} protein families stacked bar chart...")
         plot_stacked_bar_protein_families(
             datasets["2017"], datasets["2025"], families_bar_path, top_n=args.top_n
