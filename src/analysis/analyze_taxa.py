@@ -54,11 +54,11 @@ def load_silhouette(name: str, color: str = "grey") -> Image.Image | None:
     return None
 
 
-def get_silhouette(order: str, color: str = "grey") -> Image.Image | None:
+def get_silhouette(order: str) -> Image.Image | None:
     """Get silhouette image for a taxa order."""
     if order not in SILHOUETTE_MAP:
         return None
-    return load_silhouette(SILHOUETTE_MAP[order], color)
+    return load_silhouette(SILHOUETTE_MAP[order])
 
 
 def load_datasets(years: list[str], data_dir: Path = DATA_DIR) -> dict[str, pd.DataFrame]:
@@ -68,9 +68,6 @@ def load_datasets(years: list[str], data_dir: Path = DATA_DIR) -> dict[str, pd.D
         filepath = data_dir / f"toxprot_{year}.csv"
         if filepath.exists():
             datasets[year] = pd.read_csv(filepath)
-            print(f"  Loaded {year}: {len(datasets[year]):,} entries")
-        else:
-            print(f"  Warning: {filepath} not found, skipping")
     return datasets
 
 
@@ -110,10 +107,10 @@ def plot_top_taxa_trend(
     # x_offset/y_offset: position in points, zoom: scale, rotation: degrees
     # =================================================================
     silhouette_config = {
-        "Squamata": {"x_offset": 80, "y_offset": -10, "zoom": 0.02, "rotation": 0},
+        "Squamata": {"x_offset": 90, "y_offset": -10, "zoom": 0.02, "rotation": 0},
         "Araneae": {"x_offset": 45, "y_offset": 35, "zoom": 0.13, "rotation": -90},
         "Neogastropoda": {"x_offset": 45, "y_offset": -22, "zoom": 0.018, "rotation": 90},
-        "Scorpiones": {"x_offset": 105, "y_offset": 0, "zoom": 0.09, "rotation": 0},
+        "Scorpiones": {"x_offset": 110, "y_offset": 0, "zoom": 0.09, "rotation": 0},
         "Hymenoptera": {"x_offset": 45, "y_offset": 35, "zoom": 0.18, "rotation": -15},
         # Others silhouettes
         "Scolopendra": {"x_offset": 15, "y_offset": -35, "zoom": 0.018, "rotation": 0},
@@ -138,7 +135,7 @@ def plot_top_taxa_trend(
             xycoords=("axes fraction", "data"),
             xytext=(8, 0),
             textcoords="offset points",
-            fontsize=11,
+            fontsize=13,
             va="center",
             color=color,
             fontweight="bold",
@@ -185,7 +182,7 @@ def plot_top_taxa_trend(
                     )
                     ax.add_artist(ab)
 
-    ax.set_title("Growth of Top Taxa Orders in ToxProt Over Time", fontsize=18)
+    ax.set_title("Top Taxa Orders in ToxProt Over Time", fontsize=16)
     ax.set_xlabel("Year", fontsize=14)
     ax.set_ylabel("Number of Entries", fontsize=14)
     ax.set_xticks(plot_df.index[::2])
@@ -194,56 +191,7 @@ def plot_top_taxa_trend(
     ax.grid(axis="y", linestyle="--", alpha=0.7)
 
     plt.savefig(output_path.with_suffix(".png"), dpi=300, bbox_inches="tight")
-    plt.savefig(output_path.with_suffix(".svg"), bbox_inches="tight")
     plt.close()
-
-    print(f"  Saved: {output_path.with_suffix('.png')}")
-    print(f"  Saved: {output_path.with_suffix('.svg')}")
-
-
-def plot_top_taxa_area(
-    datasets: dict[str, pd.DataFrame], output_path: Path, reference_year: str = "2025"
-):
-    """Create stacked area plot showing taxa composition over time."""
-    ref_df = datasets[reference_year]
-    top_orders = ref_df["Order"].value_counts().nlargest(5).index.tolist()
-
-    taxa_data = {}
-    for year, df in datasets.items():
-        counts = df["Order"].value_counts()
-        taxa_data[year] = {order: counts.get(order, 0) for order in top_orders}
-        taxa_data[year]["Others"] = counts[~counts.index.isin(top_orders)].sum()
-
-    plot_df = pd.DataFrame(taxa_data).T
-    plot_df.index = plot_df.index.astype(int)
-
-    fig, ax = plt.subplots(figsize=(10, 7))
-
-    ax.stackplot(
-        plot_df.index,
-        plot_df.T.values,
-        labels=plot_df.columns,
-        colors=TAXA_ORDER_COLORS_LIST,
-        alpha=0.85,
-    )
-
-    ax.set_title("ToxProt Database Growth by Taxa Order", fontsize=18)
-    ax.set_xlabel("Year", fontsize=14)
-    ax.set_ylabel("Number of Entries", fontsize=14)
-    ax.set_xticks(plot_df.index[::2])
-    ax.set_ylim(bottom=0)
-    ax.tick_params(axis="both", labelsize=12)
-    ax.legend(title="Order", fontsize=11, title_fontsize=13, loc="upper left")
-    ax.grid(axis="y", linestyle="--", alpha=0.7)
-
-    fig.tight_layout()
-
-    plt.savefig(output_path.with_suffix(".png"), dpi=300, bbox_inches="tight")
-    plt.savefig(output_path.with_suffix(".svg"), bbox_inches="tight")
-    plt.close()
-
-    print(f"  Saved: {output_path.with_suffix('.png')}")
-    print(f"  Saved: {output_path.with_suffix('.svg')}")
 
 
 def plot_taxa_newcomers(
@@ -258,7 +206,6 @@ def plot_taxa_newcomers(
     newcomers = get_taxa_newcomers(df_old, df_new, taxa_level)
 
     if len(newcomers) == 0:
-        print(f"  No newcomers found at {taxa_level} level")
         return
 
     plot_data = newcomers.head(max_items)
@@ -285,28 +232,20 @@ def plot_taxa_newcomers(
     plt.savefig(output_path, dpi=300, bbox_inches="tight")
     plt.close()
 
-    print(f"  Saved: {output_path}")
-
 
 def main():
     """Generate all taxa analysis plots."""
     FIGURES_DIR.mkdir(parents=True, exist_ok=True)
 
-    print("Loading datasets...")
     datasets = load_datasets(YEARS)
 
     if len(datasets) < 2:
         print("Error: Need at least 2 datasets to generate plots")
         return
 
-    print("\nGenerating top taxa trend plot...")
     plot_top_taxa_trend(datasets, FIGURES_DIR / "top_taxa_trend")
 
-    print("\nGenerating top taxa area plot...")
-    plot_top_taxa_area(datasets, FIGURES_DIR / "top_taxa_area")
-
     if "2017" in datasets and "2025" in datasets:
-        print("\nGenerating newcomer taxa plots...")
         plot_taxa_newcomers(
             datasets["2017"],
             datasets["2025"],
@@ -322,7 +261,7 @@ def main():
             "tab:blue",
         )
 
-    print("\nDone!")
+    print("Taxa analysis complete.")
 
 
 if __name__ == "__main__":

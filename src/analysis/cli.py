@@ -68,8 +68,8 @@ def analysis(ctx, definition):
 def taxa(ctx, data_dir, output_dir):
     """Run taxonomic distribution analysis.
 
-    Generates stacked bar charts, trend lines, area plots, and newcomer
-    analyses for taxa orders across ToxProt yearly datasets.
+    Generates trend lines and newcomer analyses for taxa orders across
+    ToxProt yearly datasets.
 
     \b
     Examples:
@@ -81,18 +81,15 @@ def taxa(ctx, data_dir, output_dir):
         YEARS,
         load_datasets,
         plot_taxa_newcomers,
-        plot_top_taxa_area,
         plot_top_taxa_trend,
     )
 
     definition = ctx.obj["definition"]
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    click.echo("Loading datasets...")
     datasets = load_datasets(YEARS, data_dir=data_dir)
 
     if definition != "all":
-        click.echo(f"Filtering by definition: {definition}")
         datasets = {year: filter_by_definition(df, definition) for year, df in datasets.items()}
         # Remove empty datasets after filtering
         datasets = {year: df for year, df in datasets.items() if len(df) > 0}
@@ -100,15 +97,10 @@ def taxa(ctx, data_dir, output_dir):
     if len(datasets) < 2:
         raise click.ClickException("Need at least 2 datasets to generate plots")
 
-    click.echo("\nGenerating top taxa trend plot...")
     plot_top_taxa_trend(datasets, output_dir / "top_taxa_trend")
-
-    click.echo("\nGenerating top taxa area plot...")
-    plot_top_taxa_area(datasets, output_dir / "top_taxa_area")
 
     # Newcomer plots (comparing 2017 to 2025)
     if "2017" in datasets and "2025" in datasets:
-        click.echo("\nGenerating newcomer taxa plots...")
         plot_taxa_newcomers(
             datasets["2017"],
             datasets["2025"],
@@ -124,7 +116,7 @@ def taxa(ctx, data_dir, output_dir):
             "tab:blue",
         )
 
-    click.echo("\nDone!")
+    click.echo("Taxa analysis complete.")
 
 
 @analysis.command()
@@ -175,7 +167,7 @@ def families(ctx, data_dir, output_dir, top_n):
     protein_families_dir.mkdir(parents=True, exist_ok=True)
 
     # Load datasets
-    years = ["2005", "2010", "2015", "2020", "2025"]
+    years = ["2005", "2015", "2025"]
     click.echo("Loading ToxProt datasets...")
     datasets = {}
     for year in years:
