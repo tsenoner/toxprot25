@@ -1,17 +1,14 @@
 #!/usr/bin/env python3
-"""
-Analyze and visualize protein family distributions in ToxProt datasets.
+"""Analyze and visualize protein family distributions in ToxProt datasets.
 
-This script generates:
-1. Protein families stacked bar chart (figures/protein_families/)
-2. Summary statistics table (figures/)
+Generates a 100% stacked bar chart comparing protein family distributions
+between 2017 and 2025 ToxProt datasets.
 """
 
 import argparse
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 
 # Constants
@@ -182,128 +179,10 @@ def plot_stacked_bar_protein_families(df_2017, df_2025, output_path, top_n=15):
     plt.close()
 
 
-def _calculate_statistics(df):
-    """Calculate summary statistics for a dataset."""
-    total_count = len(df)
-
-    # Protein families
-    unique_families = len(df["Protein families"].dropna().unique())
-    na_count = df["Protein families"].isna().sum()
-    na_percentage = (na_count / total_count) * 100 if total_count > 0 else 0
-
-    # Fragments
-    df_copy = df.copy()
-    df_copy["Fragment"] = df_copy["Fragment"].astype(str)
-    fragment_count = df_copy["Fragment"].str.contains("fragment", case=False, na=False).sum()
-    fragment_percentage = (fragment_count / total_count) * 100 if total_count > 0 else 0
-
-    # PTM annotations
-    ptm_count = df["PTM Summary"].notna().sum()
-    ptm_percentage = (ptm_count / total_count) * 100 if total_count > 0 else 0
-
-    # Toxic dose annotations
-    toxic_count = df["Toxic dose"].notna().sum()
-    toxic_percentage = (toxic_count / total_count) * 100 if total_count > 0 else 0
-
-    # Taxonomy
-    species_count = len(df["Species"].unique())
-    order_count = len(df["Order"].unique())
-
-    return {
-        "total": total_count,
-        "unique_families": unique_families,
-        "na_count": na_count,
-        "na_pct": na_percentage,
-        "fragment_count": fragment_count,
-        "fragment_pct": fragment_percentage,
-        "ptm_count": ptm_count,
-        "ptm_pct": ptm_percentage,
-        "toxic_count": toxic_count,
-        "toxic_pct": toxic_percentage,
-        "species_count": species_count,
-        "order_count": order_count,
-    }
-
-
-def generate_summary_table(datasets: dict[str, pd.DataFrame], output_path: Path):
-    """
-    Generate summary statistics table comparing all datasets.
-
-    Args:
-        datasets: Dictionary mapping year to DataFrame
-        output_path: Path to save the figure
-    """
-    # Calculate statistics for all years
-    all_stats = {year: _calculate_statistics(df) for year, df in datasets.items()}
-    years = list(datasets.keys())
-
-    # Create table data
-    cell_text = [
-        [all_stats[y]["total"] for y in years],
-        [all_stats[y]["unique_families"] for y in years],
-        [f"{all_stats[y]['na_count']} ({all_stats[y]['na_pct']:.1f}%)" for y in years],
-        [f"{all_stats[y]['fragment_count']} ({all_stats[y]['fragment_pct']:.1f}%)" for y in years],
-        [f"{all_stats[y]['ptm_count']} ({all_stats[y]['ptm_pct']:.1f}%)" for y in years],
-        [f"{all_stats[y]['toxic_count']} ({all_stats[y]['toxic_pct']:.1f}%)" for y in years],
-        [all_stats[y]["species_count"] for y in years],
-        [all_stats[y]["order_count"] for y in years],
-    ]
-
-    row_headers = [
-        "Total entries",
-        "Unique protein families",
-        "Missing protein family",
-        "Fragment entries",
-        "PTM annotations",
-        "Toxic dose annotations",
-        "Species count",
-        "Order count",
-    ]
-    column_headers = years
-
-    # Create figure and table
-    fig, ax = plt.subplots(figsize=(12, 6))
-    ax.axis("tight")
-    ax.axis("off")
-
-    # Color scheme
-    row_colors = plt.cm.BuPu(np.full(len(row_headers), 0.1))
-    col_colors = plt.cm.BuPu(np.full(len(column_headers), 0.1))
-
-    col_width = 0.22
-    table = plt.table(
-        cellText=cell_text,
-        rowLabels=row_headers,
-        rowColours=row_colors,
-        rowLoc="center",
-        colColours=col_colors,
-        colLabels=column_headers,
-        cellLoc="center",
-        loc="center",
-        colWidths=[col_width] * len(years),
-    )
-
-    # Style the table
-    table.auto_set_font_size(False)
-    table.set_fontsize(12)
-
-    for cell in table.properties()["children"]:
-        cell.set_height(0.12)
-
-    # Make headers larger
-    for key in table._cells:
-        if key[0] == 0 or key[1] == -1:  # Column or row labels
-            table._cells[key].set_fontsize(13)
-            table._cells[key].set_text_props(weight="bold")
-
-    plt.savefig(output_path, dpi=300, bbox_inches="tight")
-    plt.close()
-
-
 def main():
-    """Main function to analyze protein families."""
+    """Main function for standalone execution."""
     parser = argparse.ArgumentParser(
-        description="Analyze and visualize protein family distributions."
+        description="Generate protein family stacked bar chart."
     )
     parser.add_argument(
         "--data-dir",
@@ -326,49 +205,31 @@ def main():
 
     args = parser.parse_args()
 
-    # Load all datasets
-    years = ["2005", "2015", "2025"]
+    # Load 2017 and 2025 datasets
     print("Loading ToxProt datasets...")
     datasets = {}
-    for year in years:
+    for year in ["2017", "2025"]:
         filepath = args.data_dir / f"toxprot_{year}.csv"
         if filepath.exists():
             datasets[year] = pd.read_csv(filepath)
-            print(f"  → {year}: {len(datasets[year]):,} entries")
+            print(f"  {year}: {len(datasets[year]):,} entries")
         else:
-            print(f"  → {year}: not found, skipping")
+            print(f"Error: {filepath} not found")
+            return
 
-    if len(datasets) < 2:
-        print("Error: Need at least 2 datasets")
+    if "2017" not in datasets or "2025" not in datasets:
+        print("Error: Need both 2017 and 2025 datasets")
         return
 
-    # Ensure output directories exist
-    args.output_dir.mkdir(parents=True, exist_ok=True)
+    # Ensure output directory exists
     protein_families_dir = args.output_dir / "protein_families"
     protein_families_dir.mkdir(parents=True, exist_ok=True)
 
-    # Define output paths
-    families_bar_path = protein_families_dir / "top_families_stacked_bar.png"
-    summary_table_path = args.output_dir / "dataset_summary_statistics.png"
-
-    # Generate visualizations
-    print("\nGenerating visualizations...")
-
-    # Use 2017 and 2025 for families chart
-    if "2017" in datasets and "2025" in datasets:
-        print(f"  → Top {args.top_n} protein families stacked bar chart...")
-        plot_stacked_bar_protein_families(
-            datasets["2017"], datasets["2025"], families_bar_path, top_n=args.top_n
-        )
-        print(f"    ✓ {families_bar_path}")
-
-    print("  → Summary statistics table...")
-    generate_summary_table(datasets, summary_table_path)
-    print(f"    ✓ {summary_table_path}")
-
-    print("\n" + "=" * 60)
-    print("✓ All visualizations complete!")
-    print("=" * 60)
+    output_path = protein_families_dir / "top_families_stacked_bar.png"
+    plot_stacked_bar_protein_families(
+        datasets["2017"], datasets["2025"], output_path, top_n=args.top_n
+    )
+    print(f"Saved {output_path}")
 
 
 if __name__ == "__main__":
