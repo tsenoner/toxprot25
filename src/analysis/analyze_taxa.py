@@ -26,7 +26,7 @@ SILHOUETTE_MAP = {
 }
 
 # Silhouettes for "Others" category
-OTHERS_SILHOUETTES = ["Medusa2", "Annelida", "Scolopendra", "Moth"]
+OTHERS_SILHOUETTES = ["Aedes", "Annelida", "Scolopendra", "Moth"]
 
 # Common names for newcomer taxa orders
 ORDER_COMMON_NAMES = {
@@ -45,19 +45,16 @@ ORDER_COMMON_NAMES = {
 }
 
 
-def load_silhouette(name: str, color: str = "black") -> Image.Image | None:
+def load_silhouette(name: str, color: str = "grey") -> Image.Image | None:
     """Load a silhouette PNG image by name."""
-    candidates = [
-        SILHOUETTE_DIR / f"{name}.png",
-        SILHOUETTE_DIR / f"{name}_{color}.png",
-    ]
-    for path in candidates:
-        if path.exists():
-            return Image.open(path)
+    # Prefer color-suffixed version (e.g., Spider_grey.png) over base file
+    path = SILHOUETTE_DIR / f"{name}_{color}.png"
+    if path.exists():
+        return Image.open(path)
     return None
 
 
-def get_silhouette(order: str, color: str = "black") -> Image.Image | None:
+def get_silhouette(order: str, color: str = "grey") -> Image.Image | None:
     """Get silhouette image for a taxa order."""
     if order not in SILHOUETTE_MAP:
         return None
@@ -113,17 +110,16 @@ def plot_top_taxa_trend(
     # x_offset/y_offset: position in points, zoom: scale, rotation: degrees
     # =================================================================
     silhouette_config = {
-        "Squamata": {"x_offset": 80, "y_offset": -10, "zoom": 0.04, "rotation": 0},
-        "Araneae": {"x_offset": 45, "y_offset": 35, "zoom": 0.25, "rotation": -90},
-        "Neogastropoda": {"x_offset": 45, "y_offset": -20, "zoom": 0.045, "rotation": 90},
-        "Scorpiones": {"x_offset": 100, "y_offset": 0, "zoom": 0.175, "rotation": 0},
-        # "Hymenoptera": {"x_offset": 45, "y_offset": -35, "zoom": 0.35, "rotation": -15},
-        "Hymenoptera": {"x_offset": 45, "y_offset": 35, "zoom": 0.35, "rotation": -15},
+        "Squamata": {"x_offset": 80, "y_offset": -10, "zoom": 0.02, "rotation": 0},
+        "Araneae": {"x_offset": 45, "y_offset": 35, "zoom": 0.13, "rotation": -90},
+        "Neogastropoda": {"x_offset": 45, "y_offset": -22, "zoom": 0.018, "rotation": 90},
+        "Scorpiones": {"x_offset": 105, "y_offset": 0, "zoom": 0.09, "rotation": 0},
+        "Hymenoptera": {"x_offset": 45, "y_offset": 35, "zoom": 0.18, "rotation": -15},
         # Others silhouettes
-        "Medusa2": {"x_offset": 15, "y_offset": -35, "zoom": 0.030, "rotation": 0},
-        "Annelida": {"x_offset": 45, "y_offset": -35, "zoom": 0.020, "rotation": 0},
-        "Scolopendra": {"x_offset": 60, "y_offset": -35, "zoom": 0.030, "rotation": 0},
-        "Moth": {"x_offset": 90, "y_offset": -35, "zoom": 0.025, "rotation": 0},
+        "Scolopendra": {"x_offset": 15, "y_offset": -35, "zoom": 0.018, "rotation": 0},
+        "Annelida": {"x_offset": 38, "y_offset": -35, "zoom": 0.009, "rotation": 0},
+        "Aedes": {"x_offset": 80, "y_offset": -22, "zoom": 0.035, "rotation": 0},
+        "Moth": {"x_offset": 80, "y_offset": -50, "zoom": 0.013, "rotation": 2},
     }
 
     for i, order in enumerate(plot_df.columns):
@@ -150,7 +146,7 @@ def plot_top_taxa_trend(
         )
 
         # Add silhouette
-        silhouette = get_silhouette(order, "black")
+        silhouette = get_silhouette(order)
         if silhouette is not None:
             rotation = config.get("rotation", 0)
             if rotation != 0:
@@ -171,7 +167,7 @@ def plot_top_taxa_trend(
             # Display multiple silhouettes for "Others"
             for name in OTHERS_SILHOUETTES:
                 cfg = silhouette_config.get(name, {"x_offset": 45, "y_offset": -30, "zoom": 0.025})
-                other_img = load_silhouette(name, "black")
+                other_img = load_silhouette(name)
                 if other_img is not None:
                     rotation = cfg.get("rotation", 0)
                     if rotation != 0:
