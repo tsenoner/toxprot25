@@ -64,23 +64,37 @@ def analysis(ctx, definition):
     show_default=True,
     help="Directory to save output figures.",
 )
+@click.option(
+    "--level",
+    "-l",
+    type=click.Choice(["Phylum", "Class", "Order", "Family", "all"]),
+    default="all",
+    show_default=True,
+    help="Taxonomic level for alluvial plot.",
+)
+@click.option(
+    "--skip-trend",
+    is_flag=True,
+    help="Skip generating the top taxa trend plot.",
+)
 @click.pass_context
-def taxa(ctx, data_dir, output_dir):
+def taxa(ctx, data_dir, output_dir, level, skip_trend):
     """Run taxonomic distribution analysis.
 
-    Generates trend lines and newcomer analyses for taxa orders across
-    ToxProt yearly datasets.
+    Generates alluvial diagrams showing taxa evolution across decade steps
+    (2005, 2015, 2025) at different taxonomic levels.
 
     \b
     Examples:
         toxprot analysis taxa
+        toxprot analysis taxa --level Family
+        toxprot analysis taxa -l Order --skip-trend
         toxprot analysis -d all taxa
-        toxprot analysis taxa --output-dir figures/taxa_filtered
     """
     from .analyze_taxa import (
         YEARS,
         load_datasets,
-        plot_taxa_newcomers,
+        plot_newcomers_alluvial,
         plot_top_taxa_trend,
     )
 
@@ -91,29 +105,27 @@ def taxa(ctx, data_dir, output_dir):
 
     if definition != "all":
         datasets = {year: filter_by_definition(df, definition) for year, df in datasets.items()}
-        # Remove empty datasets after filtering
         datasets = {year: df for year, df in datasets.items() if len(df) > 0}
 
     if len(datasets) < 2:
         raise click.ClickException("Need at least 2 datasets to generate plots")
 
-    plot_top_taxa_trend(datasets, output_dir / "top_taxa_trend")
+    click.echo(f"Loaded {len(datasets)} datasets (definition: {definition})")
 
-    # Newcomer plots (comparing 2017 to 2025)
-    if "2017" in datasets and "2025" in datasets:
-        plot_taxa_newcomers(
-            datasets["2017"],
-            datasets["2025"],
-            "Order",
-            output_dir / "taxa_newcomers_order.png",
-            "tab:green",
-        )
-        plot_taxa_newcomers(
-            datasets["2017"],
-            datasets["2025"],
-            "Family",
-            output_dir / "taxa_newcomers_family.png",
-            "tab:blue",
+    if not skip_trend:
+        click.echo("Generating top taxa trend plot...")
+        plot_top_taxa_trend(datasets, output_dir / "top_taxa_trend")
+
+    # Determine which levels to generate
+    all_levels = ["Phylum", "Class", "Order", "Family"]
+    levels_to_generate = all_levels if level == "all" else [level]
+
+    for lvl in levels_to_generate:
+        click.echo(f"Generating alluvial plot ({lvl})...")
+        plot_newcomers_alluvial(
+            datasets,
+            output_dir / f"taxa_newcomers_alluvial_{lvl.lower()}.png",
+            taxa_level=lvl,
         )
 
     click.echo("Taxa analysis complete.")

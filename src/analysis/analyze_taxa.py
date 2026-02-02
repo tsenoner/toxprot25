@@ -609,7 +609,7 @@ def plot_newcomers_alluvial(
 
 
 def main():
-    """Generate all taxa analysis plots."""
+    """Generate all taxa analysis plots (for standalone execution)."""
     FIGURES_DIR.mkdir(parents=True, exist_ok=True)
 
     print("Loading ToxProt datasets...")
@@ -621,31 +621,16 @@ def main():
 
     print(f"Loaded {len(datasets)} datasets")
 
-    # Keep existing top_taxa_trend
     print("Generating top taxa trend plot...")
     plot_top_taxa_trend(datasets, FIGURES_DIR / "top_taxa_trend")
 
-    # Generate all new visualization variants
-    print("Generating newcomers alluvial plot (Phylum)...")
-    plot_newcomers_alluvial(
-        datasets,
-        FIGURES_DIR / "taxa_newcomers_alluvial_phylum.png",
-        taxa_level="Phylum",
-    )
-
-    print("Generating newcomers alluvial plot (Class)...")
-    plot_newcomers_alluvial(
-        datasets,
-        FIGURES_DIR / "taxa_newcomers_alluvial_class.png",
-        taxa_level="Class",
-    )
-
-    print("Generating newcomers alluvial plot (Order)...")
-    plot_newcomers_alluvial(
-        datasets,
-        FIGURES_DIR / "taxa_newcomers_alluvial_order.png",
-        taxa_level="Order",
-    )
+    for level in ["Phylum", "Class", "Order", "Family"]:
+        print(f"Generating newcomers alluvial plot ({level})...")
+        plot_newcomers_alluvial(
+            datasets,
+            FIGURES_DIR / f"taxa_newcomers_alluvial_{level.lower()}.png",
+            taxa_level=level,
+        )
 
     print("Taxa analysis complete.")
 
