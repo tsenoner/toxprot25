@@ -3,11 +3,13 @@ name = "toxprot25"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
+    "cairosvg>=2.8.2",
     "click>=8.1.0",
     "jupyter>=1.1.1",
     "kaleido>=0.2.1",
     "matplotlib>=3.10.1",
     "matplotlib-venn>=1.1.2",
+    "obonet>=1.1.0",
     "openpyxl>=3.1.5",
     "pandas>=2.2.3",
     "pillow>=10.0.0",
