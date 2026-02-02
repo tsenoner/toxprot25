@@ -8,11 +8,11 @@ to ensure visual coherence in the manuscript.
 # =============================================================================
 # Year Colors - For temporal comparisons (2005, 2015, 2025)
 # =============================================================================
-# Using purple-teal-crimson to avoid conflict with definition colors
+# Sunset gradient (bright gold → tangerine → maroon)
 YEAR_COLORS = {
-    2005: "#7b68ee",  # Medium slate blue - earliest
-    2015: "#20b2aa",  # Light sea green - middle
-    2025: "#dc143c",  # Crimson - latest/current
+    2005: "#ffb703",  # Bright gold - earliest
+    2015: "#fb5607",  # Tangerine - middle
+    2025: "#800020",  # Maroon - latest
 }
 
 
