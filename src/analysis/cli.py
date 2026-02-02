@@ -318,7 +318,7 @@ def summary(ctx, data_dir, output_dir):
 @click.option(
     "--top-n",
     type=int,
-    default=15,
+    default=5,
     show_default=True,
     help="Number of top GO terms to display.",
 )

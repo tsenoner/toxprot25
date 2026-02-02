@@ -1,231 +1,383 @@
+#!/usr/bin/env python3
+"""Analyze and visualize GO term distributions in ToxProt datasets.
+
+Generates multiple visualizations showing GO term growth patterns,
+including hierarchy-aware count propagation to reveal annotation
+refinement over time.
+"""
+
+import re
+from collections import defaultdict
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import networkx as nx
 import numpy as np
+import obonet
 import pandas as pd
 
-# --- Configuration ---
+# Configuration
 TOP_N_GO_TERMS = 15
+GO_COLUMN = "Gene Ontology (molecular function)"
+GO_BP_COLUMN = "Gene Ontology (biological process)"
+GO_CC_COLUMN = "Gene Ontology (cellular component)"
+DEFAULT_OBO_PATH = Path("data/external/go-basic.obo")
 
-# --- Path Definitions ---
-try:
-    BASE_PATH = Path(__file__).resolve().parent.parent
-except NameError:  # Fallback for interactive environments
-    BASE_PATH = (Path.cwd()) if Path.cwd().name == "toxprot25" else Path.cwd() / ".."
+# GO root terms (Molecular Function, Biological Process, Cellular Component)
+GO_ROOTS = {"GO:0003674", "GO:0008150", "GO:0005575"}
 
-DATA_PATH = BASE_PATH / "data" / "processed"
-FIGURE_OUTPUT_PATH = BASE_PATH / "figures" / "go_terms"
-FIGURE_OUTPUT_PATH.mkdir(parents=True, exist_ok=True)
+# All available years in dataset
+ALL_YEARS = list(range(2005, 2026))
 
-# --- Data Loading ---
-try:
-    toxprot_2017_path = DATA_PATH / "toxprot_2017.csv"
-    toxprot_2025_path = DATA_PATH / "toxprot_2025.csv"
-
-    df_2017 = pd.read_csv(toxprot_2017_path)
-    df_2025 = pd.read_csv(toxprot_2025_path)
-
-except FileNotFoundError as e:
-    print(f"Error loading data: {e}. Please ensure CSV files are in {DATA_PATH}")
-    exit()
+# Key comparison years
+COMPARISON_YEARS = [2005, 2015, 2025]
 
 
-# --- GO Term Analysis Functions ---
-def get_go_counts(df, go_col="Gene Ontology (molecular function)"):
-    """Extract and count GO terms from a DataFrame."""
-    # Dropna, split by <; >, flatten, and count
-    go_series = df[go_col].dropna().astype(str)
-    all_terms = []
-    for entry in go_series:
-        terms = [t.strip() for t in entry.split(";") if t.strip()]
-        all_terms.extend(terms)
-    return pd.Series(all_terms).value_counts(), all_terms, go_series
+def load_go_hierarchy(obo_path: Path = DEFAULT_OBO_PATH) -> nx.DiGraph:
+    """Load GO hierarchy as NetworkX graph."""
+    return obonet.read_obo(str(obo_path))
 
 
-def calculate_percentage_change(old_val, new_val):
-    """Safely calculate percentage change, handling division by zero."""
-    if old_val == 0:
-        return np.inf if new_val > 0 else 0.0
-    return ((new_val - old_val) / old_val) * 100
+def extract_go_id(term_str: str) -> str | None:
+    """Extract GO ID from a term string like 'GO:0008200 (name)'."""
+    match = re.match(r"(GO:\d+)", term_str.strip())
+    return match.group(1) if match else None
 
 
-def get_go_counts_for_plotting():
-    """Get GO term counts for plotting without printing summary statistics."""
-    go_counts_2025, _, _ = get_go_counts(df_2025)
-    go_counts_2017, _, _ = get_go_counts(df_2017)
-    return go_counts_2017, go_counts_2025
-
-
-def plot_go_terms_stacked_bar():
-    """Create a stacked bar plot showing GO term counts with 2017 as base and increase stacked on top."""
-
-    # Get GO term counts
-    go_counts_2017, go_counts_2025 = get_go_counts_for_plotting()
-
-    # Get top N GO terms by 2025 count (current usage)
-    top_go_terms = go_counts_2025.head(TOP_N_GO_TERMS).index.tolist()
-
-    if not top_go_terms:
-        print("No GO terms found for plotting.")
-        return
-
-    # Create summary DataFrame
-    go_summary = pd.DataFrame(index=top_go_terms)
-    go_summary["2017_count"] = go_counts_2017.reindex(top_go_terms, fill_value=0)
-    go_summary["2025_count"] = go_counts_2025.reindex(top_go_terms, fill_value=0)
-    go_summary["absolute_change"] = go_summary["2025_count"] - go_summary["2017_count"]
-    go_summary["percentage_change"] = [
-        calculate_percentage_change(old, new)
-        for old, new in zip(go_summary["2017_count"], go_summary["2025_count"], strict=False)
-    ]
-
-    # Sort by 2025 count (descending) to show terms with highest usage at top
-    go_summary = go_summary.sort_values(by="2025_count", ascending=False)
-
-    # Create the plot
-    title = f"Top {len(go_summary)} GO Molecular Function Terms"
-    y_labels = go_summary.index
-
-    values_2017 = go_summary["2017_count"]
-    values_2025 = go_summary["2025_count"]
-    # Calculate the increase (will be 0 if count decreased)
-    values_increase = np.maximum(0, values_2025 - values_2017)
-    # For stacking, if there was a decrease, we show the full 2025 count as the base
-    values_base = np.minimum(values_2017, values_2025)
-
-    fig, ax = plt.subplots(figsize=(12, max(8, len(y_labels) * 0.5)))
-    y_pos = np.arange(len(y_labels))
-
-    # Define colors with better differentiation
-    color_base = "steelblue"  # Base (existing) portion - darker blue
-    color_increase = "#87CEEB"  # Sky blue for increase - lighter, more distinguishable
-
-    # Create horizontal stacked bars
-    # Base portion (2017 count)
-    ax.barh(y_pos, values_base, color=color_base, label="2017", alpha=0.8)
-
-    # Increase portion (stacked on top of base)
-    ax.barh(
-        y_pos,
-        values_increase,
-        left=values_base,
-        color=color_increase,
-        label="2025",
-        alpha=0.8,
-    )
-
-    # Formatting
-    ax.set_yticks(y_pos)
-    ax.set_yticklabels(
-        [term[:60] + "..." if len(term) > 60 else term for term in y_labels],
-        fontsize=10,
-    )
-    ax.invert_yaxis()  # Highest change at the top
-    ax.set_xlabel("Number of GO Term Assignments")
-    ax.set_title(title, pad=20, fontsize=14)
-    ax.legend(loc="lower right")
-
-    # Add text annotations showing the counts and changes
-    for i, go_term in enumerate(y_labels):
-        count_2017 = values_2017[go_term]
-        count_2025 = values_2025[go_term]
-
-        # Position text after the end of the stacked bar (2025 count)
-        text_x_position = count_2025 + 0.01 * ax.get_xlim()[1]
-
-        # Create annotation text with "New" indicator for terms not in 2017
-        if count_2017 == 0:
-            annotation_text = f"{count_2017}→{count_2025} (New)"
-        else:
-            annotation_text = f"{count_2017}→{count_2025}"
-
-        # Annotation showing the progression
-        ax.text(
-            text_x_position,
-            y_pos[i],
-            annotation_text,
-            va="center",
-            ha="left",
-            fontsize=9,
-            fontweight="bold",
-        )
-
-    # Adjust x-limits to ensure text is visible
-    current_xlim = ax.get_xlim()
-    expansion_factor = 0.25
-    ax.set_xlim(
-        current_xlim[0],
-        current_xlim[1] + abs(current_xlim[1]) * expansion_factor,
-    )
-
-    plt.tight_layout()
-
-    # Save the plot
-    filepath = FIGURE_OUTPUT_PATH / "go_terms_stacked_comparison_2017_vs_2025.png"
-    plt.savefig(filepath, dpi=300, bbox_inches="tight")
-    plt.close(fig)
-
-    # Save summary data
-    summary_filepath = FIGURE_OUTPUT_PATH / "go_terms_summary.csv"
-    go_summary_export = go_summary.copy()
-    go_summary_export.index.name = "GO_Term"
-    go_summary_export.to_csv(summary_filepath)
-
-
-def generate_go_counts_comparison_table():
-    """Generate a detailed comparison table of GO term counts."""
-
-    go_counts_2017, go_counts_2025 = get_go_counts(df_2017), get_go_counts(df_2025)
-    go_counts_2017, go_counts_2025 = (
-        go_counts_2017[0],
-        go_counts_2025[0],
-    )  # Extract just the counts
-
-    # Get all unique GO terms
-    all_terms = set(go_counts_2017.index) | set(go_counts_2025.index)
-
-    # Create comparison DataFrame
-    comparison_df = pd.DataFrame(index=sorted(all_terms))
-    comparison_df["2017_count"] = go_counts_2017.reindex(comparison_df.index, fill_value=0)
-    comparison_df["2025_count"] = go_counts_2025.reindex(comparison_df.index, fill_value=0)
-    comparison_df["absolute_change"] = comparison_df["2025_count"] - comparison_df["2017_count"]
-    comparison_df["percentage_change"] = [
-        calculate_percentage_change(old, new)
-        for old, new in zip(comparison_df["2017_count"], comparison_df["2025_count"], strict=False)
-    ]
-
-    # Add total counts for percentage calculations
-    total_2017 = comparison_df["2017_count"].sum()
-    total_2025 = comparison_df["2025_count"].sum()
-
-    comparison_df["2017_percentage"] = (
-        (comparison_df["2017_count"] / total_2017 * 100) if total_2017 > 0 else 0
-    )
-    comparison_df["2025_percentage"] = (
-        (comparison_df["2025_count"] / total_2025 * 100) if total_2025 > 0 else 0
-    )
-
-    # Sort by 2025 count (descending)
-    comparison_df = comparison_df.sort_values(by="2025_count", ascending=False)
-
-    # Save full comparison
-    comparison_filepath = FIGURE_OUTPUT_PATH / "go_terms_full_comparison.csv"
-    comparison_df.index.name = "GO_Term"
-    comparison_df.to_csv(comparison_filepath)
-
-    return comparison_df
-
-
-# --- Main Execution ---
-if __name__ == "__main__":
-    # Generate plots and data files
+def get_ancestors(graph: nx.DiGraph, go_id: str) -> set[str]:
+    """Get all ancestor terms (parents, grandparents, etc.)."""
     try:
-        # Generate the main stacked bar plot
-        plot_go_terms_stacked_bar()
+        return nx.descendants(graph, go_id)
+    except nx.NetworkXError:
+        return set()
 
-        # Generate detailed comparison table
-        generate_go_counts_comparison_table()
 
-    except Exception as e:
-        print(f"Error during analysis: {e}")
-        raise
+def get_term_depth(graph: nx.DiGraph, go_id: str) -> int | None:
+    """Calculate depth of a GO term (distance from root)."""
+    if go_id not in graph:
+        return None
+
+    min_depth = None
+    for root in GO_ROOTS:
+        if root in graph:
+            try:
+                path_length = nx.shortest_path_length(graph, go_id, root)
+                if min_depth is None or path_length < min_depth:
+                    min_depth = path_length
+            except nx.NetworkXNoPath:
+                continue
+
+    return min_depth
+
+
+def get_go_counts(df: pd.DataFrame, column: str = GO_COLUMN) -> dict[str, int]:
+    """Extract and count GO terms from a DataFrame."""
+    counts: dict[str, int] = defaultdict(int)
+    if column not in df.columns:
+        return dict(counts)
+    for entry in df[column].dropna().astype(str):
+        for term_str in entry.split(";"):
+            go_id = extract_go_id(term_str)
+            if go_id:
+                counts[go_id] += 1
+    return dict(counts)
+
+
+def get_go_counts_with_propagation(
+    df: pd.DataFrame, go_graph: nx.DiGraph
+) -> dict[str, int]:
+    """Count GO terms with ancestor propagation."""
+    counts: dict[str, int] = defaultdict(int)
+    for entry in df[GO_COLUMN].dropna().astype(str):
+        for term_str in entry.split(";"):
+            go_id = extract_go_id(term_str)
+            if go_id and go_id in go_graph:
+                counts[go_id] += 1
+                for ancestor in get_ancestors(go_graph, go_id):
+                    counts[ancestor] += 1
+    return dict(counts)
+
+
+def get_go_term_name(go_graph: nx.DiGraph, go_id: str) -> str:
+    """Get human-readable name for a GO term."""
+    if go_id in go_graph:
+        return go_graph.nodes[go_id].get("name", go_id)
+    return go_id
+
+
+def get_go_statistics(df: pd.DataFrame, go_graph: nx.DiGraph) -> dict:
+    """Calculate comprehensive GO statistics for a dataset."""
+    entries_with_go = df[GO_COLUMN].notna().sum() if GO_COLUMN in df.columns else 0
+    total_entries = len(df)
+
+    depths = []
+    all_terms = []
+
+    if GO_COLUMN in df.columns:
+        for entry in df[GO_COLUMN].dropna().astype(str):
+            for term_str in entry.split(";"):
+                go_id = extract_go_id(term_str)
+                if go_id:
+                    all_terms.append(go_id)
+                    depth = get_term_depth(go_graph, go_id)
+                    if depth is not None:
+                        depths.append(depth)
+
+    return {
+        "entries_with_go": entries_with_go,
+        "total_entries": total_entries,
+        "coverage_pct": (entries_with_go / total_entries * 100) if total_entries > 0 else 0,
+        "total_annotations": len(all_terms),
+        "unique_terms": len(set(all_terms)),
+        "average_depth": np.mean(depths) if depths else None,
+        "depths": depths,
+    }
+
+
+def load_datasets(years: list[int], data_dir: Path) -> dict[int, pd.DataFrame]:
+    """Load ToxProt datasets for specified years."""
+    datasets = {}
+    for year in years:
+        filepath = data_dir / f"toxprot_{year}.csv"
+        if filepath.exists():
+            datasets[year] = pd.read_csv(filepath)
+    return datasets
+
+
+def load_datasets_with_all_go(
+    years: list[int],
+    interim_dir: Path = Path("data/interim/toxprot_parsed"),
+) -> dict[int, pd.DataFrame]:
+    """Load ToxProt datasets from interim TSV files (have all GO categories)."""
+    datasets = {}
+    for year in years:
+        filepath = interim_dir / f"toxprot_{year}.tsv"
+        if filepath.exists():
+            datasets[year] = pd.read_csv(filepath, sep="\t")
+    return datasets
+
+
+# =============================================================================
+# Visualization Functions
+# =============================================================================
+
+
+def plot_go_overview(
+    datasets: dict[int, pd.DataFrame],
+    go_graph: nx.DiGraph,
+    output_path: Path,
+    top_n: int = 5,
+):
+    """Create multipanel overview figure with key GO insights.
+
+    Panels:
+    A. GO category coverage (%)
+    B. Depth sum + average depth
+    C. Top MF terms
+    D. Top BP terms
+    E. Top CC terms
+    """
+    years = sorted(datasets.keys())
+
+    fig = plt.figure(figsize=(18, 12))
+    gs = fig.add_gridspec(2, 6, hspace=0.35, wspace=0.6)
+
+    # Tick years for x-axis
+    tick_years = [2005, 2010, 2015, 2020, 2025]
+
+    # ==========================================================================
+    # Panel A: Total GO Term Counts
+    # ==========================================================================
+    ax_a = fig.add_subplot(gs[0, 0:3])  # First half of top row
+
+    mf_coverage = []
+    bp_coverage = []
+    cc_coverage = []
+    mf_term_counts = []  # Total number of GO terms (not entries)
+    bp_term_counts = []
+    cc_term_counts = []
+
+    for year in years:
+        if year in datasets:
+            df = datasets[year]
+            total = len(df)
+            # Coverage: entries with at least one annotation
+            mf_entries = df[GO_COLUMN].notna().sum() if GO_COLUMN in df.columns else 0
+            bp_entries = df[GO_BP_COLUMN].notna().sum() if GO_BP_COLUMN in df.columns else 0
+            cc_entries = df[GO_CC_COLUMN].notna().sum() if GO_CC_COLUMN in df.columns else 0
+            mf_coverage.append(mf_entries / total * 100 if total > 0 else 0)
+            bp_coverage.append(bp_entries / total * 100 if total > 0 else 0)
+            cc_coverage.append(cc_entries / total * 100 if total > 0 else 0)
+
+            # Total GO term counts (sum of all terms across all entries)
+            mf_terms = sum(len(str(x).split(";")) for x in df[GO_COLUMN].dropna()) if GO_COLUMN in df.columns else 0
+            bp_terms = sum(len(str(x).split(";")) for x in df[GO_BP_COLUMN].dropna()) if GO_BP_COLUMN in df.columns else 0
+            cc_terms = sum(len(str(x).split(";")) for x in df[GO_CC_COLUMN].dropna()) if GO_CC_COLUMN in df.columns else 0
+            mf_term_counts.append(mf_terms)
+            bp_term_counts.append(bp_terms)
+            cc_term_counts.append(cc_terms)
+        else:
+            mf_coverage.append(0)
+            bp_coverage.append(0)
+            cc_coverage.append(0)
+            mf_term_counts.append(0)
+            bp_term_counts.append(0)
+            cc_term_counts.append(0)
+
+    ax_a.plot(years, mf_term_counts, marker="o", linewidth=2.5, color="#e74c3c",
+              label="Molecular Function (MF)", markersize=6)
+    ax_a.plot(years, bp_term_counts, marker="s", linewidth=2.5, color="#3498db",
+              label="Biological Process (BP)", markersize=6)
+    ax_a.plot(years, cc_term_counts, marker="^", linewidth=2.5, color="#2ecc71",
+              label="Cellular Component (CC)", markersize=6)
+
+    ax_a.set_xlabel("Year", fontsize=12)
+    ax_a.set_ylabel("Total GO Term Annotations", fontsize=12)
+    ax_a.set_xticks(tick_years)
+    ax_a.grid(True, ls="--", alpha=0.4)
+    ax_a.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f"{x:,.0f}"))
+    ax_a.legend(loc="upper left", fontsize=10)
+
+    ax_a.set_title("A. Total GO Term Annotations", fontsize=13, fontweight="bold")
+
+    # ==========================================================================
+    # Panel B: GO Category Coverage (%)
+    # ==========================================================================
+    ax_b = fig.add_subplot(gs[0, 3:6])  # Second half of top row
+
+    ax_b.plot(years, mf_coverage, marker="o", linewidth=2.5, color="#e74c3c",
+              label="Molecular Function (MF)", markersize=6)
+    ax_b.plot(years, bp_coverage, marker="s", linewidth=2.5, color="#3498db",
+              label="Biological Process (BP)", markersize=6)
+    ax_b.plot(years, cc_coverage, marker="^", linewidth=2.5, color="#2ecc71",
+              label="Cellular Component (CC)", markersize=6)
+
+    ax_b.set_xlabel("Year", fontsize=12)
+    ax_b.set_ylabel("Coverage (%)", fontsize=12)
+    ax_b.set_ylim(0, 105)
+    ax_b.set_xticks(tick_years)
+    ax_b.grid(True, ls="--", alpha=0.4)
+    ax_b.legend(loc="lower right", fontsize=10)
+
+    ax_b.set_title("B. GO Category Coverage", fontsize=13, fontweight="bold")
+
+    # ==========================================================================
+    # Helper function for top terms panels
+    # ==========================================================================
+    # Distinct colors for top terms (colorblind-friendly)
+    term_colors = [
+        "#1f77b4",  # blue
+        "#ff7f0e",  # orange
+        "#2ca02c",  # green
+        "#d62728",  # red
+        "#9467bd",  # purple
+        "#8c564b",  # brown
+        "#e377c2",  # pink
+        "#7f7f7f",  # gray
+        "#bcbd22",  # olive
+        "#17becf",  # cyan
+    ]
+
+    def plot_top_terms(ax, datasets, go_column, go_graph, years, title, top_n=5):
+        """Plot top GO terms for a category."""
+        # Get years with data
+        years_with_data = [y for y in years if y in datasets]
+
+        # Get GO counts for each year
+        go_counts = {}
+        for year in years_with_data:
+            counts = {}
+            df = datasets[year]
+            if go_column in df.columns:
+                for entry in df[go_column].dropna().astype(str):
+                    for term_str in entry.split(";"):
+                        go_id = extract_go_id(term_str)
+                        if go_id:
+                            counts[go_id] = counts.get(go_id, 0) + 1
+            go_counts[year] = counts
+
+        if not years_with_data:
+            return
+
+        # Get top terms from latest year
+        latest = max(years_with_data)
+        sorted_terms = sorted(go_counts[latest].items(), key=lambda x: x[1], reverse=True)
+        top_terms = [t[0] for t in sorted_terms[:top_n] if t[0] in go_graph]
+
+        for i, go_id in enumerate(top_terms):
+            counts = [go_counts[y].get(go_id, 0) for y in years_with_data]
+            name = get_go_term_name(go_graph, go_id)
+            ax.plot(years_with_data, counts, marker="o", markersize=4,
+                    linewidth=2, label=name, color=term_colors[i % len(term_colors)])
+
+        ax.set_xlabel("Year", fontsize=11)
+        ax.set_ylabel("Annotations", fontsize=11)
+        ax.set_title(title, fontsize=12, fontweight="bold")
+        ax.legend(loc="upper left", fontsize=7, framealpha=0.95)
+        ax.set_xticks(tick_years)
+        ax.grid(True, ls="--", alpha=0.4)
+        ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f"{x:,.0f}"))
+
+    # ==========================================================================
+    # Panel C: Top MF Terms
+    # ==========================================================================
+    ax_c = fig.add_subplot(gs[1, 0:2])
+    plot_top_terms(ax_c, datasets, GO_COLUMN, go_graph, years,
+                   "C. Top MF Terms", top_n)
+
+    # ==========================================================================
+    # Panel D: Top BP Terms
+    # ==========================================================================
+    ax_d = fig.add_subplot(gs[1, 2:4])
+    plot_top_terms(ax_d, datasets, GO_BP_COLUMN, go_graph, years,
+                   "D. Top BP Terms", top_n)
+
+    # ==========================================================================
+    # Panel E: Top CC Terms
+    # ==========================================================================
+    ax_e = fig.add_subplot(gs[1, 4:6])
+    plot_top_terms(ax_e, datasets, GO_CC_COLUMN, go_graph, years,
+                   "E. Top CC Terms", top_n)
+
+    plt.savefig(output_path, dpi=300, bbox_inches="tight", pad_inches=0.2)
+    plt.close()
+
+
+def generate_all_figures(
+    datasets: dict[int, pd.DataFrame],
+    output_dir: Path,
+    go_graph: nx.DiGraph | None = None,
+    top_n: int = TOP_N_GO_TERMS,
+):
+    """Generate all GO term visualization figures."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    if go_graph is None:
+        go_graph = load_go_hierarchy()
+
+    # Main overview figure (multipanel)
+    print("  Generating overview figure...")
+    plot_go_overview(datasets, go_graph, output_dir / "go_terms_overview.png", top_n)
+
+
+def main():
+    """Main function for standalone execution."""
+    data_dir = Path("data/processed/toxprot")
+    output_dir = Path("figures/go_terms")
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    print("Loading GO hierarchy...")
+    go_graph = load_go_hierarchy()
+
+    print("Loading ToxProt datasets...")
+    datasets = load_datasets(ALL_YEARS, data_dir)
+    print(f"  Loaded {len(datasets)} years")
+
+    print("Generating figures...")
+    generate_all_figures(datasets, output_dir, go_graph)
+
+    print(f"Done. Figures saved to {output_dir}")
+
+
+if __name__ == "__main__":
+    main()
