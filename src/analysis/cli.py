@@ -200,24 +200,27 @@ def length(ctx, data_dir, output_dir):
 def families(ctx, data_dir, output_dir, top_n):
     """Run protein family distribution analysis.
 
-    Generates a stacked bar chart comparing protein family distributions
-    between 2017 and 2025.
+    Generates stacked bar and alluvial charts comparing protein family
+    distributions across 2005, 2015, and 2025.
 
     \b
     Examples:
         toxprot analysis families
         toxprot analysis -d all families
-        toxprot analysis families --top-n 20
+        toxprot analysis families --top-n 10
     """
-    from .analyze_protein_families import plot_stacked_bar_protein_families
+    from .analyze_protein_families import (
+        plot_alluvial_protein_families,
+        plot_stacked_bar_protein_families,
+    )
 
     definition = ctx.obj["definition"]
     output_dir.mkdir(parents=True, exist_ok=True)
     protein_families_dir = output_dir / "protein_families"
     protein_families_dir.mkdir(parents=True, exist_ok=True)
 
-    # Load datasets (need 2017 and 2025 for comparison)
-    years = ["2017", "2025"]
+    # Load datasets for comparison (2005, 2015, 2025)
+    years = [2005, 2015, 2025]
     datasets = {}
     for year in years:
         filepath = data_dir / f"toxprot_{year}.csv"
@@ -228,14 +231,18 @@ def families(ctx, data_dir, output_dir, top_n):
         datasets = {year: filter_by_definition(df, definition) for year, df in datasets.items()}
         datasets = {year: df for year, df in datasets.items() if len(df) > 0}
 
-    if "2017" not in datasets or "2025" not in datasets:
-        raise click.ClickException("Need both 2017 and 2025 datasets")
+    if len(datasets) < 2:
+        raise click.ClickException("Need at least 2 datasets for comparison")
 
+    # Generate stacked bar chart
     families_bar_path = protein_families_dir / "top_families_stacked_bar.png"
-    plot_stacked_bar_protein_families(
-        datasets["2017"], datasets["2025"], families_bar_path, top_n=top_n
-    )
+    plot_stacked_bar_protein_families(datasets, families_bar_path, top_n=top_n)
     click.echo(f"Saved {families_bar_path} (definition: {definition})")
+
+    # Generate alluvial plot
+    alluvial_path = protein_families_dir / "top_families_alluvial.png"
+    plot_alluvial_protein_families(datasets, alluvial_path, top_n=top_n)
+    click.echo(f"Saved {alluvial_path} (definition: {definition})")
 
 
 @analysis.command("summary")
@@ -290,6 +297,93 @@ def summary(ctx, data_dir, output_dir):
     output_path = output_dir / "dataset_summary_statistics.png"
     generate_summary_table(datasets, output_path)
     click.echo(f"Saved {output_path} (definition: {definition})")
+
+
+@analysis.command("go")
+@click.option(
+    "--data-dir",
+    type=click.Path(exists=True, path_type=Path),
+    default=Path("data/processed/toxprot"),
+    show_default=True,
+    help="Directory containing processed CSV files.",
+)
+@click.option(
+    "--output-dir",
+    "-o",
+    type=click.Path(path_type=Path),
+    default=Path("figures/go_terms"),
+    show_default=True,
+    help="Directory to save output figures.",
+)
+@click.option(
+    "--top-n",
+    type=int,
+    default=15,
+    show_default=True,
+    help="Number of top GO terms to display.",
+)
+@click.pass_context
+def go(ctx, data_dir, output_dir, top_n):
+    """Run GO term distribution analysis.
+
+    Generates multiple figures showing GO term growth patterns:
+    - Raw counts (explicitly annotated terms)
+    - Propagated counts (with GO hierarchy)
+    - Annotation depth over time (specificity)
+    - New vs growing terms
+    - Growth trajectories
+
+    \b
+    Examples:
+        toxprot analysis go
+        toxprot analysis -d all go
+        toxprot analysis go --top-n 20
+    """
+    from .analyze_go_terms import (
+        ALL_YEARS,
+        generate_all_figures,
+        load_datasets,
+        load_go_hierarchy,
+    )
+
+    definition = ctx.obj["definition"]
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    click.echo("Loading GO hierarchy...")
+    go_graph = load_go_hierarchy()
+
+    click.echo("Loading ToxProt datasets...")
+    datasets = load_datasets(ALL_YEARS, data_dir)
+
+    if definition != "all":
+        datasets = {year: filter_by_definition(df, definition) for year, df in datasets.items()}
+        datasets = {year: df for year, df in datasets.items() if len(df) > 0}
+
+    if len(datasets) < 2:
+        raise click.ClickException("Need at least 2 datasets")
+
+    click.echo(f"Loaded {len(datasets)} years")
+    click.echo("Generating figures...")
+    generate_all_figures(datasets, output_dir, go_graph, top_n=top_n)
+
+    # Clean up old individual figures
+    old_files = [
+        "go_terms_comparison.png",
+        "go_terms_depth.png",
+        "go_terms_depth_distribution.png",
+        "go_terms_depth_shift.png",
+        "go_terms_new_vs_growth.png",
+        "go_terms_propagated.png",
+        "go_terms_trends.png",
+        "go_terms_coverage_depth.png",
+        "go_terms_category_trends.png",
+    ]
+    for f in old_files:
+        old_path = output_dir / f
+        if old_path.exists():
+            old_path.unlink()
+
+    click.echo(f"Saved figures to {output_dir} (definition: {definition})")
 
 
 @analysis.command()
