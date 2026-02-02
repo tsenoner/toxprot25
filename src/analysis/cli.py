@@ -460,6 +460,63 @@ def ptm(ctx, data_dir, output_dir, years):
     click.echo(f"Saved to {output_dir}")
 
 
+@analysis.command("habitat")
+@click.option(
+    "--data-dir",
+    type=click.Path(exists=True, path_type=Path),
+    default=Path("data/processed/toxprot"),
+    show_default=True,
+    help="Directory containing processed CSV files.",
+)
+@click.option(
+    "--output-dir",
+    "-o",
+    type=click.Path(path_type=Path),
+    default=Path("figures/habitat"),
+    show_default=True,
+    help="Directory to save output figures.",
+)
+@click.option(
+    "--top-n",
+    type=int,
+    default=15,
+    show_default=True,
+    help="Number of top protein families to display.",
+)
+@click.pass_context
+def habitat(ctx, data_dir, output_dir, top_n):
+    """Analyze dual-habitat protein family distributions.
+
+    Generates a diverging bar chart comparing protein families found in
+    both terrestrial and marine habitats across 2005, 2015, and 2025.
+
+    \b
+    Examples:
+        toxprot analysis habitat
+        toxprot analysis -d all habitat
+        toxprot analysis habitat --top-n 20
+    """
+    from .analyze_habitat import YEARS, load_datasets, plot_habitat_protein_families
+
+    definition = ctx.obj["definition"]
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    datasets = load_datasets(YEARS, data_dir)
+
+    if definition != "all":
+        datasets = {year: filter_by_definition(df, definition) for year, df in datasets.items()}
+        datasets = {year: df for year, df in datasets.items() if len(df) > 0}
+
+    if len(datasets) < 3:
+        raise click.ClickException("Need at least 3 datasets (2005, 2015, 2025)")
+
+    click.echo(f"Loaded {len(datasets)} datasets (definition: {definition})")
+
+    output_path = output_dir / "dual_habitat_protein_families.png"
+    plot_habitat_protein_families(datasets, output_path, top_n=top_n)
+    click.echo(f"Saved {output_path}")
+
+
 @analysis.command()
 @click.option(
     "--data-dir",
