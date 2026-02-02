@@ -64,6 +64,6 @@ Additional standalone scripts in `src/analysis/` cover habitat and GO-term analy
 
 ## Data Sources
 
-- [UniProtKB/Swiss-Prot](https://ftp.uniprot.org/pub/databases/uniprot/previous_major_releases) -- historical releases (2005-2025)
+- [UniProt Release History](docs/uniprot_releases.md) -- Swiss-Prot release versions and dates (2005-2025)
 - [ToxProt](https://www.uniprot.org/help/Toxins) -- UniProt animal toxin annotation program
 - Habitat classification -- manual taxonomic curation
