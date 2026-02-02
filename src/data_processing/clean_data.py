@@ -251,12 +251,11 @@ def process_toxprot_tsv(tsv_input_path: Path, update_protfams_func, create_fasta
         create_fasta_func(df, "Entry", "Sequence", fasta_output_path, signal_peptide_col)
 
     # Prepare columns for CSV output: remove columns not needed in final CSV
-    # Keep 'Gene Ontology (molecular function)' from GO columns
     drop_cols = [
         "Sequence",
         "Signal peptide (range)",
         "PTM_Features",  # Full JSON not needed in final CSV
-    ] + [col for col in go_merge_cols if col != "Gene Ontology (molecular function)"]
+    ]
     columns_for_csv = [col for col in df.columns if col not in drop_cols]
 
     # Save CSV

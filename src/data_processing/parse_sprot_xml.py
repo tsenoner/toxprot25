@@ -357,7 +357,7 @@ class SwissProtXMLParser:
                 entry_data["KEGG"] = (
                     (entry_data["KEGG"] + "; " + dbid) if entry_data["KEGG"] else dbid
                 )
-            elif dbtype == "GO":
+            elif dbtype.upper() == "GO":
                 entry_data["Gene Ontology (GO)"] = (
                     (entry_data["Gene Ontology (GO)"] + "; " + dbid)
                     if entry_data["Gene Ontology (GO)"]
