@@ -51,3 +51,7 @@ The UniProt Consortium formed in **2002** (SIB, EBI, PIR), but the first release
 Historical releases: https://ftp.uniprot.org/pub/databases/uniprot/previous_major_releases/
 
 ToxProt25 downloads `uniprot_sprot.xml.gz` from each release's `knowledgebase/complete/` directory.
+
+## References
+
+- [UniProt Release Notes](https://www.uniprot.org/release-notes)
