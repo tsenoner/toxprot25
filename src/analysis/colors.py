@@ -62,6 +62,14 @@ HABITAT_COLORS = {
     "marine": "#1565c0",  # Ocean blue
 }
 
+# Detailed habitat colors (for freshwater/estuarine if present)
+HABITAT_COLORS_DETAILED = {
+    "terrestrial": "#2e7d32",  # Forest green
+    "marine": "#1565c0",  # Ocean blue
+    "freshwater": "#00838f",  # Teal
+    "estuarine": "#5e35b1",  # Purple
+}
+
 
 # =============================================================================
 # Protein Evidence Colors

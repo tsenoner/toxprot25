@@ -10,7 +10,8 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import numpy as np
 import pandas as pd
-from matplotlib.patches import Patch
+from matplotlib.patches import Patch, PathPatch
+from matplotlib.path import Path as MplPath
 
 from .analyze_protein_families import FAMILY_NAME_MAP
 
@@ -133,10 +134,10 @@ def plot_habitat_protein_families(
     fig, ax = plt.subplots(figsize=(12, max(6, len(summary) * 0.45)))
     y_pos = np.arange(len(summary))
 
-    # Colors for the three periods (darker to lighter)
+    # Colors for the three periods (lighter to darker)
     colors = {
-        "terrestrial": ["forestgreen", "#31c42f", "#90EE90"],
-        "marine": ["steelblue", "#56a0dd", "#ADD8E6"],
+        "terrestrial": ["#90EE90", "#31c42f", "forestgreen"],
+        "marine": ["#ADD8E6", "#56a0dd", "steelblue"],
     }
 
     def abs_formatter(x, _pos):
@@ -192,16 +193,28 @@ def plot_habitat_protein_families(
     ax.invert_yaxis()
     ax.set_xlabel("Number of Entries (Marine ← | → Terrestrial)")
 
-    # Custom legend showing years with colors for both habitats (Marine first, then Terrestrial)
+    # Custom legend with Marine/Terrestrial columns and years
     legend_elements = [
-        Patch(facecolor=colors["marine"][0], edgecolor="none", label=f"Marine {year_early}"),
-        Patch(facecolor=colors["marine"][1], edgecolor="none", label=f"Marine {year_mid}"),
-        Patch(facecolor=colors["marine"][2], edgecolor="none", label=f"Marine {year_late}"),
-        Patch(facecolor=colors["terrestrial"][0], edgecolor="none", label=f"Terrestrial {year_early}"),
-        Patch(facecolor=colors["terrestrial"][1], edgecolor="none", label=f"Terrestrial {year_mid}"),
-        Patch(facecolor=colors["terrestrial"][2], edgecolor="none", label=f"Terrestrial {year_late}"),
+        # Marine column (left)
+        Patch(facecolor=colors["marine"][0], edgecolor="none", label=str(year_early)),
+        Patch(facecolor=colors["marine"][1], edgecolor="none", label=str(year_mid)),
+        Patch(facecolor=colors["marine"][2], edgecolor="none", label=str(year_late)),
+        # Terrestrial column (right)
+        Patch(facecolor=colors["terrestrial"][0], edgecolor="none", label=str(year_early)),
+        Patch(facecolor=colors["terrestrial"][1], edgecolor="none", label=str(year_mid)),
+        Patch(facecolor=colors["terrestrial"][2], edgecolor="none", label=str(year_late)),
     ]
-    ax.legend(handles=legend_elements, loc="lower right", fontsize=10, ncol=2)
+    ax.legend(
+        handles=legend_elements,
+        loc="lower right",
+        fontsize=10,
+        ncol=2,
+        columnspacing=1.5,
+        handletextpad=0.5,
+        handlelength=1.5,
+        title="Marine      Terrestrial",
+        title_fontproperties={"weight": "bold", "size": 10},
+    )
     ax.axvline(0, color="grey", lw=0.8)
     ax.xaxis.set_major_formatter(mticker.FuncFormatter(abs_formatter))
 
@@ -239,3 +252,600 @@ def plot_habitat_protein_families(
     plt.savefig(output_path, dpi=150)
     print(f"Generated: {output_path}")
     plt.close(fig)
+
+
+def plot_taxa_by_habitat(
+    df: pd.DataFrame,
+    output_path: Path,
+) -> None:
+    """Create single-panel figure showing taxa distribution by habitat with flow connections.
+
+    Shows stacked bars for Entries, Species, and Protein Families by habitat,
+    with the Protein Families bar "expanding" into Shared/Exclusive breakdown
+    via connecting flow lines.
+
+    Args:
+        df: DataFrame with columns: Entry, Species, Habitat, Protein families.
+            Should already be filtered to venom_tissue criterion.
+        output_path: Path for output figure.
+    """
+    # Filter to venom_tissue criterion
+    venom_df = df[df["ToxProt definition"].isin(["venom_tissue", "both"])].copy()
+
+    if venom_df.empty:
+        print("No data matching venom_tissue criterion.")
+        return
+
+    # --- Data preparation ---
+    # Habitat-level summary
+    habitat_summary = (
+        venom_df.groupby("Habitat")
+        .agg(
+            entry_count=("Entry", "count"),
+            species_count=("Species", "nunique"),
+            family_count=("Protein families", "nunique"),
+        )
+        .reset_index()
+    )
+
+    # === Identify shared protein families ===
+    habitats = ["terrestrial", "marine"]
+    terr_families = set(
+        venom_df[venom_df["Habitat"] == "terrestrial"]["Protein families"].dropna().unique()
+    )
+    marine_families = set(
+        venom_df[venom_df["Habitat"] == "marine"]["Protein families"].dropna().unique()
+    )
+    shared_families = terr_families & marine_families
+    n_shared = len(shared_families)
+
+    # Get counts per habitat
+    data_by_habitat = {}
+    for hab in habitats:
+        hab_data = habitat_summary[habitat_summary["Habitat"] == hab]
+        if len(hab_data) > 0:
+            data_by_habitat[hab] = {
+                "species": hab_data["species_count"].values[0],
+                "entries": hab_data["entry_count"].values[0],
+                "families": hab_data["family_count"].values[0],
+            }
+        else:
+            data_by_habitat[hab] = {"species": 0, "entries": 0, "families": 0}
+
+    # Calculate totals
+    total_species = sum(d["species"] for d in data_by_habitat.values())
+    total_entries = sum(d["entries"] for d in data_by_habitat.values())
+    total_families = len(terr_families | marine_families)  # Union of all families
+
+    # Exclusive family counts
+    n_terr_exclusive = len(terr_families - shared_families)
+    n_marine_exclusive = len(marine_families - shared_families)
+
+    # --- Create figure ---
+    fig, ax = plt.subplots(figsize=(12, 6))
+
+    # Use 2005 colors from dual_habitat_protein_families figure (darker, more readable)
+    habitat_colors = {
+        "terrestrial": "forestgreen",  # Dark green (2005)
+        "marine": "steelblue",  # Dark blue (2005)
+    }
+
+    # === Layout configuration ===
+    # Left side: Entries, Species, Protein Families (3 bars)
+    # Right side: Stacked vertically - Shared (top 50%), Exclusive (bottom 50%)
+    metrics_left = ["Entries", "Species", "Protein\nFamilies"]
+
+    x_left = np.array([0, 1, 2])
+    x_right = np.array([4, 5])  # Just Entries, Species columns
+    bar_width = 0.5
+
+    # === Calculate percentages for left-side bars ===
+    # Order: Entries, Species, Protein Families
+    terr_pcts_left = [
+        data_by_habitat["terrestrial"]["entries"] / total_entries * 100 if total_entries > 0 else 0,
+        data_by_habitat["terrestrial"]["species"] / total_species * 100 if total_species > 0 else 0,
+        n_terr_exclusive / total_families * 100 if total_families > 0 else 0,
+    ]
+    marine_pcts_left = [
+        data_by_habitat["marine"]["entries"] / total_entries * 100 if total_entries > 0 else 0,
+        data_by_habitat["marine"]["species"] / total_species * 100 if total_species > 0 else 0,
+        n_marine_exclusive / total_families * 100 if total_families > 0 else 0,
+    ]
+    shared_pcts_left = [
+        0,  # Entries can't be "shared" in same way
+        0,  # Species can't be "shared" in same way
+        n_shared / total_families * 100 if total_families > 0 else 0,
+    ]
+
+    # Counts for labels
+    terr_counts_left = [
+        data_by_habitat["terrestrial"]["entries"],
+        data_by_habitat["terrestrial"]["species"],
+        n_terr_exclusive,
+    ]
+    marine_counts_left = [
+        data_by_habitat["marine"]["entries"],
+        data_by_habitat["marine"]["species"],
+        n_marine_exclusive,
+    ]
+
+    # === Draw left-side stacked bars ===
+    # Terrestrial (bottom)
+    ax.bar(
+        x_left,
+        terr_pcts_left,
+        bar_width,
+        label="Terrestrial",
+        color=habitat_colors["terrestrial"],
+        edgecolor="black",
+        linewidth=0.5,
+    )
+
+    # Shared families (middle, only for Protein Families)
+    ax.bar(
+        x_left,
+        shared_pcts_left,
+        bar_width,
+        bottom=terr_pcts_left,
+        label=f"Shared (n={n_shared})",
+        color="#7570b3",  # Purple
+        edgecolor="black",
+        linewidth=0.5,
+    )
+
+    # Marine (top)
+    ax.bar(
+        x_left,
+        marine_pcts_left,
+        bar_width,
+        bottom=[t + s for t, s in zip(terr_pcts_left, shared_pcts_left, strict=True)],
+        label="Marine",
+        color=habitat_colors["marine"],
+        edgecolor="black",
+        linewidth=0.5,
+    )
+
+    # === Calculate data for right-side bars (Shared/Exclusive by Entries/Species) ===
+    venom_df.loc[:, "is_shared"] = venom_df["Protein families"].isin(shared_families)
+
+    panel_right_data = {}
+    for hab in habitats:
+        hab_df = venom_df[venom_df["Habitat"] == hab]
+        panel_right_data[hab] = {
+            "shared_entries": hab_df[hab_df["is_shared"]]["Entry"].count(),
+            "exclusive_entries": hab_df[~hab_df["is_shared"]]["Entry"].count(),
+            "shared_species": hab_df[hab_df["is_shared"]]["Species"].nunique(),
+            "exclusive_species": hab_df[~hab_df["is_shared"]]["Species"].nunique(),
+        }
+
+    # Calculate totals for each metric (Entries, Species)
+    shared_totals = [
+        panel_right_data["terrestrial"]["shared_entries"]
+        + panel_right_data["marine"]["shared_entries"],
+        panel_right_data["terrestrial"]["shared_species"]
+        + panel_right_data["marine"]["shared_species"],
+    ]
+    exclusive_totals = [
+        panel_right_data["terrestrial"]["exclusive_entries"]
+        + panel_right_data["marine"]["exclusive_entries"],
+        panel_right_data["terrestrial"]["exclusive_species"]
+        + panel_right_data["marine"]["exclusive_species"],
+    ]
+
+    # Shared: Terrestrial counts and percentages (scaled to 50% height)
+    shared_terr_counts = [
+        panel_right_data["terrestrial"]["shared_entries"],
+        panel_right_data["terrestrial"]["shared_species"],
+    ]
+    shared_terr_pcts = [
+        (t / total * 50) if total > 0 else 0
+        for t, total in zip(shared_terr_counts, shared_totals, strict=True)
+    ]
+    shared_marine_counts = [
+        panel_right_data["marine"]["shared_entries"],
+        panel_right_data["marine"]["shared_species"],
+    ]
+    shared_marine_pcts = [
+        (m / total * 50) if total > 0 else 0
+        for m, total in zip(shared_marine_counts, shared_totals, strict=True)
+    ]
+
+    # Exclusive: Terrestrial counts and percentages (scaled to 50% height)
+    exclusive_terr_counts = [
+        panel_right_data["terrestrial"]["exclusive_entries"],
+        panel_right_data["terrestrial"]["exclusive_species"],
+    ]
+    exclusive_terr_pcts = [
+        (t / total * 50) if total > 0 else 0
+        for t, total in zip(exclusive_terr_counts, exclusive_totals, strict=True)
+    ]
+    exclusive_marine_counts = [
+        panel_right_data["marine"]["exclusive_entries"],
+        panel_right_data["marine"]["exclusive_species"],
+    ]
+    exclusive_marine_pcts = [
+        (m / total * 50) if total > 0 else 0
+        for m, total in zip(exclusive_marine_counts, exclusive_totals, strict=True)
+    ]
+
+    # === Draw right-side bars (vertically stacked with gap) ===
+    # Layout: Exclusive (0-45), gap (45-55), Shared (55-100)
+    gap_bottom = 45
+    gap_top = 55
+    exclusive_height = gap_bottom  # 0-45
+    shared_height = 100 - gap_top  # 55-100 = 45
+
+    # Scale percentages to fit in their respective sections
+    exclusive_terr_scaled = [(t / 50) * exclusive_height for t in exclusive_terr_pcts]
+    exclusive_marine_scaled = [(m / 50) * exclusive_height for m in exclusive_marine_pcts]
+    shared_terr_scaled = [(t / 50) * shared_height for t in shared_terr_pcts]
+    shared_marine_scaled = [(m / 50) * shared_height for m in shared_marine_pcts]
+
+    # Exclusive group (bottom: y=0-45)
+    ax.bar(
+        x_right,
+        exclusive_terr_scaled,
+        bar_width,
+        bottom=0,
+        color=habitat_colors["terrestrial"],
+        edgecolor="black",
+        linewidth=0.5,
+    )
+    ax.bar(
+        x_right,
+        exclusive_marine_scaled,
+        bar_width,
+        bottom=exclusive_terr_scaled,
+        color=habitat_colors["marine"],
+        edgecolor="black",
+        linewidth=0.5,
+    )
+
+    # Shared group (top: y=55-100)
+    ax.bar(
+        x_right,
+        shared_terr_scaled,
+        bar_width,
+        bottom=gap_top,
+        color=habitat_colors["terrestrial"],
+        edgecolor="black",
+        linewidth=0.5,
+    )
+    ax.bar(
+        x_right,
+        shared_marine_scaled,
+        bar_width,
+        bottom=[gap_top + t for t in shared_terr_scaled],
+        color=habitat_colors["marine"],
+        edgecolor="black",
+        linewidth=0.5,
+    )
+
+    # === Add value labels inside left-side bars ===
+    for i in range(len(x_left)):
+        # Terrestrial label
+        t_pct = terr_pcts_left[i]
+        ax.text(
+            x_left[i],
+            t_pct / 2,
+            f"{terr_counts_left[i]:,}\n({t_pct:.1f}%)",
+            ha="center",
+            va="center",
+            fontsize=7,
+            color="white",
+            fontweight="bold",
+        )
+
+        # Shared label (only for Protein Families bar)
+        s_pct = shared_pcts_left[i]
+        if s_pct > 0:
+            ax.text(
+                x_left[i],
+                terr_pcts_left[i] + s_pct / 2,
+                f"{n_shared}\n({s_pct:.1f}%)",
+                ha="center",
+                va="center",
+                fontsize=7,
+                color="white",
+                fontweight="bold",
+            )
+
+        # Marine label
+        m_pct = marine_pcts_left[i]
+        bottom_m = terr_pcts_left[i] + shared_pcts_left[i]
+        ax.text(
+            x_left[i],
+            bottom_m + m_pct / 2,
+            f"{marine_counts_left[i]:,}\n({m_pct:.1f}%)",
+            ha="center",
+            va="center",
+            fontsize=7,
+            color="white",
+            fontweight="bold",
+        )
+
+    # === Add value labels inside right-side bars ===
+    # Exclusive group labels (bottom: 0-45)
+    for i in range(len(x_right)):
+        # Terrestrial
+        t_scaled = exclusive_terr_scaled[i]
+        t_pct_actual = (
+            exclusive_terr_counts[i] / exclusive_totals[i] * 100 if exclusive_totals[i] > 0 else 0
+        )
+        ax.text(
+            x_right[i],
+            t_scaled / 2,
+            f"{exclusive_terr_counts[i]:,}\n({t_pct_actual:.1f}%)",
+            ha="center",
+            va="center",
+            fontsize=7,
+            color="white",
+            fontweight="bold",
+        )
+        # Marine
+        m_scaled = exclusive_marine_scaled[i]
+        m_pct_actual = (
+            exclusive_marine_counts[i] / exclusive_totals[i] * 100 if exclusive_totals[i] > 0 else 0
+        )
+        ax.text(
+            x_right[i],
+            exclusive_terr_scaled[i] + m_scaled / 2,
+            f"{exclusive_marine_counts[i]:,}\n({m_pct_actual:.1f}%)",
+            ha="center",
+            va="center",
+            fontsize=7,
+            color="white",
+            fontweight="bold",
+        )
+
+    # Shared group labels (top: 55-100)
+    min_height_for_label = 8  # Minimum scaled height to fit label inside
+    for i in range(len(x_right)):
+        # Terrestrial
+        t_scaled = shared_terr_scaled[i]
+        t_pct_actual = shared_terr_counts[i] / shared_totals[i] * 100 if shared_totals[i] > 0 else 0
+        ax.text(
+            x_right[i],
+            gap_top + t_scaled / 2,
+            f"{shared_terr_counts[i]:,}\n({t_pct_actual:.1f}%)",
+            ha="center",
+            va="center",
+            fontsize=7,
+            color="white",
+            fontweight="bold",
+        )
+        # Marine - place outside if section too small
+        m_scaled = shared_marine_scaled[i]
+        m_pct_actual = (
+            shared_marine_counts[i] / shared_totals[i] * 100 if shared_totals[i] > 0 else 0
+        )
+        if m_scaled >= min_height_for_label:
+            ax.text(
+                x_right[i],
+                gap_top + shared_terr_scaled[i] + m_scaled / 2,
+                f"{shared_marine_counts[i]:,}\n({m_pct_actual:.1f}%)",
+                ha="center",
+                va="center",
+                fontsize=7,
+                color="white",
+                fontweight="bold",
+            )
+        else:
+            # Place label outside, directly on top of the bar
+            bar_top = gap_top + shared_terr_scaled[i] + m_scaled
+            ax.text(
+                x_right[i],
+                bar_top + 1,
+                f"{shared_marine_counts[i]:,} ({m_pct_actual:.1f}%)",
+                ha="center",
+                va="bottom",
+                fontsize=7,
+                fontweight="bold",
+                color=habitat_colors["marine"],
+            )
+
+    # === Draw flow connections using Bézier curves ===
+    def draw_flow(
+        x1: float,
+        y1_bottom: float,
+        y1_top: float,
+        x2: float,
+        y2_bottom: float,
+        y2_top: float,
+        color: str,
+        alpha: float = 0.4,
+    ):
+        """Draw a curved flow between two vertical segments."""
+        half_width = bar_width / 2
+        ctrl_offset = (x2 - x1) * 0.4
+        verts = [
+            (x1 + half_width, y1_bottom),
+            (x1 + half_width + ctrl_offset, y1_bottom),
+            (x2 - ctrl_offset, y2_bottom),
+            (x2, y2_bottom),
+            (x2, y2_top),
+            (x2 - ctrl_offset, y2_top),
+            (x1 + half_width + ctrl_offset, y1_top),
+            (x1 + half_width, y1_top),
+            (x1 + half_width, y1_bottom),
+        ]
+        codes = [
+            MplPath.MOVETO,
+            MplPath.CURVE4,
+            MplPath.CURVE4,
+            MplPath.CURVE4,
+            MplPath.LINETO,
+            MplPath.CURVE4,
+            MplPath.CURVE4,
+            MplPath.CURVE4,
+            MplPath.CLOSEPOLY,
+        ]
+        path = MplPath(verts, codes)
+        patch = PathPatch(path, facecolor=color, edgecolor="none", alpha=alpha)
+        ax.add_patch(patch)
+
+    # Protein Families bar positions (source)
+    pf_x = x_left[2]
+    pf_terr_bottom = 0
+    pf_terr_top = terr_pcts_left[2]
+    pf_shared_bottom = pf_terr_top
+    pf_shared_top = pf_shared_bottom + shared_pcts_left[2]
+    pf_marine_bottom = pf_shared_top
+    pf_marine_top = pf_marine_bottom + marine_pcts_left[2]
+
+    # Flow target x position (stop before the bars to give sense of direction)
+    flow_target_x = x_right[0] - bar_width / 2 - 0.15
+
+    # Calculate proportional targets for exclusive section
+    # Average terrestrial percentage across exclusive entries/species
+    avg_terr_pct = sum(exclusive_terr_pcts) / len(exclusive_terr_pcts)  # ~72.7%
+    terr_height_in_exclusive = (avg_terr_pct / 50) * exclusive_height  # Scale to 0-45 range
+
+    # Flow 1: Terrestrial exclusive → bottom portion of Exclusive group (0 to ~72.7%)
+    draw_flow(
+        pf_x,
+        pf_terr_bottom,
+        pf_terr_top,
+        flow_target_x,
+        0,
+        terr_height_in_exclusive,
+        habitat_colors["terrestrial"],
+        alpha=0.35,
+    )
+
+    # Flow 2: Shared → Shared group (55-100)
+    draw_flow(
+        pf_x,
+        pf_shared_bottom,
+        pf_shared_top,
+        flow_target_x,
+        gap_top,
+        100,
+        "#7570b3",
+        alpha=0.35,
+    )
+
+    # Flow 3: Marine exclusive → top portion of Exclusive group (~72.7% to 100%)
+    draw_flow(
+        pf_x,
+        pf_marine_bottom,
+        pf_marine_top,
+        flow_target_x,
+        terr_height_in_exclusive,
+        exclusive_height,
+        habitat_colors["marine"],
+        alpha=0.35,
+    )
+
+    # === Axis configuration ===
+    all_x = list(x_left) + list(x_right)
+    all_labels = metrics_left + ["Entries", "Species"]
+    ax.set_xticks(all_x)
+    ax.set_xticklabels(all_labels)
+    ax.set_ylabel("Percentage (%)")
+    ax.set_ylim(0, 105)
+    ax.set_xlim(-0.6, 6.4)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    # Create x-axis break by hiding part of the bottom spine and drawing two segments
+    ax.spines["bottom"].set_visible(False)
+    # Draw left segment of x-axis (under left bars)
+    ax.plot([-0.6, 2.6], [0, 0], color="black", lw=1, clip_on=False)
+    # Draw right segment of x-axis (under right bars) - shorter
+    ax.plot([3.4, 5.6], [0, 0], color="black", lw=1, clip_on=False)
+
+    # Add dashed horizontal line between Shared and Exclusive groups on the right
+    ax.hlines(
+        y=(gap_bottom + gap_top) / 2,
+        xmin=x_right[0] - bar_width / 2 - 0.1,
+        xmax=x_right[1] + bar_width / 2 + 0.1,
+        colors="gray",
+        linestyles="dashed",
+        linewidth=1.0,
+    )
+
+    # Add group labels on the right side (centered in each section)
+    shared_center_y = gap_top + shared_height / 2  # Center of shared section
+    exclusive_center_y = exclusive_height / 2  # Center of exclusive section
+    label_x = x_right[1] + bar_width / 2 + 0.3
+    ax.text(
+        label_x,
+        shared_center_y,
+        f"Shared\n(n={n_shared})",
+        ha="left",
+        va="center",
+        fontsize=9,
+        fontweight="bold",
+    )
+    ax.text(
+        label_x,
+        exclusive_center_y,
+        f"Exclusive\n(n={n_terr_exclusive + n_marine_exclusive})",
+        ha="left",
+        va="center",
+        fontsize=9,
+        fontweight="bold",
+    )
+
+    # Move legend to top right, above Shared label
+    ax.legend(loc="lower left", bbox_to_anchor=(0.85, 0.82), fontsize=9, framealpha=1.0)
+
+    plt.tight_layout()
+    plt.subplots_adjust(bottom=0.15)  # Room for group labels
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    plt.savefig(output_path, dpi=150, bbox_inches="tight")
+    print(f"Generated: {output_path}")
+    plt.close(fig)
+
+
+def create_habitat_combined_figure(
+    panel_a_path: Path,
+    panel_b_path: Path,
+    output_path: Path,
+) -> None:
+    """Create combined A/B panel figure from two existing figures.
+
+    Args:
+        panel_a_path: Path to Panel A figure (taxa_by_habitat.png)
+        panel_b_path: Path to Panel B figure (dual_habitat_protein_families.png)
+        output_path: Path for combined output figure
+    """
+    from PIL import Image, ImageDraw, ImageFont
+
+    # Load the images
+    img_a = Image.open(panel_a_path)
+    img_b = Image.open(panel_b_path)
+
+    # Get dimensions
+    w_a, h_a = img_a.size
+    w_b, h_b = img_b.size
+
+    # Create combined figure (stacked vertically)
+    padding = 30
+    total_width = max(w_a, w_b)
+    total_height = h_a + h_b + padding
+
+    # Create new image with white background
+    combined = Image.new("RGB", (total_width, total_height), "white")
+
+    # Paste images (centered horizontally if widths differ)
+    x_offset_a = (total_width - w_a) // 2
+    x_offset_b = (total_width - w_b) // 2
+    combined.paste(img_a, (x_offset_a, 0))
+    combined.paste(img_b, (x_offset_b, h_a + padding))
+
+    # Add panel labels using PIL
+    draw = ImageDraw.Draw(combined)
+    try:
+        font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 36)
+    except OSError:
+        font = ImageFont.load_default()
+
+    # Add A and B labels
+    draw.text((15, 5), "A", fill="black", font=font)
+    draw.text((15, h_a + padding + 5), "B", fill="black", font=font)
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    combined.save(output_path, dpi=(150, 150))
+    print(f"Generated: {output_path}")
