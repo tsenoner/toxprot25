@@ -82,14 +82,14 @@ def filter_df_by_families(df: pd.DataFrame, families_to_keep: set[str]) -> pd.Da
 
 def plot_habitat_protein_families(
     datasets: dict[int, pd.DataFrame],
-    output_path: Path,
+    ax: plt.Axes,
     top_n: int = TOP_N_FAMILIES,
 ) -> None:
     """Plot dual-habitat protein family evolution across years.
 
     Args:
         datasets: Dictionary mapping years to DataFrames
-        output_path: Path for output figure (without extension)
+        ax: Axes to draw on.
         top_n: Number of top families to display
     """
     years = sorted(datasets.keys())
@@ -130,8 +130,6 @@ def plot_habitat_protein_families(
     summary["total_latest"] = summary[f"terrestrial_{year_late}"] + summary[f"marine_{year_late}"]
     summary = summary.sort_values(by="total_latest", ascending=False)
 
-    # Create figure
-    fig, ax = plt.subplots(figsize=(12, max(6, len(summary) * 0.45)))
     y_pos = np.arange(len(summary))
 
     # Colors for the three periods (lighter to darker)
@@ -220,7 +218,7 @@ def plot_habitat_protein_families(
 
     # Expand x-limits for annotations (balance space for annotations on both sides)
     xlim = ax.get_xlim()
-    ax.set_xlim(xlim[0] * 2.5, xlim[1] * 1.1)
+    ax.set_xlim(xlim[0] * 2.3, xlim[1] * 1.1)
     xlim = ax.get_xlim()
     offset = abs(xlim[1]) * 0.02
 
@@ -248,15 +246,10 @@ def plot_habitat_protein_families(
             fontsize=8,
         )
 
-    plt.tight_layout()
-    plt.savefig(output_path, dpi=150)
-    print(f"Generated: {output_path}")
-    plt.close(fig)
-
 
 def plot_taxa_by_habitat(
     df: pd.DataFrame,
-    output_path: Path,
+    ax: plt.Axes,
 ) -> None:
     """Create single-panel figure showing taxa distribution by habitat with flow connections.
 
@@ -267,7 +260,7 @@ def plot_taxa_by_habitat(
     Args:
         df: DataFrame with columns: Entry, Species, Habitat, Protein families.
             Should already be filtered to venom_tissue criterion.
-        output_path: Path for output figure.
+        ax: Axes to draw on.
     """
     # Filter to venom_tissue criterion
     venom_df = df[df["ToxProt definition"].isin(["venom_tissue", "both"])].copy()
@@ -321,9 +314,6 @@ def plot_taxa_by_habitat(
     n_terr_exclusive = len(terr_families - shared_families)
     n_marine_exclusive = len(marine_families - shared_families)
 
-    # --- Create figure ---
-    fig, ax = plt.subplots(figsize=(12, 6))
-
     # Use 2005 colors from dual_habitat_protein_families figure (darker, more readable)
     habitat_colors = {
         "terrestrial": "forestgreen",  # Dark green (2005)
@@ -336,7 +326,7 @@ def plot_taxa_by_habitat(
     metrics_left = ["Entries", "Species", "Protein\nFamilies"]
 
     x_left = np.array([0, 1, 2])
-    x_right = np.array([4, 5])  # Just Entries, Species columns
+    x_right = np.array([3.7, 4.3])  # Just Entries, Species columns (closer together)
     bar_width = 0.5
 
     # === Calculate percentages for left-side bars ===
@@ -744,16 +734,54 @@ def plot_taxa_by_habitat(
     ax.set_xticklabels(all_labels)
     ax.set_ylabel("Percentage (%)")
     ax.set_ylim(0, 105)
-    ax.set_xlim(-0.6, 6.4)
+    ax.set_xlim(-0.3, 5.5)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
 
-    # Create x-axis break by hiding part of the bottom spine and drawing two segments
+    # Hide bottom spine (no x-axis line)
     ax.spines["bottom"].set_visible(False)
-    # Draw left segment of x-axis (under left bars)
-    ax.plot([-0.6, 2.6], [0, 0], color="black", lw=1, clip_on=False)
-    # Draw right segment of x-axis (under right bars) - shorter
-    ax.plot([3.4, 5.6], [0, 0], color="black", lw=1, clip_on=False)
+
+    # Add two separate y-axes for right-side bars (Exclusive bottom, Shared top)
+    right_axis_x = x_right[0] - bar_width / 2 - 0.15
+    tick_length = 0.02
+
+    # Bottom y-axis for Exclusive section (0-45 maps to 0-100%)
+    ax.plot([right_axis_x, right_axis_x], [0, gap_bottom], color="black", lw=0.8, clip_on=False)
+    for tick_val, label in [(0, "0"), (gap_bottom / 2, "50"), (gap_bottom, "100")]:
+        ax.plot(
+            [right_axis_x - tick_length, right_axis_x],
+            [tick_val, tick_val],
+            color="black",
+            lw=0.8,
+            clip_on=False,
+        )
+        ax.text(
+            right_axis_x - tick_length - 0.05,
+            tick_val,
+            label,
+            ha="right",
+            va="center",
+            fontsize=9,
+        )
+
+    # Top y-axis for Shared section (55-100 maps to 0-100%)
+    ax.plot([right_axis_x, right_axis_x], [gap_top, 100], color="black", lw=0.8, clip_on=False)
+    for tick_val, label in [(gap_top, "0"), ((gap_top + 100) / 2, "50"), (100, "100")]:
+        ax.plot(
+            [right_axis_x - tick_length, right_axis_x],
+            [tick_val, tick_val],
+            color="black",
+            lw=0.8,
+            clip_on=False,
+        )
+        ax.text(
+            right_axis_x - tick_length - 0.05,
+            tick_val,
+            label,
+            ha="right",
+            va="center",
+            fontsize=9,
+        )
 
     # Add dashed horizontal line between Shared and Exclusive groups on the right
     ax.hlines(
@@ -791,61 +819,42 @@ def plot_taxa_by_habitat(
     # Move legend to top right, above Shared label
     ax.legend(loc="lower left", bbox_to_anchor=(0.85, 0.82), fontsize=9, framealpha=1.0)
 
-    plt.tight_layout()
-    plt.subplots_adjust(bottom=0.15)  # Room for group labels
+
+def plot_habitat_combined(
+    df: pd.DataFrame,
+    datasets: dict[int, pd.DataFrame],
+    output_path: Path,
+    top_n: int = TOP_N_FAMILIES,
+) -> None:
+    """Create combined two-panel habitat figure with taxa distribution and protein families.
+
+    Args:
+        df: DataFrame for Panel A (taxa by habitat). Should be 2025 data.
+        datasets: Dictionary mapping years to DataFrames for Panel B (protein families).
+        output_path: Path for combined output figure.
+        top_n: Number of top protein families to display in Panel B.
+    """
     output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Create figure with independent panel positioning
+    fig = plt.figure(figsize=(14, 12))
+
+    # Panel A: positioned with minimal left margin (can extend further left)
+    ax_a = fig.add_axes([0.06, 0.55, 0.88, 0.40])  # [left, bottom, width, height]
+
+    # Panel B: positioned with larger left margin to accommodate long y-axis labels
+    ax_b = fig.add_axes([0.22, 0.08, 0.72, 0.42])
+
+    # Panel A: Taxa by habitat
+    plot_taxa_by_habitat(df, ax_a)
+
+    # Panel B: Dual-habitat protein families
+    plot_habitat_protein_families(datasets, ax_b, top_n=top_n)
+
+    # Add panel labels at absolute left edge of figure
+    fig.text(0.01, 0.96, "A", fontsize=18, fontweight="bold")
+    fig.text(0.01, 0.50, "B", fontsize=18, fontweight="bold")
+
     plt.savefig(output_path, dpi=150, bbox_inches="tight")
     print(f"Generated: {output_path}")
     plt.close(fig)
-
-
-def create_habitat_combined_figure(
-    panel_a_path: Path,
-    panel_b_path: Path,
-    output_path: Path,
-) -> None:
-    """Create combined A/B panel figure from two existing figures.
-
-    Args:
-        panel_a_path: Path to Panel A figure (taxa_by_habitat.png)
-        panel_b_path: Path to Panel B figure (dual_habitat_protein_families.png)
-        output_path: Path for combined output figure
-    """
-    from PIL import Image, ImageDraw, ImageFont
-
-    # Load the images
-    img_a = Image.open(panel_a_path)
-    img_b = Image.open(panel_b_path)
-
-    # Get dimensions
-    w_a, h_a = img_a.size
-    w_b, h_b = img_b.size
-
-    # Create combined figure (stacked vertically)
-    padding = 30
-    total_width = max(w_a, w_b)
-    total_height = h_a + h_b + padding
-
-    # Create new image with white background
-    combined = Image.new("RGB", (total_width, total_height), "white")
-
-    # Paste images (centered horizontally if widths differ)
-    x_offset_a = (total_width - w_a) // 2
-    x_offset_b = (total_width - w_b) // 2
-    combined.paste(img_a, (x_offset_a, 0))
-    combined.paste(img_b, (x_offset_b, h_a + padding))
-
-    # Add panel labels using PIL
-    draw = ImageDraw.Draw(combined)
-    try:
-        font = ImageFont.truetype("/System/Library/Fonts/Helvetica.ttc", 36)
-    except OSError:
-        font = ImageFont.load_default()
-
-    # Add A and B labels
-    draw.text((15, 5), "A", fill="black", font=font)
-    draw.text((15, h_a + padding + 5), "B", fill="black", font=font)
-
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    combined.save(output_path, dpi=(150, 150))
-    print(f"Generated: {output_path}")
