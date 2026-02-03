@@ -4,7 +4,6 @@
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage
 from matplotlib.patches import PathPatch, Rectangle

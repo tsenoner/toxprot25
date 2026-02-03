@@ -516,7 +516,7 @@ def habitat(ctx, data_dir, output_dir, top_n):
     # Use 2025 data for Panel A
     df_2025 = datasets[max(datasets.keys())]
 
-    output_path = output_dir / "habitat_combined.png"
+    output_path = output_dir / "habitat.png"
     plot_habitat_combined(df_2025, datasets, output_path, top_n=top_n)
     click.echo(f"Saved {output_path}")
 
