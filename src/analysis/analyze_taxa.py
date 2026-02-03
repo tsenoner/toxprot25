@@ -281,9 +281,11 @@ def plot_newcomers_alluvial(
     datasets: dict[str, pd.DataFrame],
     output_path: Path,
     taxa_level: str = "Phylum",
-    years: list[int] = [2005, 2015, 2025],
+    years: list[int] | None = None,
     definition: str | None = DEFAULT_DEFINITION,
 ):
+    if years is None:
+        years = [2005, 2015, 2025]
     """Create alluvial-style diagram showing taxa at decade steps.
 
     Style matches definition_comparison.png:
@@ -339,10 +341,7 @@ def plot_newcomers_alluvial(
         all_taxa.update(data_by_year[year].keys())
 
     # Sort by 2025 count (descending), taxa not in 2025 go at end
-    taxa_order = sorted(
-        all_taxa,
-        key=lambda t: -data_by_year[reference_year].get(t, 0)
-    )
+    taxa_order = sorted(all_taxa, key=lambda t: -data_by_year[reference_year].get(t, 0))
 
     # Create color map
     taxa_colors = {}
@@ -421,7 +420,7 @@ def plot_newcomers_alluvial(
         total_height = 0
         taxa_counts = data_by_year[year]
         n_taxa_year = len(taxa_counts)
-        for taxon, count in taxa_counts.items():
+        for _taxon, count in taxa_counts.items():
             total_height += count * scale_factor
         # Add gaps - extra gap for small bars with top labels
         n_small = sum(1 for c in taxa_counts.values() if needs_top_label(c))
@@ -445,7 +444,7 @@ def plot_newcomers_alluvial(
         # Sort ALL taxa by 2025 order (consistent across all years)
         sorted_taxa = sorted(
             taxa_counts.items(),
-            key=lambda x: taxa_order.index(x[0]) if x[0] in taxa_order else len(taxa_order)
+            key=lambda x: taxa_order.index(x[0]) if x[0] in taxa_order else len(taxa_order),
         )
 
         # Calculate starting y offset for centering
@@ -534,8 +533,12 @@ def plot_newcomers_alluvial(
             color = taxa_colors.get(taxon, OTHER_COLOR)
 
             draw_alluvial_flow(
-                x1, pos1["bottom"], pos1["top"],
-                x2, pos2["bottom"], pos2["top"],
+                x1,
+                pos1["bottom"],
+                pos1["top"],
+                x2,
+                pos2["bottom"],
+                pos2["top"],
                 color,
                 alpha=0.4,
             )

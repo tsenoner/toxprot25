@@ -74,7 +74,9 @@ class TestUpdateProtfams:
         """Test handling of empty/NaN values."""
         df = pd.DataFrame({"Protein families": ["", pd.NA, "Conotoxin M superfamily"]})
         result = update_protfams(df)
-        assert pd.isna(result["Protein families"].iloc[0]) or result["Protein families"].iloc[0] == ""
+        assert (
+            pd.isna(result["Protein families"].iloc[0]) or result["Protein families"].iloc[0] == ""
+        )
 
 
 class TestCreateFastaFile:
@@ -82,20 +84,14 @@ class TestCreateFastaFile:
 
     def test_creates_fasta_file(self, temp_dir):
         """Test that FASTA file is created."""
-        df = pd.DataFrame({
-            "Entry": ["P0C1T5"],
-            "Sequence": ["MKLTCVLVVALLLLVPATTI"]
-        })
+        df = pd.DataFrame({"Entry": ["P0C1T5"], "Sequence": ["MKLTCVLVVALLLLVPATTI"]})
         fasta_path = temp_dir / "test.fasta"
         create_fasta_file(df, "Entry", "Sequence", fasta_path)
         assert fasta_path.exists()
 
     def test_fasta_format_correct(self, temp_dir):
         """Test that FASTA format is correct."""
-        df = pd.DataFrame({
-            "Entry": ["P0C1T5"],
-            "Sequence": ["MKLTCVLVVALLLLVPATTI"]
-        })
+        df = pd.DataFrame({"Entry": ["P0C1T5"], "Sequence": ["MKLTCVLVVALLLLVPATTI"]})
         fasta_path = temp_dir / "test.fasta"
         create_fasta_file(df, "Entry", "Sequence", fasta_path)
 
@@ -105,11 +101,13 @@ class TestCreateFastaFile:
 
     def test_removes_signal_peptide(self, temp_dir):
         """Test that signal peptide is removed when range provided."""
-        df = pd.DataFrame({
-            "Entry": ["P0C1T5"],
-            "Sequence": ["MKLTCVLVVALLLLVPATTIREST"],  # 24 chars total
-            "Signal peptide (range)": ["1-10"]  # Remove first 10 amino acids
-        })
+        df = pd.DataFrame(
+            {
+                "Entry": ["P0C1T5"],
+                "Sequence": ["MKLTCVLVVALLLLVPATTIREST"],  # 24 chars total
+                "Signal peptide (range)": ["1-10"],  # Remove first 10 amino acids
+            }
+        )
         fasta_path = temp_dir / "test.fasta"
         create_fasta_file(df, "Entry", "Sequence", fasta_path, "Signal peptide (range)")
 
@@ -119,11 +117,13 @@ class TestCreateFastaFile:
 
     def test_preserves_sequence_without_signal(self, temp_dir):
         """Test that sequence is preserved when no signal peptide range."""
-        df = pd.DataFrame({
-            "Entry": ["P0C1T5"],
-            "Sequence": ["MKLTCVLVVALLLLVPATTI"],
-            "Signal peptide (range)": [""]
-        })
+        df = pd.DataFrame(
+            {
+                "Entry": ["P0C1T5"],
+                "Sequence": ["MKLTCVLVVALLLLVPATTI"],
+                "Signal peptide (range)": [""],
+            }
+        )
         fasta_path = temp_dir / "test.fasta"
         create_fasta_file(df, "Entry", "Sequence", fasta_path, "Signal peptide (range)")
 
@@ -132,10 +132,7 @@ class TestCreateFastaFile:
 
     def test_skips_empty_sequences(self, temp_dir):
         """Test that empty sequences are skipped."""
-        df = pd.DataFrame({
-            "Entry": ["P0C1T5", "P0C1T6"],
-            "Sequence": ["MKLTCVLVVALLLLVPATTI", ""]
-        })
+        df = pd.DataFrame({"Entry": ["P0C1T5", "P0C1T6"], "Sequence": ["MKLTCVLVVALLLLVPATTI", ""]})
         fasta_path = temp_dir / "test.fasta"
         create_fasta_file(df, "Entry", "Sequence", fasta_path)
 
@@ -145,10 +142,7 @@ class TestCreateFastaFile:
 
     def test_creates_parent_directory(self, temp_dir):
         """Test that parent directory is created if needed."""
-        df = pd.DataFrame({
-            "Entry": ["P0C1T5"],
-            "Sequence": ["MKLTCVLVVALLLLVPATTI"]
-        })
+        df = pd.DataFrame({"Entry": ["P0C1T5"], "Sequence": ["MKLTCVLVVALLLLVPATTI"]})
         fasta_path = temp_dir / "subdir" / "test.fasta"
         create_fasta_file(df, "Entry", "Sequence", fasta_path)
         assert fasta_path.exists()
@@ -160,6 +154,7 @@ class TestDetermineHabitat:
     def test_clear_terrestrial_order(self, habitat_mapping_file):
         """Test clear terrestrial order classification."""
         import json
+
         with open(habitat_mapping_file) as f:
             mapping = json.load(f)
 
@@ -169,6 +164,7 @@ class TestDetermineHabitat:
     def test_clear_marine_order(self, habitat_mapping_file):
         """Test clear marine order classification."""
         import json
+
         with open(habitat_mapping_file) as f:
             mapping = json.load(f)
 
@@ -178,6 +174,7 @@ class TestDetermineHabitat:
     def test_ambiguous_order_marine_genus(self, habitat_mapping_file):
         """Test ambiguous order with marine genus."""
         import json
+
         with open(habitat_mapping_file) as f:
             mapping = json.load(f)
 
@@ -187,6 +184,7 @@ class TestDetermineHabitat:
     def test_unknown_order(self, habitat_mapping_file):
         """Test unknown order returns 'unknown'."""
         import json
+
         with open(habitat_mapping_file) as f:
             mapping = json.load(f)
 
@@ -196,6 +194,7 @@ class TestDetermineHabitat:
     def test_missing_genus(self, habitat_mapping_file):
         """Test handling of missing genus."""
         import json
+
         with open(habitat_mapping_file) as f:
             mapping = json.load(f)
 
@@ -209,6 +208,7 @@ class TestDetermineHabitatDetailed:
     def test_clear_terrestrial_order(self, habitat_detailed_file):
         """Test clear terrestrial order classification."""
         import json
+
         with open(habitat_detailed_file) as f:
             mapping = json.load(f)
 
@@ -218,6 +218,7 @@ class TestDetermineHabitatDetailed:
     def test_clear_marine_order(self, habitat_detailed_file):
         """Test clear marine order classification."""
         import json
+
         with open(habitat_detailed_file) as f:
             mapping = json.load(f)
 
@@ -227,6 +228,7 @@ class TestDetermineHabitatDetailed:
     def test_ambiguous_order_freshwater_genus(self, habitat_detailed_file):
         """Test ambiguous order with freshwater genus."""
         import json
+
         with open(habitat_detailed_file) as f:
             mapping = json.load(f)
 

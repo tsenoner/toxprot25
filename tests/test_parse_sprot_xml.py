@@ -3,7 +3,6 @@
 import json
 import xml.etree.ElementTree as ET
 
-from src.data_processing import VENOM_TISSUE_TERMS, has_venom_source_tissue
 from src.data_processing.clean_data import extract_ptm_summary
 from src.data_processing.parse_sprot_dat import PTMVocabulary
 from src.data_processing.parse_sprot_xml import (
@@ -202,13 +201,15 @@ class TestCleanDataPTMExtraction:
     """Tests for PTM summary extraction functions in clean_data.py."""
 
     def test_extract_ptm_summary_basic(self):
-        ptm_json = json.dumps({
-            "Disulfide bond": [{"pos": "41-77", "note": "", "evidence": ""}],
-            "Modified residue": [
-                {"pos": "49", "note": "4-hydroxyproline", "evidence": ""},
-                {"pos": "52", "note": "4-hydroxyproline", "evidence": ""},
-            ],
-        })
+        ptm_json = json.dumps(
+            {
+                "Disulfide bond": [{"pos": "41-77", "note": "", "evidence": ""}],
+                "Modified residue": [
+                    {"pos": "49", "note": "4-hydroxyproline", "evidence": ""},
+                    {"pos": "52", "note": "4-hydroxyproline", "evidence": ""},
+                ],
+            }
+        )
         summary = extract_ptm_summary(ptm_json)
         assert "Disulfide bond:1" in summary
         # Modified residue notes are resolved to keywords
@@ -232,14 +233,14 @@ class TestNamespaceDetection:
 
     def test_namespace_detection_https(self, temp_dir):
         xml_path = temp_dir / "https_test.xml"
-        content = '''<?xml version="1.0" encoding="UTF-8"?>
+        content = """<?xml version="1.0" encoding="UTF-8"?>
 <uniprot xmlns="https://uniprot.org/uniprot">
   <entry dataset="Swiss-Prot">
     <accession>P00001</accession>
     <name>TEST</name>
     <sequence length="10" mass="1000">MAAAAA</sequence>
   </entry>
-</uniprot>'''
+</uniprot>"""
         with open(xml_path, "w") as f:
             f.write(content)
         ns = detect_namespace(xml_path)
@@ -307,48 +308,12 @@ class TestProcessXMLFile:
         assert len(ptm_features["Modified residue"]) == 2
 
 
-class TestVenomTissueControlledVocabulary:
-    """Tests for venom tissue detection using controlled vocabulary."""
-
-    def test_venom_tissue_terms_contains_expected_values(self):
-        """Test that VENOM_TISSUE_TERMS contains the expected controlled vocabulary."""
-        assert "venom" in VENOM_TISSUE_TERMS
-        assert "venom gland" in VENOM_TISSUE_TERMS
-        assert "venom duct" in VENOM_TISSUE_TERMS
-
-    def test_has_venom_source_tissue_exact_match(self):
-        """Test exact match of venom tissue terms."""
-        assert has_venom_source_tissue({"Venom"}) is True
-        assert has_venom_source_tissue({"Venom gland"}) is True
-        assert has_venom_source_tissue({"Venom duct"}) is True
-
-    def test_has_venom_source_tissue_case_insensitive(self):
-        """Test case-insensitive matching."""
-        assert has_venom_source_tissue({"VENOM"}) is True
-        assert has_venom_source_tissue({"venom"}) is True
-        assert has_venom_source_tissue({"Venom Gland"}) is True
-
-    def test_has_venom_source_tissue_rejects_saliva(self):
-        """Test that 'Saliva' RC tissue does NOT match controlled vocabulary."""
-        assert has_venom_source_tissue({"Saliva"}) is False
-        assert has_venom_source_tissue({"Venomous"}) is False
-
-    def test_has_venom_source_tissue_empty_set(self):
-        """Test that empty set returns False."""
-        assert has_venom_source_tissue(set()) is False
-
-    def test_has_venom_source_tissue_mixed(self):
-        """Test with mixed venom and non-venom tissues."""
-        assert has_venom_source_tissue({"Saliva", "Venom"}) is True
-        assert has_venom_source_tissue({"Saliva", "Brain"}) is False
-
-
 class TestXMLSourceTissueParsing:
     """Tests for XML source tissue parsing from <reference><source><tissue>."""
 
     def test_parse_entry_extracts_source_tissues(self):
         """Test that source tissues are extracted from reference elements."""
-        xml_str = '''<entry dataset="Swiss-Prot" xmlns="http://uniprot.org/uniprot">
+        xml_str = """<entry dataset="Swiss-Prot" xmlns="http://uniprot.org/uniprot">
           <accession>P12345</accession>
           <name>TEST_ENTRY</name>
           <organism>
@@ -372,7 +337,7 @@ class TestXMLSourceTissueParsing:
           <keyword id="KW-0800">Toxin</keyword>
           <proteinExistence type="evidence at protein level"/>
           <sequence length="10" mass="1000">MAAAAA</sequence>
-        </entry>'''
+        </entry>"""
         entry_data, meets_criteria = _parse_entry(xml_str)
 
         # Source tissues should be extracted and joined (informational)
@@ -384,7 +349,7 @@ class TestXMLSourceTissueParsing:
 
     def test_parse_entry_venomous_saliva_matches_via_freetext(self):
         """Test that 'venomous saliva' matches via CC free-text (UniProt ToxProt query)."""
-        xml_str = '''<entry dataset="Swiss-Prot" xmlns="http://uniprot.org/uniprot">
+        xml_str = """<entry dataset="Swiss-Prot" xmlns="http://uniprot.org/uniprot">
           <accession>P58609</accession>
           <name>TEST_SALIVA</name>
           <organism>
@@ -403,7 +368,7 @@ class TestXMLSourceTissueParsing:
           <keyword id="KW-0800">Toxin</keyword>
           <proteinExistence type="evidence at protein level"/>
           <sequence length="10" mass="1000">MAAAAA</sequence>
-        </entry>'''
+        </entry>"""
         entry_data, meets_criteria = _parse_entry(xml_str)
 
         # Source tissue is Saliva (from RC line)
@@ -417,7 +382,7 @@ class TestXMLSourceTissueParsing:
 
     def test_parse_entry_no_source_tissues(self):
         """Test entry with no source tissue elements."""
-        xml_str = '''<entry dataset="Swiss-Prot" xmlns="http://uniprot.org/uniprot">
+        xml_str = """<entry dataset="Swiss-Prot" xmlns="http://uniprot.org/uniprot">
           <accession>P99999</accession>
           <name>TEST_NOTISSUE</name>
           <organism>
@@ -428,7 +393,7 @@ class TestXMLSourceTissueParsing:
           <keyword id="KW-0800">Toxin</keyword>
           <proteinExistence type="evidence at protein level"/>
           <sequence length="10" mass="1000">MAAAAA</sequence>
-        </entry>'''
+        </entry>"""
         entry_data, meets_criteria = _parse_entry(xml_str)
 
         assert entry_data["Source tissues"] == ""

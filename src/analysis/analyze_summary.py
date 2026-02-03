@@ -33,9 +33,7 @@ def _calculate_statistics(df: pd.DataFrame) -> dict:
     # Fragments
     df_copy = df.copy()
     df_copy["Fragment"] = df_copy["Fragment"].astype(str)
-    fragment_count = (
-        df_copy["Fragment"].str.contains("fragment", case=False, na=False).sum()
-    )
+    fragment_count = df_copy["Fragment"].str.contains("fragment", case=False, na=False).sum()
     fragment_percentage = (fragment_count / total_count) * 100 if total_count > 0 else 0
 
     # PTM annotations
@@ -82,15 +80,9 @@ def generate_summary_table(datasets: dict[int, pd.DataFrame], output_path: Path)
         [all_stats[y]["total"] for y in years],
         [all_stats[y]["unique_families"] for y in years],
         [f"{all_stats[y]['na_count']} ({all_stats[y]['na_pct']:.1f}%)" for y in years],
-        [
-            f"{all_stats[y]['fragment_count']} ({all_stats[y]['fragment_pct']:.1f}%)"
-            for y in years
-        ],
+        [f"{all_stats[y]['fragment_count']} ({all_stats[y]['fragment_pct']:.1f}%)" for y in years],
         [f"{all_stats[y]['ptm_count']} ({all_stats[y]['ptm_pct']:.1f}%)" for y in years],
-        [
-            f"{all_stats[y]['toxic_count']} ({all_stats[y]['toxic_pct']:.1f}%)"
-            for y in years
-        ],
+        [f"{all_stats[y]['toxic_count']} ({all_stats[y]['toxic_pct']:.1f}%)" for y in years],
         [all_stats[y]["species_count"] for y in years],
         [all_stats[y]["order_count"] for y in years],
     ]

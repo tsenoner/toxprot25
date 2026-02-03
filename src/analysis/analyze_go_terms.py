@@ -83,9 +83,7 @@ def get_go_counts(df: pd.DataFrame, column: str = GO_COLUMN) -> dict[str, int]:
     return dict(counts)
 
 
-def get_go_counts_with_propagation(
-    df: pd.DataFrame, go_graph: nx.DiGraph
-) -> dict[str, int]:
+def get_go_counts_with_propagation(df: pd.DataFrame, go_graph: nx.DiGraph) -> dict[str, int]:
     """Count GO terms with ancestor propagation."""
     counts: dict[str, int] = defaultdict(int)
     for entry in df[GO_COLUMN].dropna().astype(str):
@@ -210,9 +208,21 @@ def plot_go_overview(
             cc_coverage.append(cc_entries / total * 100 if total > 0 else 0)
 
             # Total GO term counts (sum of all terms across all entries)
-            mf_terms = sum(len(str(x).split(";")) for x in df[GO_COLUMN].dropna()) if GO_COLUMN in df.columns else 0
-            bp_terms = sum(len(str(x).split(";")) for x in df[GO_BP_COLUMN].dropna()) if GO_BP_COLUMN in df.columns else 0
-            cc_terms = sum(len(str(x).split(";")) for x in df[GO_CC_COLUMN].dropna()) if GO_CC_COLUMN in df.columns else 0
+            mf_terms = (
+                sum(len(str(x).split(";")) for x in df[GO_COLUMN].dropna())
+                if GO_COLUMN in df.columns
+                else 0
+            )
+            bp_terms = (
+                sum(len(str(x).split(";")) for x in df[GO_BP_COLUMN].dropna())
+                if GO_BP_COLUMN in df.columns
+                else 0
+            )
+            cc_terms = (
+                sum(len(str(x).split(";")) for x in df[GO_CC_COLUMN].dropna())
+                if GO_CC_COLUMN in df.columns
+                else 0
+            )
             mf_term_counts.append(mf_terms)
             bp_term_counts.append(bp_terms)
             cc_term_counts.append(cc_terms)
@@ -224,12 +234,33 @@ def plot_go_overview(
             bp_term_counts.append(0)
             cc_term_counts.append(0)
 
-    ax_a.plot(years, mf_term_counts, marker="o", linewidth=2.5, color="#e74c3c",
-              label="Molecular Function (MF)", markersize=6)
-    ax_a.plot(years, bp_term_counts, marker="s", linewidth=2.5, color="#3498db",
-              label="Biological Process (BP)", markersize=6)
-    ax_a.plot(years, cc_term_counts, marker="^", linewidth=2.5, color="#2ecc71",
-              label="Cellular Component (CC)", markersize=6)
+    ax_a.plot(
+        years,
+        mf_term_counts,
+        marker="o",
+        linewidth=2.5,
+        color="#e74c3c",
+        label="Molecular Function (MF)",
+        markersize=6,
+    )
+    ax_a.plot(
+        years,
+        bp_term_counts,
+        marker="s",
+        linewidth=2.5,
+        color="#3498db",
+        label="Biological Process (BP)",
+        markersize=6,
+    )
+    ax_a.plot(
+        years,
+        cc_term_counts,
+        marker="^",
+        linewidth=2.5,
+        color="#2ecc71",
+        label="Cellular Component (CC)",
+        markersize=6,
+    )
 
     ax_a.set_xlabel("Year", fontsize=12)
     ax_a.set_ylabel("Total GO Term Annotations", fontsize=12)
@@ -245,12 +276,33 @@ def plot_go_overview(
     # ==========================================================================
     ax_b = fig.add_subplot(gs[0, 3:6])  # Second half of top row
 
-    ax_b.plot(years, mf_coverage, marker="o", linewidth=2.5, color="#e74c3c",
-              label="Molecular Function (MF)", markersize=6)
-    ax_b.plot(years, bp_coverage, marker="s", linewidth=2.5, color="#3498db",
-              label="Biological Process (BP)", markersize=6)
-    ax_b.plot(years, cc_coverage, marker="^", linewidth=2.5, color="#2ecc71",
-              label="Cellular Component (CC)", markersize=6)
+    ax_b.plot(
+        years,
+        mf_coverage,
+        marker="o",
+        linewidth=2.5,
+        color="#e74c3c",
+        label="Molecular Function (MF)",
+        markersize=6,
+    )
+    ax_b.plot(
+        years,
+        bp_coverage,
+        marker="s",
+        linewidth=2.5,
+        color="#3498db",
+        label="Biological Process (BP)",
+        markersize=6,
+    )
+    ax_b.plot(
+        years,
+        cc_coverage,
+        marker="^",
+        linewidth=2.5,
+        color="#2ecc71",
+        label="Cellular Component (CC)",
+        markersize=6,
+    )
 
     ax_b.set_xlabel("Year", fontsize=12)
     ax_b.set_ylabel("Coverage (%)", fontsize=12)
@@ -307,8 +359,15 @@ def plot_go_overview(
         for i, go_id in enumerate(top_terms):
             counts = [go_counts[y].get(go_id, 0) for y in years_with_data]
             name = get_go_term_name(go_graph, go_id)
-            ax.plot(years_with_data, counts, marker="o", markersize=4,
-                    linewidth=2, label=name, color=term_colors[i % len(term_colors)])
+            ax.plot(
+                years_with_data,
+                counts,
+                marker="o",
+                markersize=4,
+                linewidth=2,
+                label=name,
+                color=term_colors[i % len(term_colors)],
+            )
 
         ax.set_xlabel("Year", fontsize=11)
         ax.set_ylabel("Annotations", fontsize=11)
@@ -322,22 +381,19 @@ def plot_go_overview(
     # Panel C: Top MF Terms
     # ==========================================================================
     ax_c = fig.add_subplot(gs[1, 0:2])
-    plot_top_terms(ax_c, datasets, GO_COLUMN, go_graph, years,
-                   "C. Top MF Terms", top_n)
+    plot_top_terms(ax_c, datasets, GO_COLUMN, go_graph, years, "C. Top MF Terms", top_n)
 
     # ==========================================================================
     # Panel D: Top BP Terms
     # ==========================================================================
     ax_d = fig.add_subplot(gs[1, 2:4])
-    plot_top_terms(ax_d, datasets, GO_BP_COLUMN, go_graph, years,
-                   "D. Top BP Terms", top_n)
+    plot_top_terms(ax_d, datasets, GO_BP_COLUMN, go_graph, years, "D. Top BP Terms", top_n)
 
     # ==========================================================================
     # Panel E: Top CC Terms
     # ==========================================================================
     ax_e = fig.add_subplot(gs[1, 4:6])
-    plot_top_terms(ax_e, datasets, GO_CC_COLUMN, go_graph, years,
-                   "E. Top CC Terms", top_n)
+    plot_top_terms(ax_e, datasets, GO_CC_COLUMN, go_graph, years, "E. Top CC Terms", top_n)
 
     plt.savefig(output_path, dpi=300, bbox_inches="tight", pad_inches=0.2)
     plt.close()

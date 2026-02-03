@@ -168,7 +168,9 @@ class TestProcessSwissProtFile:
         assert "Organism" in header
         assert "Sequence" in header
 
-    def test_process_filters_entries(self, temp_dir, sample_swissprot_entry, sample_swissprot_entry_non_metazoa):
+    def test_process_filters_entries(
+        self, temp_dir, sample_swissprot_entry, sample_swissprot_entry_non_metazoa
+    ):
         """Test that only matching entries are included in output."""
         # Create a file with both matching and non-matching entries
         dat_path = temp_dir / "mixed.dat"
@@ -190,10 +192,7 @@ class TestProcessSwissProtFile:
 
     def test_process_returns_false_for_missing_file(self, temp_dir):
         """Test that processing returns False for non-existent input."""
-        result = process_swissprot_file(
-            temp_dir / "nonexistent.dat",
-            temp_dir / "output.tsv"
-        )
+        result = process_swissprot_file(temp_dir / "nonexistent.dat", temp_dir / "output.tsv")
         assert result is False
 
     def test_process_creates_output_directory(self, sample_dat_file, temp_dir):

@@ -41,7 +41,7 @@ def sample_swissprot_entry():
         "KW   toxin.\n",
         "FT   SIGNAL          1..22\n",
         "FT   DISULFID        41..77\n",
-        "FT                   /note=\"Interchain\"\n",
+        'FT                   /note="Interchain"\n',
         "FT   DISULFID        48..63\n",
         "PE   1: Evidence at protein level;\n",
         "DR   InterPro; IPR004214; Conotoxin.\n",
@@ -89,9 +89,11 @@ def sample_tsv_file(temp_dir):
 
     tsv_path = temp_dir / "toxprot_2020.tsv"
     # PTM_Features JSON for first entry (uses readable names, no summary)
-    ptm_features_1 = json.dumps({
-        "Disulfide bond": [{"pos": "41-77", "note": "", "evidence": ""}],
-    })
+    ptm_features_1 = json.dumps(
+        {
+            "Disulfide bond": [{"pos": "41-77", "note": "", "evidence": ""}],
+        }
+    )
     data = {
         "Entry": ["P0C1T5", "P0C1T6"],
         "Organism": ["Conus magus", "Conus striatus"],
@@ -136,17 +138,15 @@ def sample_csv_file(temp_dir):
 def habitat_mapping_file(temp_dir):
     """Create a sample habitat mapping JSON file."""
     import json
+
     mapping = {
         "clear_orders": {
             "terrestrial": ["Squamata", "Scorpiones", "Araneae"],
-            "marine": ["Neogastropoda", "Octopoda"]
+            "marine": ["Neogastropoda", "Octopoda"],
         },
         "ambiguous_orders": {
-            "Anguilliformes": {
-                "marine": ["Gymnothorax"],
-                "freshwater": ["Anguilla"]
-            }
-        }
+            "Anguilliformes": {"marine": ["Gymnothorax"], "freshwater": ["Anguilla"]}
+        },
     }
     mapping_path = temp_dir / "marine_terrestrial.json"
     with open(mapping_path, "w") as f:
@@ -157,7 +157,7 @@ def habitat_mapping_file(temp_dir):
 @pytest.fixture
 def sample_xml_entry():
     """Minimal UniProt XML entry string for a toxin protein."""
-    return '''<entry dataset="Swiss-Prot" created="2005-06-07" modified="2024-01-24" version="42" xmlns="http://uniprot.org/uniprot">
+    return """<entry dataset="Swiss-Prot" created="2005-06-07" modified="2024-01-24" version="42" xmlns="http://uniprot.org/uniprot">
   <accession>P0C1T5</accession>
   <accession>P0C1T6</accession>
   <name>TOXB1_CONMA</name>
@@ -246,13 +246,13 @@ def sample_xml_entry():
   <sequence length="85" mass="8547" checksum="ABC123" modified="2005-06-07" version="1">
 MKLTCVLVVALLLLVPATTISASGDGRCCKGKRECNNPPCKGKGCSSPKCWPGCC
   </sequence>
-</entry>'''
+</entry>"""
 
 
 @pytest.fixture
 def sample_xml_entry_non_metazoa():
     """Minimal UniProt XML entry string for a non-Metazoa organism."""
-    return '''<entry dataset="Swiss-Prot" xmlns="http://uniprot.org/uniprot">
+    return """<entry dataset="Swiss-Prot" xmlns="http://uniprot.org/uniprot">
   <accession>P12345</accession>
   <name>PROT_ECOLI</name>
   <protein>
@@ -275,17 +275,17 @@ def sample_xml_entry_non_metazoa():
   <sequence length="100" mass="10000" checksum="DEF456" modified="2005-01-01" version="1">
 MKKKKKKKKKAAAAAAAAAABBBBBBBBBBCCCCCCCCCC
   </sequence>
-</entry>'''
+</entry>"""
 
 
 @pytest.fixture
 def sample_xml_file(temp_dir, sample_xml_entry):
     """Create a sample .xml file wrapping the test entry in a uniprot document."""
     xml_path = temp_dir / "test_sprot.xml"
-    content = f'''<?xml version="1.0" encoding="UTF-8"?>
+    content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <uniprot xmlns="http://uniprot.org/uniprot">
 {sample_xml_entry}
-</uniprot>'''
+</uniprot>"""
     with open(xml_path, "w") as f:
         f.write(content)
     return xml_path
@@ -295,11 +295,11 @@ def sample_xml_file(temp_dir, sample_xml_entry):
 def sample_xml_file_mixed(temp_dir, sample_xml_entry, sample_xml_entry_non_metazoa):
     """Create a .xml file with both matching and non-matching entries."""
     xml_path = temp_dir / "mixed_sprot.xml"
-    content = f'''<?xml version="1.0" encoding="UTF-8"?>
+    content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <uniprot xmlns="http://uniprot.org/uniprot">
 {sample_xml_entry}
 {sample_xml_entry_non_metazoa}
-</uniprot>'''
+</uniprot>"""
     with open(xml_path, "w") as f:
         f.write(content)
     return xml_path
@@ -339,21 +339,22 @@ KW   Phosphoprotein.
 def habitat_detailed_file(temp_dir):
     """Create a sample detailed habitat mapping JSON file."""
     import json
+
     mapping = {
         "clear_orders": {
             "terrestrial": ["Squamata", "Scorpiones", "Araneae"],
             "marine": ["Neogastropoda", "Octopoda"],
             "freshwater": [],
-            "estuarine": []
+            "estuarine": [],
         },
         "ambiguous_orders": {
             "Anguilliformes": {
                 "marine": ["Gymnothorax"],
                 "freshwater": ["Anguilla"],
                 "terrestrial": [],
-                "estuarine": []
+                "estuarine": [],
             }
-        }
+        },
     }
     detailed_path = temp_dir / "habitat_detailed.json"
     with open(detailed_path, "w") as f:

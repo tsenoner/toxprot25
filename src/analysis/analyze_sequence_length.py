@@ -20,9 +20,7 @@ TICK_LABEL_FONTSIZE = 12
 LEGEND_FONTSIZE = 16
 
 
-def plot_sequence_length_histogram(
-    datasets: dict[int, pd.DataFrame], output_path: Path
-) -> None:
+def plot_sequence_length_histogram(datasets: dict[int, pd.DataFrame], output_path: Path) -> None:
     """
     Create overlaid histogram comparing sequence lengths across years.
 
