@@ -1,31 +1,67 @@
 #!/usr/bin/env python3
 """
-Protein Evidence Sankey Plot - Final Version
-============================================
+Protein Evidence Alluvial Plot
+==============================
 
-Creates a Sankey diagram showing the flow of protein evidence categories
-from ToxProt 2017 to ToxProt 2025 with proper node positioning.
+Creates an alluvial-style diagram showing the flow of protein evidence categories
+across ToxProt datasets from 2008 to 2015 to 2025.
+
+Uses matplotlib with Bezier curve flows, consistent with other project figures.
 
 Author: Tobias Senoner
 """
 
-import argparse
 from collections import Counter
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import pandas as pd
-import plotly.graph_objects as go
+from matplotlib.patches import PathPatch, Rectangle
+from matplotlib.path import Path as MplPath
+
+# --- Configuration ---
+DATA_DIR = Path("data/processed/toxprot")
+FIGURES_DIR = Path("figures/protein_evidence")
+YEARS = [2008, 2015, 2025]
+
+# Protein existence category colors
+PE_COLORS = {
+    "Evidence at protein level": "#2E86AB",  # Blue
+    "Evidence at transcript level": "#A23B72",  # Purple
+    "Inferred from homology": "#F18F01",  # Orange
+    "Predicted": "#C73E1D",  # Red
+    "Uncertain": "#592941",  # Dark purple
+    "Removed": "#808080",  # Gray for removed entries
+}
+
+# Canonical order for PE categories (most certain to least certain)
+PE_CATEGORIES = [
+    "Evidence at protein level",
+    "Evidence at transcript level",
+    "Inferred from homology",
+    "Predicted",
+    "Uncertain",
+]
+
+# Display labels (two lines for long names)
+PE_LABELS = {
+    "Evidence at protein level": "Evidence at\nprotein level",
+    "Evidence at transcript level": "Evidence at\ntranscript level",
+    "Inferred from homology": "Inferred from\nhomology",
+    "Predicted": "Predicted",
+    "Uncertain": "Uncertain",
+}
 
 
-def normalize_pe_category(category):
+def normalize_pe_category(category: str) -> str:
     """
     Normalize protein existence categories to standard names.
 
     Args:
-        category (str): Raw category from dataset
+        category: Raw category from dataset
 
     Returns:
-        str: Normalized category name
+        Normalized category name
     """
     if pd.isna(category):
         return "Unknown"
@@ -47,510 +83,518 @@ def normalize_pe_category(category):
         return category
 
 
-def hex_to_rgba(hex_color, alpha=0.4):
-    """Convert hex color to rgba with transparency."""
-    hex_color = hex_color.lstrip("#")
-    if len(hex_color) != 6:
-        return f"rgba(200,200,200,{alpha})"
-    try:
-        r, g, b = tuple(int(hex_color[i : i + 2], 16) for i in (0, 2, 4))
-        return f"rgba({r},{g},{b},{alpha})"
-    except ValueError:
-        return f"rgba(200,200,200,{alpha})"
+def load_datasets(years: list[int], data_dir: Path = DATA_DIR) -> dict[int, pd.DataFrame]:
+    """Load ToxProt datasets for specified years."""
+    datasets = {}
+    for year in years:
+        filepath = data_dir / f"toxprot_{year}.csv"
+        if filepath.exists():
+            datasets[year] = pd.read_csv(filepath)
+    return datasets
 
 
-def calculate_node_positions(categories_2017, categories_2025, flow_counter, has_new_node=False):
-    """
-    Calculate proper Y positions for nodes to avoid overlap.
+def filter_by_definition(df: pd.DataFrame, definition: str | None = None) -> pd.DataFrame:
+    """Filter dataset by ToxProt definition.
 
     Args:
-        categories_2017: List of categories for 2017 side
-        categories_2025: List of categories for 2025 side
-        flow_counter: Counter of flows between categories
-        has_new_node: Boolean indicating if there's a "New" node in the middle
+        df: DataFrame containing protein data
+        definition: ToxProt definition filter ("venom_tissue", "kw_toxin", "both", or None for all)
 
     Returns:
-        tuple: (y_positions_2017, y_positions_2025, y_position_new)
+        Filtered DataFrame
     """
-    # Calculate total flow for each node to determine relative sizes
-    node_flows_2017 = {cat: 0 for cat in categories_2017}
-    node_flows_2025 = {cat: 0 for cat in categories_2025}
-    new_node_flow = 0
+    if definition is None or definition == "all":
+        return df
 
-    for (src, tgt), count in flow_counter.items():
-        if src == "New":
-            new_node_flow += count
-        elif src in node_flows_2017:
-            node_flows_2017[src] += count
-        if tgt in node_flows_2025:
-            node_flows_2025[tgt] += count
+    if "ToxProt definition" not in df.columns:
+        return df
 
-    # Calculate positions for 2017 side - leave space at bottom for New node
-    def calculate_2017_positions(categories, node_flows):
-        """Calculate y positions for 2017 side, leaving bottom space."""
-        if not categories:
-            return []
-
-        # Calculate total flow
-        total_flow = sum(node_flows[cat] for cat in categories)
-        if total_flow == 0:
-            # If no flow, distribute evenly
-            n = len(categories)
-            return [0.05 + i * 0.5 / max(n - 1, 1) for i in range(n)]
-
-        # Use only top portion of space to leave room for New node at bottom
-        margin_top = 0.05  # 5% margin at top
-        margin_bottom = 0.35  # 35% margin at bottom for New node
-        usable_height = 1.0 - margin_top - margin_bottom
-
-        # Minimum spacing between nodes
-        min_spacing = 0.015  # 1.5% minimum gap
-        total_spacing = min_spacing * (len(categories) - 1)
-
-        # Available height for nodes after accounting for spacing
-        available_for_nodes = usable_height - total_spacing
-
-        positions = []
-        current_y = margin_top
-
-        for _i, cat in enumerate(categories):
-            # Calculate this node's height based on its flow
-            node_height = (node_flows[cat] / total_flow) * available_for_nodes
-
-            # Position is at the center of the node
-            y_position = current_y + node_height / 2
-
-            # Ensure position is within valid range
-            y_position = max(0.001, min(0.999, y_position))
-            positions.append(y_position)
-
-            # Move to next node position
-            current_y += node_height + min_spacing
-
-        return positions
-
-    # Calculate positions for 2025 side - use full height
-    def calculate_2025_positions(categories, node_flows):
-        """Calculate y positions for 2025 side using full height."""
-        if not categories:
-            return []
-
-        # Calculate total flow
-        total_flow = sum(node_flows[cat] for cat in categories)
-        if total_flow == 0:
-            # If no flow, distribute evenly
-            n = len(categories)
-            return [0.05 + i * 0.9 / max(n - 1, 1) for i in range(n)]
-
-        margin_top = 0.01  # 1% margin at top
-        margin_bottom = 0.05  # 5% margin at bottom
-        usable_height = 1.0 - margin_top - margin_bottom
-
-        # Minimum spacing between nodes
-        min_spacing = 0.02  # 2% minimum gap
-        total_spacing = min_spacing * (len(categories) - 1)
-
-        # Available height for nodes after accounting for spacing
-        available_for_nodes = usable_height - total_spacing
-
-        positions = []
-        current_y = margin_top
-
-        for _i, cat in enumerate(categories):
-            # Calculate this node's height based on its flow
-            node_height = (node_flows[cat] / total_flow) * available_for_nodes
-
-            # Position is at the center of the node
-            y_position = current_y + node_height / 2
-
-            # Ensure position is within valid range
-            y_position = max(0.001, min(0.999, y_position))
-            positions.append(y_position)
-
-            # Move to next node position
-            current_y += node_height + min_spacing
-
-        return positions
-
-    y_positions_2017 = calculate_2017_positions(categories_2017, node_flows_2017)
-    y_positions_2025 = calculate_2025_positions(categories_2025, node_flows_2025)
-
-    # Position for the "New" node - at the bottom, with some clearance
-    y_position_new = 0.95 if has_new_node else None
-
-    return y_positions_2017, y_positions_2025, y_position_new
+    if definition == "venom_tissue":
+        return df[df["ToxProt definition"].isin(["venom_tissue", "both"])]
+    elif definition == "kw_toxin":
+        return df[df["ToxProt definition"].isin(["kw_toxin", "both"])]
+    elif definition == "both_only":
+        return df[df["ToxProt definition"] == "both"]
+    else:
+        return df
 
 
-def create_protein_evidence_sankey(toxprot_2017_path, toxprot_2025_path, output_path=None):
+def plot_protein_evidence_alluvial(
+    datasets: dict[int, pd.DataFrame],
+    output_path: Path,
+    years: list[int] = YEARS,
+    definition: str | None = "venom_tissue",
+):
     """
-    Create a Sankey diagram showing protein evidence category transitions.
+    Create alluvial-style diagram showing protein evidence category transitions.
+
+    Style matches plot_newcomers_alluvial() from analyze_taxa.py:
+    - Centered nodes with black edges
+    - White counts inside large bars, colored counts above small bars
+    - Category names on right side of last column
+    - Bezier curve flows between years
+    - Year labels with totals at bottom
+    - "Removed" entries shown midway between columns
 
     Args:
-        toxprot_2017_path (str): Path to 2017 ToxProt data
-        toxprot_2025_path (str): Path to 2025 ToxProt data
-        output_path (str, optional): Path to save the plot
-
-    Returns:
-        go.Figure: Plotly figure object
+        datasets: Dictionary mapping year to DataFrame
+        output_path: Path to save the figure
+        years: Years to show as columns
+        definition: ToxProt definition filter
     """
+    # Apply definition filter
+    filtered_datasets = {}
+    for year in years:
+        if year not in datasets:
+            print(f"Warning: Dataset for {year} not found")
+            continue
+        filtered_datasets[year] = filter_by_definition(datasets[year], definition)
 
-    # Load data
-    print("Loading data...")
-    df_2017 = pd.read_csv(toxprot_2017_path)
-    df_2025 = pd.read_csv(toxprot_2025_path)
+    # Prepare data: normalize PE categories and track protein IDs
+    pe_by_year = {}
+    for year in years:
+        if year not in filtered_datasets:
+            continue
+        df = filtered_datasets[year].copy()
 
-    # Determine protein ID column
-    id_col = "Entry" if "Entry" in df_2017.columns else df_2017.columns[0]
+        # Determine protein ID column
+        id_col = "Entry" if "Entry" in df.columns else df.columns[0]
 
-    print(f"Using '{id_col}' as protein ID column")
-    print(f"2017 dataset: {len(df_2017)} proteins")
-    print(f"2025 dataset: {len(df_2025)} proteins")
+        # Normalize PE categories
+        df["PE_normalized"] = df["Protein existence"].apply(normalize_pe_category)
+        pe_by_year[year] = df.set_index(id_col)["PE_normalized"]
 
-    # Normalize protein existence categories
-    df_2017["PE_normalized"] = df_2017["Protein existence"].apply(normalize_pe_category)
-    df_2025["PE_normalized"] = df_2025["Protein existence"].apply(normalize_pe_category)
+    # Get category counts for each year
+    data_by_year = {}
+    for year in years:
+        if year not in pe_by_year:
+            continue
+        counts = pe_by_year[year].value_counts().to_dict()
+        # Filter to only canonical categories (ignore Unknown/other)
+        data_by_year[year] = {
+            cat: counts.get(cat, 0) for cat in PE_CATEGORIES if counts.get(cat, 0) > 0
+        }
 
-    # Map protein ID to normalized PE for each year
-    pe_2017 = df_2017.set_index(id_col)["PE_normalized"]
-    pe_2025 = df_2025.set_index(id_col)["PE_normalized"]
+    # Calculate flows between consecutive years
+    flows = {}
+    for i in range(len(years) - 1):
+        year1, year2 = years[i], years[i + 1]
+        if year1 not in pe_by_year or year2 not in pe_by_year:
+            continue
 
-    print(f"2017 categories: {pe_2017.value_counts().to_dict()}")
-    print(f"2025 categories: {pe_2025.value_counts().to_dict()}")
+        pe1, pe2 = pe_by_year[year1], pe_by_year[year2]
+        flow_counter = Counter()
 
-    # Define canonical PE categories and colors
-    pe_categories = [
-        "Evidence at protein level",
-        "Evidence at transcript level",
-        "Inferred from homology",
-        "Predicted",
-        "Uncertain",
-    ]
+        # Common proteins - track category transitions
+        common_ids = set(pe1.index) & set(pe2.index)
+        for pid in common_ids:
+            src, tgt = pe1[pid], pe2[pid]
+            if src in PE_CATEGORIES and tgt in PE_CATEGORIES:
+                flow_counter[(src, tgt)] += 1
 
-    # Define colors - using a more distinct palette
-    pe_colors = [
-        "#2E86AB",  # Blue - Evidence at protein level
-        "#A23B72",  # Purple - Evidence at transcript level
-        "#F18F01",  # Orange - Inferred from homology
-        "#C73E1D",  # Red - Predicted
-        "#592941",  # Dark purple - Uncertain
-    ]
+        # Removed proteins (in year1 but not in year2)
+        removed_ids = set(pe1.index) - set(pe2.index)
+        removed_counts = Counter()
+        for pid in removed_ids:
+            cat = pe1[pid]
+            if cat in PE_CATEGORIES:
+                removed_counts[cat] += 1
 
-    special_categories = ["Removed", "New"]
-    special_colors = ["#808080", "#A0A0A0"]  # Gray shades for removed/new
+        flows[(year1, year2)] = {
+            "transitions": flow_counter,
+            "removed": removed_counts,
+            "removed_total": sum(removed_counts.values()),
+        }
 
-    # Find all categories present in the data
-    all_categories_2017 = set(pe_2017.dropna().unique())
-    all_categories_2025 = set(pe_2025.dropna().unique())
-    all_categories = all_categories_2017.union(all_categories_2025)
+    # Figure size (compact height)
+    fig, ax = plt.subplots(figsize=(12, 7))
 
-    # Order categories: canonical first, then others
-    ordered_categories = []
-    for cat in pe_categories:
-        if cat in all_categories:
-            ordered_categories.append(cat)
+    # Layout parameters - add space for "Removed" nodes between years
+    n_years = len(years)
+    year_x_positions = [i * 2.4 for i in range(n_years)]
+    removed_x_positions = [year_x_positions[i] + 1.2 for i in range(n_years - 1)]
+    box_width = 0.7  # Wider to fit count + percentage
+    removed_box_width = 0.3  # Slightly narrower for "Removed" nodes
+    gap = 3  # Gap between stacked bars
 
-    # Add any extra categories
-    for cat in sorted(all_categories):
-        if cat not in ordered_categories:
-            ordered_categories.append(cat)
-
-    print(f"All categories: {ordered_categories}")
-
-    # Build color mapping
-    color_map = {}
-    for _i, cat in enumerate(ordered_categories):
-        if cat in pe_categories:
-            idx = pe_categories.index(cat)
-            color_map[cat] = pe_colors[idx]
-        elif cat in special_categories:
-            idx = special_categories.index(cat)
-            color_map[cat] = special_colors[idx]
-        else:
-            color_map[cat] = "#CCCCCC"  # Default gray
-
-    # Calculate flows
-    print("Calculating protein flows...")
-    flow_counter = Counter()
-
-    # Proteins present in both years
-    common_ids = set(pe_2017.index) & set(pe_2025.index)
-    print(f"Common proteins: {len(common_ids)}")
-
-    for pid in common_ids:
-        src = pe_2017[pid]
-        tgt = pe_2025[pid]
-        if pd.notna(src) and pd.notna(tgt):
-            flow_counter[(src, tgt)] += 1
-
-    # Proteins only in 2017 (removed in 2025)
-    removed_ids = set(pe_2017.index) - set(pe_2025.index)
-    print(f"Removed proteins: {len(removed_ids)}")
-
-    for pid in removed_ids:
-        src = pe_2017[pid]
-        if pd.notna(src):
-            flow_counter[(src, "Removed")] += 1
-
-    # Proteins only in 2025 (new in 2025)
-    new_ids = set(pe_2025.index) - set(pe_2017.index)
-    print(f"New proteins: {len(new_ids)}")
-
-    for pid in new_ids:
-        tgt = pe_2025[pid]
-        if pd.notna(tgt):
-            flow_counter[("New", tgt)] += 1
-
-    # Determine which categories appear on each side
-    flow_categories_2017 = set()  # Source categories (2017 side)
-    flow_categories_2025 = set()  # Target categories (2025 side)
-    has_new_node = False
-
-    for (src, tgt), _count in flow_counter.items():
-        if src == "New":
-            has_new_node = True
-        else:
-            flow_categories_2017.add(src)
-        flow_categories_2025.add(tgt)
-
-    # Create separate category lists for each side in a logical order
-    categories_2017 = []
-    categories_2025 = []
-
-    # Add regular categories that appear on each side
-    for cat in ordered_categories:
-        if cat in flow_categories_2017:
-            categories_2017.append(cat)
-        if cat in flow_categories_2025:
-            categories_2025.append(cat)
-
-    # Add "Removed" to 2025 side if present
-    if "Removed" in flow_categories_2025:
-        categories_2025.append("Removed")
-
-    # Update color mapping for any new categories
-    all_unique_categories = set(categories_2017 + categories_2025)
-    if has_new_node:
-        all_unique_categories.add("New")
-    for cat in all_unique_categories:
-        if cat not in color_map:
-            if cat in special_categories:
-                idx = special_categories.index(cat)
-                color_map[cat] = special_colors[idx]
-            else:
-                color_map[cat] = "#CCCCCC"  # Default gray
-
-    print(f"Total flows: {len(flow_counter)}")
-    print(f"2017 categories: {categories_2017}")
-    print(f"2025 categories: {categories_2025}")
-    print(f"Has 'New' node: {has_new_node}")
-
-    # Calculate proper Y positions
-    y_positions_2017, y_positions_2025, y_position_new = calculate_node_positions(
-        categories_2017, categories_2025, flow_counter, has_new_node
-    )
-
-    # Calculate node counts and percentages for labels
-    node_counts_2017 = {cat: 0 for cat in categories_2017}
-    node_counts_2025 = {cat: 0 for cat in categories_2025}
-    new_node_count = 0
-
-    for (src, tgt), count in flow_counter.items():
-        if src == "New":
-            new_node_count += count
-        elif src in node_counts_2017:
-            node_counts_2017[src] += count
-        if tgt in node_counts_2025:
-            node_counts_2025[tgt] += count
-
-    # Calculate totals for percentage calculations
-    # For 2017: only count proteins that were in 2017
-    total_2017 = sum(node_counts_2017.values())
-    # For 2025: count all proteins in 2025 (including new ones)
-    total_2025 = sum(node_counts_2025.values())
-
-    # Build Sankey diagram data
-    # Create node labels with protein counts and percentages
-    labels_2017 = []
-    for cat in categories_2017:
-        count = node_counts_2017[cat]
-        percentage = (count / total_2017 * 100) if total_2017 > 0 else 0
-        if percentage < 1.0:
-            labels_2017.append(f"{cat} {count:,} proteins ({percentage:.1f}%)")
-        else:
-            labels_2017.append(f"{cat}<br>{count:,} proteins ({percentage:.1f}%)")
-
-    labels_2025 = []
-    for cat in categories_2025:
-        count = node_counts_2025[cat]
-        percentage = (count / total_2025 * 100) if total_2025 > 0 else 0
-        if percentage < 1.0:
-            labels_2025.append(f"{cat} {count:,} proteins ({percentage:.1f}%)")
-        else:
-            labels_2025.append(f"{cat}<br>{count:,} proteins ({percentage:.1f}%)")
-
-    # Build all labels list
-    all_labels = labels_2017 + labels_2025
-    if has_new_node:
-        all_labels.append(f"New in 2025<br>{new_node_count:,} proteins")
-
-    # Create node colors
-    colors_2017 = [color_map[cat] for cat in categories_2017]
-    colors_2025 = [color_map[cat] for cat in categories_2025]
-    node_colors = colors_2017 + colors_2025
-    if has_new_node:
-        node_colors.append(color_map["New"])
-
-    # Create node index mappings
-    cat_to_2017_idx = {cat: i for i, cat in enumerate(categories_2017)}
-    cat_to_2025_idx = {cat: i + len(categories_2017) for i, cat in enumerate(categories_2025)}
-    if has_new_node:
-        new_node_idx = len(categories_2017) + len(categories_2025)
-
-    # Build links
-    sources, targets, values, link_colors = [], [], [], []
-
-    for (src, tgt), count in flow_counter.items():
-        if src == "New" and has_new_node:
-            sources.append(new_node_idx)
-            targets.append(cat_to_2025_idx[tgt])
-            values.append(count)
-            link_colors.append(hex_to_rgba(color_map["New"], 0.5))
-        elif src in cat_to_2017_idx and tgt in cat_to_2025_idx:
-            sources.append(cat_to_2017_idx[src])
-            targets.append(cat_to_2025_idx[tgt])
-            values.append(count)
-            link_colors.append(hex_to_rgba(color_map[src], 0.5))
-
-    print(f"Created {len(sources)} links")
-
-    # X positions: 2017 on left, 2025 on right, New in middle
-    x_positions_2017 = [0.001] * len(categories_2017)
-    x_positions_2025 = [0.999] * len(categories_2025)
-    all_x_positions = x_positions_2017 + x_positions_2025
-    if has_new_node:
-        all_x_positions.append(0.35)  # Middle position for "New" node
-
-    # Combine all Y positions
-    all_y_positions = y_positions_2017 + y_positions_2025
-    if has_new_node:
-        all_y_positions.append(y_position_new)
-
-    fig = go.Figure(
-        data=[
-            go.Sankey(
-                arrangement="snap",  # Use snap for some automatic adjustment
-                node=dict(
-                    pad=15,  # Padding between nodes
-                    thickness=25,  # Node thickness
-                    line=dict(color="black", width=1),
-                    label=all_labels,
-                    color=node_colors,
-                    x=all_x_positions,
-                    y=all_y_positions,
-                ),
-                link=dict(
-                    source=sources,
-                    target=targets,
-                    value=values,
-                    color=link_colors,
-                ),
-                textfont=dict(size=24, color="black"),  # Significantly increased font size
-            )
+    def draw_alluvial_flow(
+        x1: float,
+        y1_bottom: float,
+        y1_top: float,
+        x2: float,
+        y2_bottom: float,
+        y2_top: float,
+        color: str,
+        alpha: float = 0.4,
+        width1: float = box_width,
+        width2: float = box_width,
+    ):
+        """Draw a curved flow between two vertical segments."""
+        ctrl_offset = (x2 - x1) * 0.4
+        verts = [
+            (x1 + width1 / 2, y1_bottom),
+            (x1 + width1 / 2 + ctrl_offset, y1_bottom),
+            (x2 - width2 / 2 - ctrl_offset, y2_bottom),
+            (x2 - width2 / 2, y2_bottom),
+            (x2 - width2 / 2, y2_top),
+            (x2 - width2 / 2 - ctrl_offset, y2_top),
+            (x1 + width1 / 2 + ctrl_offset, y1_top),
+            (x1 + width1 / 2, y1_top),
+            (x1 + width1 / 2, y1_bottom),
         ]
-    )
+        codes = [
+            MplPath.MOVETO,
+            MplPath.CURVE4,
+            MplPath.CURVE4,
+            MplPath.CURVE4,
+            MplPath.LINETO,
+            MplPath.CURVE4,
+            MplPath.CURVE4,
+            MplPath.CURVE4,
+            MplPath.CLOSEPOLY,
+        ]
+        path = MplPath(verts, codes)
+        patch = PathPatch(path, facecolor=color, edgecolor="none", alpha=alpha)
+        ax.add_patch(patch)
 
-    # Add year labels as annotations above each column
-    fig.add_annotation(
-        x=0.001,
-        y=1.08,
-        text="<b>2017</b>",
-        showarrow=False,
-        xref="paper",
-        yref="paper",
-        font=dict(size=24, color="black"),
-        xanchor="center",
-    )
+    # Use 2025 total as reference for scaling
+    reference_year = years[-1]
+    reference_total = sum(data_by_year[reference_year].values())
+    scale_factor = 100 / reference_total
 
-    fig.add_annotation(
-        x=0.999,
-        y=1.08,
-        text="<b>2025</b>",
-        showarrow=False,
-        xref="paper",
-        yref="paper",
-        font=dict(size=24, color="black"),
-        xanchor="center",
-    )
+    # Determine which categories need labels on top (small bars)
+    def needs_top_label(count):
+        return count * scale_factor < 3.0
 
-    # Update layout
-    fig.update_layout(
-        title={
-            "text": "Protein Evidence Category Transitions: ToxProt Database Evolution",
-            "x": 0.5,
-            "xanchor": "center",
-            "font": {"size": 32},
-        },
-        font=dict(size=18),  # Significantly increased base font size
-        height=900,  # Increased height for better spacing
-        width=1400,  # Increased width for better readability with larger text
-        margin=dict(t=140, b=40, l=40, r=40),  # More top margin for year labels
-        showlegend=False,
-    )
+    # Calculate total heights for each year (for centering)
+    year_heights = {}
+    for year in years:
+        if year not in data_by_year:
+            continue
+        total_height = 0
+        counts = data_by_year[year]
+        n_cats = len([c for c in counts.values() if c > 0])
+        for count in counts.values():
+            if count > 0:
+                total_height += count * scale_factor
+        # Add gaps
+        n_small = sum(1 for c in counts.values() if c > 0 and needs_top_label(c))
+        total_height += (n_cats - 1) * gap + n_small * 2.0
+        year_heights[year] = total_height
 
-    # Save if output path provided
-    if output_path:
-        print(f"Saving plot to {output_path}")
-        fig.write_html(output_path)
-        # Also save as PNG if possible
-        try:
-            png_path = output_path.replace(".html", ".png")
-            fig.write_image(png_path, width=1400, height=900, scale=2)
-            print(f"Also saved PNG to {png_path}")
-        except Exception as e:
-            print(f"Could not save PNG: {e}")
+    max_height = max(year_heights.values())
+    center_y = max_height / 2
 
-    return fig
+    # Track positions for each year and category
+    positions = {}
+    removed_positions = {}  # For "Removed" nodes
+
+    # Draw bars for each year (centered)
+    for i, year in enumerate(years):
+        if year not in data_by_year:
+            continue
+
+        counts = data_by_year[year]
+        x = year_x_positions[i]
+
+        # Sort categories in canonical order
+        sorted_cats = [(cat, counts.get(cat, 0)) for cat in PE_CATEGORIES if counts.get(cat, 0) > 0]
+
+        # Calculate starting y offset for centering
+        y_offset = center_y - year_heights[year] / 2
+        positions[year] = {}
+
+        for cat, count in sorted_cats:
+            height = count * scale_factor
+            is_small = needs_top_label(count)
+
+            positions[year][cat] = {
+                "bottom": y_offset,
+                "top": y_offset + height,
+                "count": count,
+                "height": height,
+            }
+
+            color = PE_COLORS.get(cat, "#CCCCCC")
+
+            # Draw rectangle with black edge
+            rect = Rectangle(
+                (x - box_width / 2, y_offset),
+                box_width,
+                height,
+                facecolor=color,
+                edgecolor="black",
+                linewidth=1,
+            )
+            ax.add_patch(rect)
+
+            # Calculate percentage for this year
+            year_total = sum(counts.values())
+            pct = (count / year_total * 100) if year_total > 0 else 0
+
+            # Show count and percentage - inside for large bars, on top for small bars
+            if not is_small:
+                fontsize = 11 if height > 5 else 9
+                label = f"{count:,}\n({pct:.1f}%)"
+                ax.text(
+                    x,
+                    y_offset + height / 2,
+                    label,
+                    ha="center",
+                    va="center",
+                    fontsize=fontsize,
+                    fontweight="bold",
+                    color="white",
+                )
+            else:
+                # Small bar - put count on top
+                label = f"{count:,} ({pct:.1f}%)"
+                ax.text(
+                    x,
+                    y_offset + height + 0.5,
+                    label,
+                    ha="center",
+                    va="bottom",
+                    fontsize=9,
+                    fontweight="bold",
+                    color=color,
+                )
+
+            # Extra gap after small bars
+            extra_gap = 2.0 if is_small else 0
+            y_offset += height + gap + extra_gap
+
+    # Draw "Removed" nodes between years
+    for i in range(len(years) - 1):
+        year1, year2 = years[i], years[i + 1]
+        if (year1, year2) not in flows:
+            continue
+
+        flow_data = flows[(year1, year2)]
+        removed_total = flow_data["removed_total"]
+
+        if removed_total == 0:
+            continue
+
+        removed_x = removed_x_positions[i]
+        removed_height = removed_total * scale_factor
+
+        # Position "Removed" node - center it vertically
+        removed_bottom = center_y - removed_height / 2
+        removed_top = removed_bottom + removed_height
+
+        removed_positions[(year1, year2)] = {
+            "bottom": removed_bottom,
+            "top": removed_top,
+            "count": removed_total,
+            "height": removed_height,
+        }
+
+        # Draw "Removed" rectangle
+        rect = Rectangle(
+            (removed_x - removed_box_width / 2, removed_bottom),
+            removed_box_width,
+            removed_height,
+            facecolor=PE_COLORS["Removed"],
+            edgecolor="black",
+            linewidth=1,
+        )
+        ax.add_patch(rect)
+
+        # Add count inside or above
+        if needs_top_label(removed_total):
+            ax.text(
+                removed_x,
+                removed_top + 0.5,
+                f"{removed_total:,}",
+                ha="center",
+                va="bottom",
+                fontsize=10,
+                fontweight="bold",
+                color=PE_COLORS["Removed"],
+            )
+        else:
+            ax.text(
+                removed_x,
+                (removed_bottom + removed_top) / 2,
+                f"{removed_total:,}",
+                ha="center",
+                va="center",
+                fontsize=11,
+                fontweight="bold",
+                color="white",
+            )
+
+        # Add "Removed" label below the bar
+        ax.text(
+            removed_x,
+            removed_bottom - 1.5,
+            "Removed",
+            ha="center",
+            va="top",
+            fontsize=9,
+            fontweight="bold",
+            fontstyle="italic",
+            color=PE_COLORS["Removed"],
+        )
+
+    # Draw flows between consecutive years
+    for i in range(len(years) - 1):
+        year1, year2 = years[i], years[i + 1]
+        if year1 not in positions or year2 not in positions:
+            continue
+        if (year1, year2) not in flows:
+            continue
+
+        x1, x2 = year_x_positions[i], year_x_positions[i + 1]
+        removed_x = removed_x_positions[i]
+        flow_data = flows[(year1, year2)]
+
+        # Track cumulative positions for stacking flows within each bar
+        src_offsets = {cat: positions[year1][cat]["bottom"] for cat in positions[year1]}
+        tgt_offsets = {cat: positions[year2][cat]["bottom"] for cat in positions[year2]}
+
+        # Draw flows for category transitions (existing proteins)
+        for src_cat in PE_CATEGORIES:
+            if src_cat not in positions[year1]:
+                continue
+
+            for tgt_cat in PE_CATEGORIES:
+                if tgt_cat not in positions[year2]:
+                    continue
+
+                count = flow_data["transitions"].get((src_cat, tgt_cat), 0)
+                if count == 0:
+                    continue
+
+                flow_height = count * scale_factor
+
+                # Source position
+                y1_bottom = src_offsets[src_cat]
+                y1_top = y1_bottom + flow_height
+                src_offsets[src_cat] = y1_top
+
+                # Target position
+                y2_bottom = tgt_offsets[tgt_cat]
+                y2_top = y2_bottom + flow_height
+                tgt_offsets[tgt_cat] = y2_top
+
+                # Use source category color for the flow
+                color = PE_COLORS.get(src_cat, "#CCCCCC")
+
+                draw_alluvial_flow(
+                    x1,
+                    y1_bottom,
+                    y1_top,
+                    x2,
+                    y2_bottom,
+                    y2_top,
+                    color,
+                    alpha=0.4,
+                )
+
+        # Draw flows from PE categories to "Removed" node
+        if (year1, year2) in removed_positions:
+            removed_pos = removed_positions[(year1, year2)]
+            removed_offset = removed_pos["bottom"]
+
+            for src_cat in PE_CATEGORIES:
+                if src_cat not in positions[year1]:
+                    continue
+
+                count = flow_data["removed"].get(src_cat, 0)
+                if count == 0:
+                    continue
+
+                flow_height = count * scale_factor
+
+                # Source position
+                y1_bottom = src_offsets[src_cat]
+                y1_top = y1_bottom + flow_height
+                src_offsets[src_cat] = y1_top
+
+                # Removed node position
+                y2_bottom = removed_offset
+                y2_top = y2_bottom + flow_height
+                removed_offset = y2_top
+
+                # Use source category color for the flow
+                color = PE_COLORS.get(src_cat, "#CCCCCC")
+
+                draw_alluvial_flow(
+                    x1,
+                    y1_bottom,
+                    y1_top,
+                    removed_x,
+                    y2_bottom,
+                    y2_top,
+                    color,
+                    alpha=0.4,
+                    width1=box_width,
+                    width2=removed_box_width,
+                )
+
+    # Add category names on the right side of the last column (two-line labels)
+    last_year = years[-1]
+    last_x = year_x_positions[-1]
+
+    for cat in positions[last_year]:
+        pos = positions[last_year][cat]
+        color = PE_COLORS.get(cat, "#CCCCCC")
+        label = PE_LABELS.get(cat, cat)
+
+        ax.text(
+            last_x + box_width / 2 + 0.1,
+            (pos["bottom"] + pos["top"]) / 2,
+            label,
+            ha="left",
+            va="center",
+            fontsize=10,
+            fontweight="bold",
+            color=color,
+        )
+
+    # Calculate totals for year labels
+    totals = {year: sum(data_by_year[year].values()) for year in years if year in data_by_year}
+
+    # Add year labels at bottom
+    for i, year in enumerate(years):
+        if year in totals:
+            total = totals[year]
+            ax.text(
+                year_x_positions[i],
+                -5,
+                f"{year}\n(n={total:,})",
+                ha="center",
+                va="top",
+                fontsize=14,
+                fontweight="bold",
+            )
+
+    ax.set_xlim(-0.8, year_x_positions[-1] + 2.2)
+    ax.set_ylim(-12, max_height + 5)
+    ax.axis("off")
+
+    # Save figure
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    plt.savefig(output_path, dpi=300, bbox_inches="tight", pad_inches=0.1)
+    plt.close()
 
 
 def main():
-    """Main function for command line usage."""
-    parser = argparse.ArgumentParser(description="Create protein evidence Sankey plot")
+    """Main function for standalone execution."""
+    datasets = load_datasets(YEARS, data_dir=DATA_DIR)
 
-    parser.add_argument(
-        "--data-2017",
-        default="data/processed/toxprot_2017.csv",
-        help="Path to 2017 ToxProt data",
-    )
-    parser.add_argument(
-        "--data-2025",
-        default="data/processed/toxprot_2025.csv",
-        help="Path to 2025 ToxProt data",
-    )
-    parser.add_argument(
-        "--output",
-        default="figures/protein_evidence",
-        help="Output directory for the plots",
-    )
-    parser.add_argument("--show", action="store_true", help="Display the plot in browser")
+    if len(datasets) < 2:
+        print("Error: Need at least 2 datasets to generate plot")
+        return
 
-    args = parser.parse_args()
+    print(f"Loaded {len(datasets)} datasets")
+    for year, df in datasets.items():
+        print(f"  {year}: {len(df)} proteins")
 
-    # Convert to absolute paths
-    script_dir = Path(__file__).parent.parent
-    data_2017_path = script_dir / args.data_2017
-    data_2025_path = script_dir / args.data_2025
-    output_dir = script_dir / args.output
-    output_path = output_dir / "protein_evidence_sankey.html"
-
-    # Create output directory if needed
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    # Create the plot
-    fig = create_protein_evidence_sankey(str(data_2017_path), str(data_2025_path), str(output_path))
-
-    # Show plot if requested
-    if args.show:
-        fig.show()
+    output_path = FIGURES_DIR / "protein_evidence_sankey.png"
+    plot_protein_evidence_alluvial(datasets, output_path, years=YEARS)
 
     print("Done!")
 

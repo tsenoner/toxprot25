@@ -485,10 +485,11 @@ def ptm(ctx, data_dir, output_dir, years):
 )
 @click.pass_context
 def habitat(ctx, data_dir, output_dir, top_n):
-    """Analyze dual-habitat protein family distributions.
+    """Analyze habitat distributions for ToxProt entries.
 
-    Generates a diverging bar chart comparing protein families found in
-    both terrestrial and marine habitats across 2005, 2015, and 2025.
+    Creates a two-panel figure:
+    - Panel A: Taxa distribution by habitat (terrestrial vs marine)
+    - Panel B: Dual-habitat protein family evolution across 2005, 2015, 2025
 
     \b
     Examples:
@@ -496,7 +497,7 @@ def habitat(ctx, data_dir, output_dir, top_n):
         toxprot analysis -d all habitat
         toxprot analysis habitat --top-n 20
     """
-    from .analyze_habitat import YEARS, load_datasets, plot_habitat_protein_families
+    from .analyze_habitat import YEARS, load_datasets, plot_habitat_combined
 
     definition = ctx.obj["definition"]
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -512,62 +513,11 @@ def habitat(ctx, data_dir, output_dir, top_n):
 
     click.echo(f"Loaded {len(datasets)} datasets (definition: {definition})")
 
-    output_path = output_dir / "dual_habitat_protein_families.png"
-    plot_habitat_protein_families(datasets, output_path, top_n=top_n)
-    click.echo(f"Saved {output_path}")
+    # Use 2025 data for Panel A
+    df_2025 = datasets[max(datasets.keys())]
 
-
-@analysis.command("habitat-taxa")
-@click.option(
-    "--data-dir",
-    type=click.Path(exists=True, path_type=Path),
-    default=Path("data/processed/toxprot"),
-    show_default=True,
-    help="Directory containing processed CSV files.",
-)
-@click.option(
-    "--output-dir",
-    "-o",
-    type=click.Path(path_type=Path),
-    default=Path("figures/habitat"),
-    show_default=True,
-    help="Directory to save output figures.",
-)
-@click.option(
-    "--year",
-    type=int,
-    default=2025,
-    show_default=True,
-    help="Year of dataset to analyze.",
-)
-def habitat_taxa(data_dir, output_dir, year):
-    """Visualize taxa distribution by habitat.
-
-    Creates a dual-panel figure showing:
-    - Panel A: Summary bar chart with species and entry counts per habitat
-    - Panel B: Scatter plot of species by entries, colored by taxonomic order
-
-    Uses venom_tissue criterion (ToxProt definition in ["venom_tissue", "both"]).
-
-    \b
-    Examples:
-        toxprot analysis habitat-taxa
-        toxprot analysis habitat-taxa --year 2024
-        toxprot analysis habitat-taxa -o figures/custom
-    """
-    from .analyze_habitat import plot_taxa_by_habitat
-
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    filepath = data_dir / f"toxprot_{year}.csv"
-    if not filepath.exists():
-        raise click.ClickException(f"File not found: {filepath}")
-
-    df = pd.read_csv(filepath)
-    click.echo(f"Loaded {len(df):,} entries from {year}")
-
-    output_path = output_dir / "taxa_by_habitat.png"
-    plot_taxa_by_habitat(df, output_path)
+    output_path = output_dir / "habitat_combined.png"
+    plot_habitat_combined(df_2025, datasets, output_path, top_n=top_n)
     click.echo(f"Saved {output_path}")
 
 
@@ -625,6 +575,64 @@ def source_tissue(ctx, data_dir, output_dir, top_n):
 
     output_path = output_dir / "source_tissue_alluvial.png"
     plot_source_tissue_alluvial(datasets, output_path, top_n=top_n)
+    click.echo(f"Saved {output_path}")
+
+
+@analysis.command("protein-evidence")
+@click.option(
+    "--data-dir",
+    type=click.Path(exists=True, path_type=Path),
+    default=Path("data/processed/toxprot"),
+    show_default=True,
+    help="Directory containing processed CSV files.",
+)
+@click.option(
+    "--output-dir",
+    "-o",
+    type=click.Path(path_type=Path),
+    default=Path("figures/protein_evidence"),
+    show_default=True,
+    help="Directory to save output figures.",
+)
+@click.pass_context
+def protein_evidence(ctx, data_dir, output_dir):
+    """Analyze protein evidence category evolution.
+
+    Creates an alluvial diagram showing protein evidence level transitions
+    across 2008, 2015, and 2025 (PE levels introduced mid-2007).
+
+    Shows flows between categories and removed proteins at each time point.
+
+    \b
+    Examples:
+        toxprot analysis protein-evidence
+        toxprot analysis -d all protein-evidence
+        toxprot analysis protein-evidence -o figures/custom
+    """
+    from .plot_protein_evidence_sankey import (
+        YEARS,
+        filter_by_definition,
+        load_datasets,
+        plot_protein_evidence_alluvial,
+    )
+
+    definition = ctx.obj["definition"]
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    datasets = load_datasets(YEARS, data_dir=data_dir)
+
+    if len(datasets) < 2:
+        raise click.ClickException("Need at least 2 datasets")
+
+    # Apply definition filter for display
+    filtered = {y: filter_by_definition(df, definition) for y, df in datasets.items()}
+
+    click.echo(f"Loaded {len(datasets)} datasets (definition: {definition})")
+    for year, df in filtered.items():
+        click.echo(f"  {year}: {len(df):,} proteins")
+
+    output_path = output_dir / "protein_evidence_sankey.png"
+    plot_protein_evidence_alluvial(datasets, output_path, years=YEARS, definition=definition)
     click.echo(f"Saved {output_path}")
 
 
