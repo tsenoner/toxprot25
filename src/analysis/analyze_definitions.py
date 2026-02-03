@@ -382,7 +382,6 @@ def create_definition_comparison_figure(df: pd.DataFrame, output_dir: Path) -> N
 
     plt.tight_layout()
     plt.savefig(output_dir / "definition_comparison.png", dpi=300, bbox_inches="tight")
-    plt.savefig(output_dir / "definition_comparison.pdf", bbox_inches="tight")
     plt.close()
 
 

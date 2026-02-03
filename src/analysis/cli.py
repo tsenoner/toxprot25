@@ -68,7 +68,7 @@ def analysis(ctx, definition):
     "--level",
     "-l",
     type=click.Choice(["Phylum", "Class", "Order", "Family", "all"]),
-    default="all",
+    default="Order",
     show_default=True,
     help="Taxonomic level for alluvial plot.",
 )
@@ -204,7 +204,7 @@ def length(ctx, data_dir, output_dir):
 @click.option(
     "--top-n",
     type=int,
-    default=15,
+    default=10,
     show_default=True,
     help="Number of top protein families to display.",
 )

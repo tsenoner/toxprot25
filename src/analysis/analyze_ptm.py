@@ -191,7 +191,6 @@ def create_combined_figure(datasets: dict[int, pd.DataFrame], output_dir: Path, 
     )
 
     plt.savefig(output_dir / "ptm_overview.png", dpi=300, bbox_inches="tight")
-    plt.savefig(output_dir / "ptm_overview.pdf", bbox_inches="tight")
     plt.close()
 
 
