@@ -226,3 +226,138 @@ class TestGetOutputFilename:
         """Test fallback for non-standard filename."""
         result = get_output_filename(Path("custom_name.dat"))
         assert result == "toxprot_custom_name.tsv"
+
+
+class TestDATSourceTissueParsing:
+    """Tests for DAT source tissue parsing from RC lines."""
+
+    def test_parse_entry_extracts_rc_tissues(self):
+        """Test that RC TISSUE= values are extracted (informational only)."""
+        entry_lines = [
+            "ID   TOXB1_CONMA             Reviewed;          85 AA.\n",
+            "AC   P0C1T5;\n",
+            "OS   Conus magus (Magician's cone).\n",
+            "OC   Eukaryota; Metazoa; Spiralia.\n",
+            "OX   NCBI_TaxID=6491;\n",
+            "RC   TISSUE=Venom gland;\n",
+            "RC   TISSUE=Venom duct;\n",
+            "CC   -!- TISSUE SPECIFICITY: Expressed by the venom gland.\n",
+            "KW   Toxin.\n",
+            "SQ   SEQUENCE   10 AA;  1000 MW;  ABC123 CRC64;\n",
+            "     MAAAAAAA\n",
+        ]
+        parser = SwissProtParser()
+        entry_data, meets_criteria = parser.parse_entry(entry_lines)
+
+        # Source tissues should be extracted (informational)
+        assert "Venom duct" in entry_data["Source tissues"]
+        assert "Venom gland" in entry_data["Source tissues"]
+        # Criteria based on CC free-text "venom" + KW-0800
+        assert meets_criteria is True
+        assert entry_data["ToxProt definition"] == "both"
+
+    def test_parse_entry_multiple_tissues_on_one_rc_line(self):
+        """Test parsing multiple TISSUE values on a single RC line."""
+        entry_lines = [
+            "ID   TOXB1_CONMA             Reviewed;          85 AA.\n",
+            "AC   P0C1T5;\n",
+            "OS   Conus magus.\n",
+            "OC   Metazoa.\n",
+            "OX   NCBI_TaxID=6491;\n",
+            "RC   TISSUE=Venom; TISSUE=Venom gland;\n",
+            "KW   Toxin.\n",
+            "SQ   SEQUENCE   10 AA;  1000 MW;  ABC123 CRC64;\n",
+            "     MAAAAAAA\n",
+        ]
+        parser = SwissProtParser()
+        entry_data, _ = parser.parse_entry(entry_lines)
+
+        assert "Venom" in entry_data["Source tissues"]
+        assert "Venom gland" in entry_data["Source tissues"]
+
+    def test_parse_entry_venomous_saliva_matches_via_freetext(self):
+        """Test that 'venomous saliva' matches via CC free-text (UniProt ToxProt query)."""
+        entry_lines = [
+            "ID   RDA1C_PLARH             Reviewed;         130 AA.\n",
+            "AC   P58609;\n",
+            "OS   Platymeris rhadamanthus (Assassin bug).\n",
+            "OC   Eukaryota; Metazoa; Ecdysozoa; Arthropoda; Hexapoda; Insecta.\n",
+            "OX   NCBI_TaxID=51583;\n",
+            "RC   TISSUE=Saliva;\n",
+            "CC   -!- TISSUE SPECIFICITY: Produced by the venomous saliva.\n",
+            "KW   Toxin.\n",
+            "SQ   SEQUENCE   130 AA;  14000 MW;  ABC123 CRC64;\n",
+            "     MAAAAAAA\n",
+        ]
+        parser = SwissProtParser()
+        entry_data, meets_criteria = parser.parse_entry(entry_lines)
+
+        # Source tissue is Saliva (from RC line)
+        assert entry_data["Source tissues"] == "Saliva"
+        # Meets criteria via both KW-0800 and CC free-text "venom" match
+        assert meets_criteria is True
+        # ToxProt definition is "both" because CC contains "venom" (UniProt ToxProt query behavior)
+        assert entry_data["ToxProt definition"] == "both"
+        # The free-text "Tissue specificity" contains "venomous saliva"
+        assert "venomous saliva" in entry_data["Tissue specificity"].lower()
+
+    def test_parse_entry_no_rc_lines(self):
+        """Test entry with no RC lines."""
+        entry_lines = [
+            "ID   TOXB1_CONMA             Reviewed;          85 AA.\n",
+            "AC   P0C1T5;\n",
+            "OS   Conus magus.\n",
+            "OC   Metazoa.\n",
+            "OX   NCBI_TaxID=6491;\n",
+            "KW   Toxin.\n",
+            "SQ   SEQUENCE   10 AA;  1000 MW;  ABC123 CRC64;\n",
+            "     MAAAAAAA\n",
+        ]
+        parser = SwissProtParser()
+        entry_data, meets_criteria = parser.parse_entry(entry_lines)
+
+        assert entry_data["Source tissues"] == ""
+        # Still meets criteria due to Toxin keyword
+        assert meets_criteria is True
+        assert entry_data["ToxProt definition"] == "kw_toxin"
+
+    def test_parse_entry_venom_tissue_only(self):
+        """Test entry with venom in CC tissue specificity but no Toxin keyword."""
+        entry_lines = [
+            "ID   TOXB1_CONMA             Reviewed;          85 AA.\n",
+            "AC   P0C1T5;\n",
+            "OS   Conus magus.\n",
+            "OC   Metazoa.\n",
+            "OX   NCBI_TaxID=6491;\n",
+            "RC   TISSUE=Venom;\n",
+            "CC   -!- TISSUE SPECIFICITY: Expressed by the venom gland.\n",
+            "SQ   SEQUENCE   10 AA;  1000 MW;  ABC123 CRC64;\n",
+            "     MAAAAAAA\n",
+        ]
+        parser = SwissProtParser()
+        entry_data, meets_criteria = parser.parse_entry(entry_lines)
+
+        assert entry_data["Source tissues"] == "Venom"
+        # Criteria uses CC free-text matching (UniProt ToxProt query)
+        assert meets_criteria is True
+        assert entry_data["ToxProt definition"] == "venom_tissue"
+
+    def test_parse_entry_rc_tissue_only_no_cc(self):
+        """Test that RC source tissue alone (without CC) doesn't meet criteria."""
+        entry_lines = [
+            "ID   TOXB1_CONMA             Reviewed;          85 AA.\n",
+            "AC   P0C1T5;\n",
+            "OS   Conus magus.\n",
+            "OC   Metazoa.\n",
+            "OX   NCBI_TaxID=6491;\n",
+            "RC   TISSUE=Venom;\n",
+            "SQ   SEQUENCE   10 AA;  1000 MW;  ABC123 CRC64;\n",
+            "     MAAAAAAA\n",
+        ]
+        parser = SwissProtParser()
+        entry_data, meets_criteria = parser.parse_entry(entry_lines)
+
+        # RC source tissue is captured (informational)
+        assert entry_data["Source tissues"] == "Venom"
+        # But without CC or KW-0800, doesn't meet ToxProt criteria
+        assert meets_criteria is False

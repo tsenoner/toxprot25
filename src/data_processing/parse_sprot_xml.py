@@ -22,6 +22,9 @@ from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
 
+# Note: Source tissues are parsed for informational purposes only.
+# The ToxProt criteria uses CC free-text matching (cc_tissue_specificity:venom)
+
 logger = logging.getLogger(__name__)
 
 
@@ -71,6 +74,7 @@ class SwissProtXMLParser:
         "Fragment",
         "Function [CC]",
         "Tissue specificity",
+        "Source tissues",
         "Toxic dose",
         "PTM_Features",
         "PTM Keywords",
@@ -176,6 +180,17 @@ class SwissProtXMLParser:
                     if (taxon.text or "").strip() == "Metazoa":
                         is_metazoa = True
                         break
+
+        # --- Source tissues (RC line in flat format) ---
+        # Collect all tissue values from <reference><source><tissue> elements
+        source_tissues = set()
+        for ref_elem in entry_elem.findall(self._tag("reference")):
+            source = ref_elem.find(self._tag("source"))
+            if source is not None:
+                for tissue_elem in source.findall(self._tag("tissue")):
+                    if tissue_elem.text:
+                        source_tissues.add(tissue_elem.text.strip())
+        entry_data["Source tissues"] = "; ".join(sorted(source_tissues))
 
         # --- Protein names ---
         protein_elem = entry_elem.find(self._tag("protein"))
@@ -396,6 +411,7 @@ class SwissProtXMLParser:
             entry_data["Protein existence"] = pe_map.get(pe_type, pe_type)
 
         # --- Criteria check ---
+        # Match UniProt ToxProt query: cc_tissue_specificity:venom (CC free-text only)
         has_venom_tissue = "venom" in entry_data["Tissue specificity"].lower()
         meets_criteria = is_metazoa and (has_venom_tissue or has_kw0800_toxin)
 

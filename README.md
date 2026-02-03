@@ -24,16 +24,27 @@ Run any command with `-h` for full options (e.g. `-f` to force reprocess, `--kee
 
 ## How Proteins Are Selected
 
-The parser extracts reviewed Metazoa proteins from each Swiss-Prot release that match **either** of two criteria (union):
+The parser replicates UniProt's [ToxProt](https://www.uniprot.org/help/Toxins) query, extracting reviewed Metazoa proteins that match **either** criterion:
 
 ```
-(taxonomy_id:33208) AND ((cc_tissue_specificity:venom OR keyword:KW-0800)) AND (reviewed:true)
+(taxonomy_id:33208) AND (cc_tissue_specificity:venom OR keyword:KW-0800) AND (reviewed:true)
 ```
 
-- **Venom tissue** -- the protein's tissue specificity annotation mentions venom or venom glands
-- **Toxin keyword** -- the protein carries UniProt keyword KW-0800 ("Toxin")
+### Criteria Details
 
-Every output row includes a `ToxProt definition` column recording which criterion matched: `venom_tissue`, `kw_toxin`, or `both`.
+| Criterion | UniProt Field | Implementation |
+|-----------|---------------|----------------|
+| **Venom tissue** | `cc_tissue_specificity:venom` | Free-text search: `"venom" in CC_TISSUE_SPECIFICITY.lower()` |
+| **Toxin keyword** | `keyword:KW-0800` | Exact match on `<keyword id="KW-0800">` element |
+| **Metazoa** | `taxonomy_id:33208` | Checks `<taxon>Metazoa</taxon>` in organism lineage |
+
+The `cc_tissue_specificity:venom` criterion uses **free-text substring matching** on the CC "TISSUE SPECIFICITY" comment (e.g., "Expressed by the venom gland" or "Produced by the venomous saliva" both match).
+
+### Output Columns
+
+- **`ToxProt definition`** -- Which criterion matched: `venom_tissue`, `kw_toxin`, or `both`
+- **`Tissue specificity`** -- Full CC comment text (used for venom tissue matching)
+- **`Source tissues`** -- RC line tissue values from references (informational metadata, not used for selection criteria)
 
 ## Analysis
 

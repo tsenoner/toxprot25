@@ -33,6 +33,7 @@ def sample_swissprot_entry():
         "OC   Caenogastropoda; Hypsogastropoda; Neogastropoda; Conoidea; Conidae;\n",
         "OC   Conus.\n",
         "OX   NCBI_TaxID=6491;\n",
+        "RC   TISSUE=Venom duct;\n",
         "CC   -!- FUNCTION: Mu-conotoxins block voltage-gated sodium channels.\n",
         "CC   -!- TISSUE SPECIFICITY: Expressed by the venom duct.\n",
         "CC   -!- SIMILARITY: Belongs to the conotoxin M superfamily.\n",
@@ -181,6 +182,11 @@ def sample_xml_entry():
       <taxon>Gastropoda</taxon>
     </lineage>
   </organism>
+  <reference key="1">
+    <source>
+      <tissue>Venom duct</tissue>
+    </source>
+  </reference>
   <comment type="function">
     <text>Mu-conotoxins block voltage-gated sodium channels.</text>
   </comment>

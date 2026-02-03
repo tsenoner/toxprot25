@@ -18,6 +18,9 @@ from pathlib import Path
 
 from tqdm import tqdm
 
+# Note: Source tissues are parsed for informational purposes only.
+# The ToxProt criteria uses CC free-text matching (cc_tissue_specificity:venom)
+
 # Module logger - configuration handled by caller or main()
 logger = logging.getLogger(__name__)
 
@@ -136,6 +139,7 @@ class SwissProtParser:
         "Fragment",
         "Function [CC]",
         "Tissue specificity",
+        "Source tissues",
         "Toxic dose",
         "Disulfide bond",
         "Glycosylation",
@@ -270,6 +274,9 @@ class SwissProtParser:
         processing_de_flags = False
         in_sequence_block = False
 
+        # Source tissues from RC lines (controlled vocabulary)
+        source_tissues = set()
+
         # PTM storage
         ptm_features = {
             "MOD_RES": [],
@@ -320,6 +327,14 @@ class SwissProtParser:
                 match = re.search(r"NCBI_TaxID=(\d+)", content)
                 if match:
                     entry_data["Organism (ID)"] = match.group(1)
+
+            # Reference comment (RC) - Source tissues
+            # RC   TISSUE=Venom; TISSUE=Venom gland;
+            elif line.startswith("RC"):
+                in_sequence_block = False
+                tissue_matches = re.findall(r"TISSUE=([^;]+)", content)
+                for tissue in tissue_matches:
+                    source_tissues.add(tissue.strip())
 
             # Keywords
             elif line.startswith("KW"):
@@ -517,7 +532,10 @@ class SwissProtParser:
         # Clean protein families
         self._clean_protein_families(entry_data)
 
-        # Check criteria
+        # Store source tissues (from RC lines) - informational only
+        entry_data["Source tissues"] = "; ".join(sorted(source_tissues))
+
+        # Match UniProt ToxProt query: cc_tissue_specificity:venom (CC free-text only)
         has_venom_tissue = "venom" in entry_data["Tissue specificity"].lower()
         meets_criteria = is_metazoa and (has_venom_tissue or has_kw0800_toxin)
 

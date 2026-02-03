@@ -2,8 +2,8 @@
 
 import json
 import xml.etree.ElementTree as ET
-from pathlib import Path
 
+from src.data_processing import VENOM_TISSUE_TERMS, has_venom_source_tissue
 from src.data_processing.clean_data import extract_ptm_summary
 from src.data_processing.parse_sprot_dat import PTMVocabulary
 from src.data_processing.parse_sprot_xml import (
@@ -305,3 +305,133 @@ class TestProcessXMLFile:
         assert "Modified residue" in ptm_features
         assert len(ptm_features["Disulfide bond"]) == 2
         assert len(ptm_features["Modified residue"]) == 2
+
+
+class TestVenomTissueControlledVocabulary:
+    """Tests for venom tissue detection using controlled vocabulary."""
+
+    def test_venom_tissue_terms_contains_expected_values(self):
+        """Test that VENOM_TISSUE_TERMS contains the expected controlled vocabulary."""
+        assert "venom" in VENOM_TISSUE_TERMS
+        assert "venom gland" in VENOM_TISSUE_TERMS
+        assert "venom duct" in VENOM_TISSUE_TERMS
+
+    def test_has_venom_source_tissue_exact_match(self):
+        """Test exact match of venom tissue terms."""
+        assert has_venom_source_tissue({"Venom"}) is True
+        assert has_venom_source_tissue({"Venom gland"}) is True
+        assert has_venom_source_tissue({"Venom duct"}) is True
+
+    def test_has_venom_source_tissue_case_insensitive(self):
+        """Test case-insensitive matching."""
+        assert has_venom_source_tissue({"VENOM"}) is True
+        assert has_venom_source_tissue({"venom"}) is True
+        assert has_venom_source_tissue({"Venom Gland"}) is True
+
+    def test_has_venom_source_tissue_rejects_saliva(self):
+        """Test that 'Saliva' RC tissue does NOT match controlled vocabulary."""
+        assert has_venom_source_tissue({"Saliva"}) is False
+        assert has_venom_source_tissue({"Venomous"}) is False
+
+    def test_has_venom_source_tissue_empty_set(self):
+        """Test that empty set returns False."""
+        assert has_venom_source_tissue(set()) is False
+
+    def test_has_venom_source_tissue_mixed(self):
+        """Test with mixed venom and non-venom tissues."""
+        assert has_venom_source_tissue({"Saliva", "Venom"}) is True
+        assert has_venom_source_tissue({"Saliva", "Brain"}) is False
+
+
+class TestXMLSourceTissueParsing:
+    """Tests for XML source tissue parsing from <reference><source><tissue>."""
+
+    def test_parse_entry_extracts_source_tissues(self):
+        """Test that source tissues are extracted from reference elements."""
+        xml_str = '''<entry dataset="Swiss-Prot" xmlns="http://uniprot.org/uniprot">
+          <accession>P12345</accession>
+          <name>TEST_ENTRY</name>
+          <organism>
+            <name type="scientific">Conus magus</name>
+            <dbReference type="NCBI Taxonomy" id="6491"/>
+            <lineage><taxon>Metazoa</taxon></lineage>
+          </organism>
+          <reference key="1">
+            <source>
+              <tissue>Venom gland</tissue>
+            </source>
+          </reference>
+          <reference key="2">
+            <source>
+              <tissue>Venom duct</tissue>
+            </source>
+          </reference>
+          <comment type="tissue specificity">
+            <text>Expressed by the venom gland.</text>
+          </comment>
+          <keyword id="KW-0800">Toxin</keyword>
+          <proteinExistence type="evidence at protein level"/>
+          <sequence length="10" mass="1000">MAAAAA</sequence>
+        </entry>'''
+        entry_data, meets_criteria = _parse_entry(xml_str)
+
+        # Source tissues should be extracted and joined (informational)
+        assert "Venom duct" in entry_data["Source tissues"]
+        assert "Venom gland" in entry_data["Source tissues"]
+        # Criteria based on CC free-text "venom" + KW-0800
+        assert meets_criteria is True
+        assert entry_data["ToxProt definition"] == "both"
+
+    def test_parse_entry_venomous_saliva_matches_via_freetext(self):
+        """Test that 'venomous saliva' matches via CC free-text (UniProt ToxProt query)."""
+        xml_str = '''<entry dataset="Swiss-Prot" xmlns="http://uniprot.org/uniprot">
+          <accession>P58609</accession>
+          <name>TEST_SALIVA</name>
+          <organism>
+            <name type="scientific">Platymeris rhadamanthus</name>
+            <dbReference type="NCBI Taxonomy" id="51583"/>
+            <lineage><taxon>Metazoa</taxon></lineage>
+          </organism>
+          <reference key="1">
+            <source>
+              <tissue>Saliva</tissue>
+            </source>
+          </reference>
+          <comment type="tissue specificity">
+            <text>Produced by the venomous saliva.</text>
+          </comment>
+          <keyword id="KW-0800">Toxin</keyword>
+          <proteinExistence type="evidence at protein level"/>
+          <sequence length="10" mass="1000">MAAAAA</sequence>
+        </entry>'''
+        entry_data, meets_criteria = _parse_entry(xml_str)
+
+        # Source tissue is Saliva (from RC line)
+        assert entry_data["Source tissues"] == "Saliva"
+        # Meets criteria via both KW-0800 and CC free-text "venom" match
+        assert meets_criteria is True
+        # ToxProt definition is "both" because CC contains "venom" (UniProt ToxProt query behavior)
+        assert entry_data["ToxProt definition"] == "both"
+        # The free-text "Tissue specificity" contains "venomous saliva"
+        assert "venomous saliva" in entry_data["Tissue specificity"].lower()
+
+    def test_parse_entry_no_source_tissues(self):
+        """Test entry with no source tissue elements."""
+        xml_str = '''<entry dataset="Swiss-Prot" xmlns="http://uniprot.org/uniprot">
+          <accession>P99999</accession>
+          <name>TEST_NOTISSUE</name>
+          <organism>
+            <name type="scientific">Conus magus</name>
+            <dbReference type="NCBI Taxonomy" id="6491"/>
+            <lineage><taxon>Metazoa</taxon></lineage>
+          </organism>
+          <keyword id="KW-0800">Toxin</keyword>
+          <proteinExistence type="evidence at protein level"/>
+          <sequence length="10" mass="1000">MAAAAA</sequence>
+        </entry>'''
+        entry_data, meets_criteria = _parse_entry(xml_str)
+
+        assert entry_data["Source tissues"] == ""
+        # Still meets criteria due to KW-0800
+        assert meets_criteria is True
+        assert entry_data["ToxProt definition"] == "kw_toxin"

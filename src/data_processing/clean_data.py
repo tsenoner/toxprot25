@@ -187,6 +187,7 @@ def process_toxprot_tsv(tsv_input_path: Path, update_protfams_func, create_fasta
         "Length",
         "Fragment",
         "Toxic dose",
+        "Source tissues",
         "PTM_Features",
         "PTM Keywords",
         "Sequence",
