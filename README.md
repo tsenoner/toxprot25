@@ -1,8 +1,20 @@
 # ToxProt25
 
-This repository tracks how the [ToxProt](https://www.uniprot.org/help/Toxins) dataset -- UniProt's curated collection of animal toxin proteins -- has evolved across 20 years of Swiss-Prot releases (2005-2025).
+Analysis of [ToxProt](https://www.uniprot.org/help/Toxins) — UniProt's curated collection of animal toxin proteins — across 21 years of Swiss-Prot releases (2005-2025).
 
-It provides a reproducible pipeline that downloads historical Swiss-Prot releases, extracts toxin proteins, and produces per-year datasets (CSV + FASTA) enriched with taxonomy and habitat data. On top of that, it includes analyses of taxonomic distribution, protein families, habitat patterns, PTMs, GO terms, and protein space embeddings.
+This project provides a reproducible pipeline that downloads historical Swiss-Prot releases, extracts toxin proteins, and produces per-year datasets (CSV + FASTA) enriched with taxonomy and habitat data. It enables decade-based comparisons (2005 → 2015 → 2025) and full timeline trend analysis.
+
+## Data Flow
+
+```
+UniProt FTP ──download──▶ XML ──parse──▶ TSV ──clean──▶ CSV + FASTA
+                                                              │
+                                                              ▼
+                                                    toxprot analysis
+                                                              │
+                                                              ▼
+                                                          Figures
+```
 
 ## Quick Start
 
@@ -11,70 +23,74 @@ git clone https://github.com/tsenoner/toxprot25.git
 cd toxprot25
 uv sync
 
-# Run the full pipeline (2005-2025): download -> parse -> clean
-toxprot data pipeline
-
-# Or process specific years only
-toxprot data pipeline -y 2020-2025
+toxprot data pipeline           # Download and process data (2005-2025)
+toxprot analysis pipeline       # Generate all figures
 ```
 
-Output: `data/processed/toxprot/` (one CSV + FASTA per year).
+Output: `data/processed/toxprot/` (CSV + FASTA per year), `figures/` (all analysis plots).
 
-Run any command with `-h` for full options (e.g. `-f` to force reprocess, `--keep-dat` to retain raw files, `-v` for verbose logging).
+## CLI Overview
 
-## How Proteins Are Selected
+### Data Processing (`toxprot data`)
 
-The parser replicates UniProt's [ToxProt](https://www.uniprot.org/help/Toxins) query, extracting reviewed Metazoa proteins that match **either** criterion:
+Process UniProt Swiss-Prot releases to extract toxin proteins.
+
+| Command    | Description                              |
+| ---------- | ---------------------------------------- |
+| `pipeline` | Full workflow (download → parse → clean) |
+| `download` | Fetch releases from UniProt FTP          |
+| `parse`    | Extract toxin proteins from XML          |
+| `clean`    | Add taxonomy, habitat, create CSV/FASTA  |
+
+**Common options:** `-y` years (e.g., `2020-2025`), `-f` force reprocess, `--keep-raw` retain XML files, `-v` verbose.
+
+See the [Data Processing Guide](docs/data_processing.md) for detailed command options and output descriptions.
+
+### Analysis (`toxprot analysis`)
+
+Generate figures and statistics from processed data.
+
+| Command            | Description                             |
+| ------------------ | --------------------------------------- |
+| `pipeline`         | Run all analyses with defaults          |
+| `summary`          | Dataset statistics (entries, species)   |
+| `taxa`             | Taxonomic distribution trends           |
+| `families`         | Protein family distributions            |
+| `length`           | Sequence length distributions           |
+| `habitat`          | Terrestrial vs. marine distribution     |
+| `source-tissue`    | Source tissue annotations               |
+| `ptm`              | Post-translational modification trends  |
+| `go`               | GO term distributions                   |
+| `protein-evidence` | Protein existence level evolution       |
+| `definitions`      | Compare selection criteria (2025 only)  |
+
+**Default filter:** `--definition venom_tissue`. Use `--definition all` for all entries.
+
+See the [Analysis Guide](docs/analysis_summary.md) for detailed command options and output descriptions.
+
+## ToxProt Selection Criteria
+
+The parser replicates UniProt's ToxProt query, extracting reviewed Metazoa proteins matching **either** criterion:
 
 ```
 (taxonomy_id:33208) AND (cc_tissue_specificity:venom OR keyword:KW-0800) AND (reviewed:true)
 ```
 
-### Criteria Details
+| Criterion         | UniProt Field                  | Match Type                              |
+| ----------------- | ------------------------------ | --------------------------------------- |
+| **Venom tissue**  | `cc_tissue_specificity:venom`  | Free-text: `"venom" in CC_TISSUE_SPECIFICITY` |
+| **Toxin keyword** | `keyword:KW-0800`              | Exact match on keyword element          |
 
-| Criterion | UniProt Field | Implementation |
-|-----------|---------------|----------------|
-| **Venom tissue** | `cc_tissue_specificity:venom` | Free-text search: `"venom" in CC_TISSUE_SPECIFICITY.lower()` |
-| **Toxin keyword** | `keyword:KW-0800` | Exact match on `<keyword id="KW-0800">` element |
-| **Metazoa** | `taxonomy_id:33208` | Checks `<taxon>Metazoa</taxon>` in organism lineage |
+The `--definition` flag filters outputs: `all`, `venom_tissue` (default), `kw_toxin`, `both_only`.
 
-The `cc_tissue_specificity:venom` criterion uses **free-text substring matching** on the CC "TISSUE SPECIFICITY" comment (e.g., "Expressed by the venom gland" or "Produced by the venomous saliva" both match).
+## Documentation
 
-### Output Columns
-
-- **`ToxProt definition`** -- Which criterion matched: `venom_tissue`, `kw_toxin`, or `both`
-- **`Tissue specificity`** -- Full CC comment text (used for venom tissue matching)
-- **`Source tissues`** -- RC line tissue values from references (informational metadata, not used for selection criteria)
-
-## Analysis
-
-```bash
-toxprot analysis taxa                            # Taxonomic distribution plots
-toxprot analysis taxa --definition venom_tissue  # Only venom-tissue entries
-toxprot analysis families                        # Protein family plots
-toxprot analysis families --top-n 20             # Custom top-N families
-toxprot analysis ptm                             # PTM analysis (2005, 2015, 2025)
-toxprot analysis ptm --years 2010,2020           # Custom year comparison
-toxprot analysis ptm --no-trends                 # Skip trend plot
-```
-
-The `--definition` flag filters by selection criterion: `all` (default), `venom_tissue`, `kw_toxin`, or `both_only`.
-
-### PTM Analysis
-
-The PTM analysis compares post-translational modification frequencies across time points. The `PTM Summary` column in output CSVs contains aggregated counts (e.g., `Disulfide bond:5; Amidation:1`).
-
-**Data source**: PTM annotations are extracted from UniProt XML `<feature>` elements. The parser:
-1. Reads feature types: `modified residue`, `glycosylation site`, `disulfide bond`, `cross-link`, and `lipid moiety-binding region`
-2. Resolves `modified residue` descriptions (e.g., "Pyrrolidone carboxylic acid") using UniProt's [ptmlist.txt](https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/docs/ptmlist.txt) controlled vocabulary
-3. Aggregates counts into standardized categories (Disulfide bond, Amidation, Glycosylation, Hydroxylation, etc.)
-
-Output: `figures/ptm/` -- stacked bar comparisons, distribution histograms, trend lines (2005-2025), and summary statistics.
-
-Additional standalone scripts in `src/analysis/` cover habitat and GO-term analyses. ProtSpace embedding analysis lives in `src/protspace/` (see its own README).
+- [Data Processing Guide](docs/data_processing.md) — Download, parse, and clean pipeline
+- [Analysis Guide](docs/analysis_summary.md) — Figure generation commands
+- [UniProt Release History](docs/uniprot_releases.md) — Swiss-Prot release versions (2005-2025)
+- [ProtSpace README](src/protspace/README.md) — Protein embedding analysis
 
 ## Data Sources
 
-- [UniProt Release History](docs/uniprot_releases.md) -- Swiss-Prot release versions and dates (2005-2025)
-- [ToxProt](https://www.uniprot.org/help/Toxins) -- UniProt animal toxin annotation program
-- Habitat classification -- manual taxonomic curation
+- [ToxProt](https://www.uniprot.org/help/Toxins) — UniProt animal toxin annotation program
+- Habitat classification — manual taxonomic curation

@@ -644,6 +644,53 @@ def protein_evidence(ctx, data_dir, output_dir):
     show_default=True,
     help="Directory containing processed CSV files.",
 )
+@click.pass_context
+def pipeline(ctx, data_dir):
+    """Run all analysis commands with default parameters.
+
+    Generates all figures: summary, taxa, families, length, habitat,
+    source-tissue, ptm, go, protein-evidence, and definitions.
+
+    Each command uses its default output directory under figures/.
+
+    \b
+    Examples:
+        toxprot analysis pipeline
+        toxprot analysis -d all pipeline
+        toxprot analysis pipeline --data-dir data/custom
+    """
+    commands = [
+        "summary",
+        "taxa",
+        "families",
+        "length",
+        "habitat",
+        "source-tissue",
+        "ptm",
+        "go",
+        "protein-evidence",
+        "definitions",
+    ]
+
+    click.echo(f"Running all analyses (definition: {ctx.obj['definition']})")
+
+    for cmd_name in commands:
+        click.echo(f"\n{'='*60}")
+        click.echo(f"Running: {cmd_name}")
+        click.echo("=" * 60)
+        ctx.invoke(analysis.commands[cmd_name], data_dir=data_dir)
+
+    click.echo(f"\nAll analyses complete. Figures saved to figures/")
+
+
+@analysis.command()
+@click.option(
+    "--data-dir",
+    type=click.Path(exists=True, path_type=Path),
+    default=Path("data/processed/toxprot"),
+    show_default=True,
+    help="Directory containing processed CSV files.",
+)
 @click.option(
     "--output-dir",
     "-o",
