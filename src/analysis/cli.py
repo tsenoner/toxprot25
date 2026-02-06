@@ -5,6 +5,8 @@ from pathlib import Path
 import click
 import pandas as pd
 
+from .protspace import protspace
+
 
 def filter_by_definition(df: pd.DataFrame, definition: str) -> pd.DataFrame:
     """Filter DataFrame by ToxProt definition column.
@@ -46,6 +48,10 @@ def analysis(ctx, definition):
     """Analysis and visualization commands."""
     ctx.ensure_object(dict)
     ctx.obj["definition"] = definition
+
+
+# Register protspace command group
+analysis.add_command(protspace)
 
 
 @analysis.command()
@@ -719,7 +725,7 @@ def definitions(data_dir, output_dir, year):
         toxprot analysis definitions --year 2024
         toxprot analysis definitions -o figures/custom_dir
     """
-    from .analyze_definitions import create_definition_comparison_figure
+    from .combine_definition_panels import create_combined_definition_figure
 
     filepath = data_dir / f"toxprot_{year}.csv"
     if not filepath.exists():
@@ -728,5 +734,5 @@ def definitions(data_dir, output_dir, year):
     df = pd.read_csv(filepath)
     click.echo(f"Loaded {len(df):,} entries from {year}")
 
-    create_definition_comparison_figure(df, output_dir)
+    create_combined_definition_figure(df, output_dir)
     click.echo(f"Saved to {output_dir}")
