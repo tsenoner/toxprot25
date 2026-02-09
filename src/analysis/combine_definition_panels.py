@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""ToxProt Definition Comparison — grouped phylum→Venn flow figure.
+"""ToxProt Definition Comparison — Venn→phylum→order flow figure.
 
-Single-panel figure with phyla grouped by definition exclusivity
-(keyword-exclusive vs shared), flowing into a Venn diagram.
+Single-panel figure flowing from a Venn diagram (left) through phyla bars
+(centre) to individual order dots (right): general to specific.
 
 Usage:
     python -m src.analysis.combine_definition_panels
@@ -72,7 +72,7 @@ def _order_data(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def plot_grouped_phylum_venn_flow(df: pd.DataFrame, ax: plt.Axes) -> None:
-    """Draw grouped phylum -> Venn flow diagram on *ax*."""
+    """Draw Venn -> phylum -> order flow diagram on *ax*."""
     from .analyze_definitions import get_taxa_by_exclusivity
 
     ct = _crosstab(df)
@@ -96,9 +96,9 @@ def plot_grouped_phylum_venn_flow(df: pd.DataFrame, ax: plt.Axes) -> None:
 
     # --- layout constants -------------------------------------------------
     box_w = 0.7
-    x_left = 0.0
-    x_venn = 5.5
-    x_orders = -2.5
+    x_venn = -2.5
+    x_left = 3.0
+    x_orders = 5.5
     gap_within = 0.4
     gap_between = 2.5
     min_bar = 0.5
@@ -136,7 +136,7 @@ def plot_grouped_phylum_venn_flow(df: pd.DataFrame, ax: plt.Axes) -> None:
     ax_w_in = fig_w_in * 0.90
     ax_h_in = fig_h_in * 0.88
     y_range_est = total_left_h + 8.0
-    x_range_pre = (x_venn + 6) - (x_orders - 3.0)
+    x_range_pre = (x_orders + 3.0) - (x_venn - 6)
     pts_per_x = 72 * ax_w_in / x_range_pre
     pts_per_y = 72 * ax_h_in / y_range_est
 
@@ -152,7 +152,7 @@ def plot_grouped_phylum_venn_flow(df: pd.DataFrame, ax: plt.Axes) -> None:
     spacing_x = gap_pts / pts_per_x
     spacing_y = gap_pts / pts_per_y
 
-    dot_x_min_global = x_orders  # track leftmost dot edge for xlim
+    dot_x_max_global = x_orders  # track rightmost dot edge for xlim
 
     for phylum in left_pos:
         pos = left_pos[phylum]
@@ -175,7 +175,7 @@ def plot_grouped_phylum_venn_flow(df: pd.DataFrame, ax: plt.Axes) -> None:
             orders.at[idxs[0], "dot_x"] = x_orders
             orders.at[idxs[0], "dot_y"] = (y_top + y_bot) / 2
             orders.at[idxs[0], "arrival_y"] = (y_top + y_bot) / 2
-            dot_x_min_global = min(dot_x_min_global, x_orders - dot_rx[0])
+            dot_x_max_global = max(dot_x_max_global, x_orders + dot_rx[0])
             continue
 
         # Start narrow (single-column), widen only when vertical space runs out
@@ -243,7 +243,7 @@ def plot_grouped_phylum_venn_flow(df: pd.DataFrame, ax: plt.Axes) -> None:
                 packed = [(k, cx, cy + y_shift) for k, cx, cy in packed]
 
                 for k, cx, _ in packed:
-                    dot_x_min_global = min(dot_x_min_global, cx - dot_rx[k])
+                    dot_x_max_global = max(dot_x_max_global, cx + dot_rx[k])
                 break
 
             strip_w = min(strip_w * 1.5, max_strip_w)
@@ -331,26 +331,26 @@ def plot_grouped_phylum_venn_flow(df: pd.DataFrame, ax: plt.Axes) -> None:
                     current_dx = abs(dx_pts)
                     if current_dx < needed_dx_pts:
                         push = (needed_dx_pts - current_dx) / pts_per_x
-                        # Move the smaller dot further left
+                        # Move the smaller dot further right
                         if r_pts[i] <= r_pts[j]:
-                            dot_x[i] -= push
+                            dot_x[i] += push
                         else:
-                            dot_x[j] -= push
+                            dot_x[j] += push
                         moved = True
         if not moved:
             break
 
     orders["dot_x"] = dot_x
-    dot_x_min_global = min(dot_x_min_global, (dot_x - radii_x).min())
+    dot_x_max_global = max(dot_x_max_global, (dot_x + radii_x).max())
 
-    # Draw order→phylum bezier flows
+    # Draw phylum→order bezier flows
     for _, row in orders.iterrows():
         if row["Phylum"] not in left_pos:
             continue
-        x0 = row["dot_x"]
-        y0 = row["dot_y"]
-        x1 = x_left - box_w / 2  # left edge of phylum bar
-        y1 = row["arrival_y"]
+        x0 = x_left + box_w / 2  # right edge of phylum bar
+        y0 = row["arrival_y"]
+        x1 = row["dot_x"]  # order dot (on the right)
+        y1 = row["dot_y"]
         lw = 0.5 + 0.7 * np.log10(row["count"]) / log_max
         color = DEFINITION_COLORS[row["exclusivity"]]
 
@@ -487,7 +487,7 @@ def plot_grouped_phylum_venn_flow(df: pd.DataFrame, ax: plt.Axes) -> None:
     y_lo = min(zone_kw["bottom"], 0, dot_y_min) - margin_lbl
     y_hi = max(zone_vt["top"], total_left_h, dot_y_max) + margin_lbl
     y_range = y_hi - y_lo
-    x_range_est = (x_venn + 5) - (dot_x_min_global - 1.0)
+    x_range_est = (dot_x_max_global + 1.0) - (x_venn - 5)
     aspect_corr = (ax_h * x_range_est) / (ax_w * y_range)
     rx_vt = ry_vt * aspect_corr
     rx_kw = ry_kw * aspect_corr
@@ -642,42 +642,44 @@ def plot_grouped_phylum_venn_flow(df: pd.DataFrame, ax: plt.Axes) -> None:
         )
     )
 
-    # --- Ellipse left-edge helpers ----------------------------------------
-    def ellipse_left_x(y, cy, ry, r_x):
+    # --- Ellipse right-edge helpers ---------------------------------------
+    def ellipse_right_x(y, cy, ry, r_x):
         t = (y - cy) / ry
         t = np.clip(t, -1.0, 1.0)
-        return x_venn - r_x * np.sqrt(1.0 - t * t)
+        return x_venn + r_x * np.sqrt(1.0 - t * t)
 
     def flow_target_x(defn, y_mid):
         if defn == "kw_toxin":
-            return ellipse_left_x(y_mid, cy_kw, ry_kw, rx_kw)
+            return ellipse_right_x(y_mid, cy_kw, ry_kw, rx_kw)
         elif defn == "venom_tissue":
-            return ellipse_left_x(y_mid, cy_vt, ry_vt, rx_vt)
+            return ellipse_right_x(y_mid, cy_vt, ry_vt, rx_vt)
         else:  # both — follow outermost individual circle outline
-            return min(
-                ellipse_left_x(y_mid, cy_kw, ry_kw, rx_kw),
-                ellipse_left_x(y_mid, cy_vt, ry_vt, rx_vt),
+            return max(
+                ellipse_right_x(y_mid, cy_kw, ry_kw, rx_kw),
+                ellipse_right_x(y_mid, cy_vt, ry_vt, rx_vt),
             )
 
-    # --- Bezier flow helper (stop just before the Venn ellipse) -----------
+    # --- Bezier flow helper (Venn right edge → phylum bar left edge) ------
     n_arc = 30
-    flow_gap = 0.05  # gap between flow end and ellipse boundary
+    flow_gap = 0.05  # gap between flow start and ellipse boundary
 
     def draw_flow(x1, y1b, y1t, y2b, y2t, defn, alpha=0.35):
         color = flow_colors[defn]
-        # Trace ellipse curvature offset by gap
+        # Trace ellipse right-edge curvature offset by gap
         ys_up = np.linspace(y2b, y2t, n_arc)
-        arc_up = [(flow_target_x(defn, y) - flow_gap, y) for y in ys_up]
+        arc_up = [(flow_target_x(defn, y) + flow_gap, y) for y in ys_up]
         x2b, _ = arc_up[0]
         x2t, _ = arc_up[-1]
         x2_mid = (x2b + x2t) / 2
-        ctrl = (x2_mid - x1) * 0.45
+        bar_left = x1 - box_w / 2
+        ctrl = (bar_left - x2_mid) * 0.45
 
+        # Bottom bezier: Venn right edge → bar left edge
         verts = [
-            (x1 + box_w / 2, y1b),
-            (x1 + box_w / 2 + ctrl, y1b),
-            (x2b - ctrl, y2b),
             (x2b, y2b),
+            (x2b + ctrl, y2b),
+            (bar_left - ctrl, y1b),
+            (bar_left, y1b),
         ]
         codes = [
             MplPath.MOVETO,
@@ -685,16 +687,21 @@ def plot_grouped_phylum_venn_flow(df: pd.DataFrame, ax: plt.Axes) -> None:
             MplPath.CURVE4,
             MplPath.CURVE4,
         ]
-        for pt in arc_up[1:]:
-            verts.append(pt)
-            codes.append(MplPath.LINETO)
+        # Line up bar left edge
+        verts.append((bar_left, y1t))
+        codes.append(MplPath.LINETO)
+        # Top bezier: bar left edge → Venn right edge
         verts += [
-            (x2t - ctrl, y2t),
-            (x1 + box_w / 2 + ctrl, y1t),
-            (x1 + box_w / 2, y1t),
+            (bar_left - ctrl, y1t),
+            (x2t + ctrl, y2t),
+            (x2t, y2t),
         ]
         codes += [MplPath.CURVE4, MplPath.CURVE4, MplPath.CURVE4]
-        verts.append((x1 + box_w / 2, y1b))
+        # Arc back down along Venn ellipse
+        for pt in reversed(arc_up[:-1]):
+            verts.append(pt)
+            codes.append(MplPath.LINETO)
+        verts.append((x2b, y2b))
         codes.append(MplPath.CLOSEPOLY)
 
         ax.add_patch(PathPatch(MplPath(verts, codes), fc=color, ec="none", alpha=alpha))
@@ -774,10 +781,10 @@ def plot_grouped_phylum_venn_flow(df: pd.DataFrame, ax: plt.Axes) -> None:
         fs_name = 10 if bar_h > small_thr else 9
         fs_count = 9 if bar_h > small_thr else 7
         ax.text(
-            x_left - box_w / 2 - 0.1,
+            x_left + box_w / 2 + 0.1,
             pos["bottom"] + bar_h / 2,
             phylum,
-            ha="right",
+            ha="left",
             va="center",
             fontsize=fs_name,
             fontstyle="italic",
@@ -846,7 +853,7 @@ def plot_grouped_phylum_venn_flow(df: pd.DataFrame, ax: plt.Axes) -> None:
 
     ax.text(
         x_venn,
-        zone_vt["top"] + 1.0,
+        zone_vt["top"] + 2.6,
         "Venom Tissue",
         ha="center",
         va="bottom",
@@ -856,12 +863,32 @@ def plot_grouped_phylum_venn_flow(df: pd.DataFrame, ax: plt.Axes) -> None:
     )
     ax.text(
         x_venn,
-        zone_kw["bottom"] - 1.0,
+        zone_vt["top"] + 1.2,
+        "cc_tissue_specificity:venom",
+        ha="center",
+        va="bottom",
+        fontsize=12,
+        fontstyle="italic",
+        color=flow_colors["venom_tissue"],
+    )
+    ax.text(
+        x_venn,
+        zone_kw["bottom"] - 1.2,
         "Toxin Keyword",
         ha="center",
         va="top",
         fontsize=14,
         fontweight="bold",
+        color=flow_colors["kw_toxin"],
+    )
+    ax.text(
+        x_venn,
+        zone_kw["bottom"] - 2.6,
+        "keyword:KW-0800",
+        ha="center",
+        va="top",
+        fontsize=12,
+        fontstyle="italic",
         color=flow_colors["kw_toxin"],
     )
 
@@ -894,14 +921,14 @@ def plot_grouped_phylum_venn_flow(df: pd.DataFrame, ax: plt.Axes) -> None:
     ]
     ax.legend(
         handles=legend_elements,
-        loc="upper right",
+        loc="upper left",
         fontsize=12,
         framealpha=0.9,
     )
 
     # --- axis limits ------------------------------------------------------
     rx_max = max(rx_vt, rx_kw)
-    ax.set_xlim(dot_x_min_global - 1.0, x_venn + rx_max + 1.0)
+    ax.set_xlim(x_venn - rx_max - 1.0, dot_x_max_global + 0.3)
     ax.set_ylim(y_lo, y_hi)
     ax.axis("off")
 
@@ -915,7 +942,7 @@ def create_combined_definition_figure(
     df: pd.DataFrame,
     output_dir: Path,
 ) -> Path:
-    """Create grouped phylum->Venn definition comparison figure."""
+    """Create Venn->phylum->order definition comparison figure."""
     output_dir.mkdir(parents=True, exist_ok=True)
 
     fig, ax = plt.subplots(figsize=(16, 9))
