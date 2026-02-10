@@ -94,6 +94,10 @@ def create_metadata_csv(
     if variant_config["exclude_fragments"]:
         columns.remove("has_fragment")
 
+    # Remove has_signal_peptide for mature variants (signal peptide already cleaved)
+    if variant_config["uses_mature"] and "has_signal_peptide" in columns:
+        columns.remove("has_signal_peptide")
+
     df_variant[columns].to_csv(output_path, index=False)
 
     if verbose:

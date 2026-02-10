@@ -94,13 +94,13 @@ def get_metadata_filename(year: str, variant: str) -> str:
 
 
 def get_protspace_output_filename(year: str, variant: str) -> str:
-    """Get protspace output parquetbundle filename."""
-    return f"protspace_{year}_{variant}.parquetbundle"
+    """Get protspace intermediate (unstyled) parquetbundle filename."""
+    return f"protspace_{year}_{variant}_tmp.parquetbundle"
 
 
 def get_protspace_styled_filename(year: str, variant: str) -> str:
-    """Get protspace styled parquetbundle filename."""
-    return f"protspace_{year}_{variant}_style.parquetbundle"
+    """Get protspace final (styled) parquetbundle filename."""
+    return f"protspace_{year}_{variant}.parquetbundle"
 
 
 def get_plot_filename(year: str, variant: str) -> str:
