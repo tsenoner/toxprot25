@@ -709,9 +709,8 @@ def pipeline(ctx, data_dir):
 def definitions(data_dir, output_dir, year):
     """Compare ToxProt definition categories.
 
-    Creates a two-panel figure comparing entries by their ToxProt definition:
-    - Panel A: Alluvial diagram showing taxonomic coverage
-    - Panel B: Venn diagram showing entry overlap
+    Creates a Venn→phylum→order flow figure comparing entries by their
+    ToxProt definition (venom tissue vs toxin keyword).
 
     \b
     Examples:
@@ -719,7 +718,7 @@ def definitions(data_dir, output_dir, year):
         toxprot analysis definitions --year 2024
         toxprot analysis definitions -o figures/custom_dir
     """
-    from .combine_definition_panels import create_combined_definition_figure
+    from .analyze_definitions import create_combined_definition_figure
 
     filepath = data_dir / f"toxprot_{year}.csv"
     if not filepath.exists():
