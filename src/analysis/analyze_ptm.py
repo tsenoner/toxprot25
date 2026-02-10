@@ -12,10 +12,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from ..config import COMPARISON_YEARS, DATA_DIR, FIGURES_DIR
 from .colors import YEAR_COLORS
 
 # Default comparison years (10-year intervals)
-DEFAULT_YEARS = [2005, 2015, 2025]
+DEFAULT_YEARS = COMPARISON_YEARS
 
 # Top 10 most common PTM types, ordered by frequency
 PTM_TYPES = [
@@ -196,13 +197,16 @@ def create_combined_figure(datasets: dict[int, pd.DataFrame], output_dir: Path, 
 
 def main():
     """Main analysis pipeline."""
-    data_dir = Path("data/processed/toxprot")
-    output_dir = Path("figures")
+    from .helpers import filter_by_definition
+
+    data_dir = DATA_DIR
+    output_dir = FIGURES_DIR
     output_dir.mkdir(parents=True, exist_ok=True)
 
     datasets = {}
     for year in DEFAULT_YEARS:
-        datasets[year] = load_data(data_dir / f"toxprot_{year}.csv")
+        df = load_data(data_dir / f"toxprot_{year}.csv")
+        datasets[year] = filter_by_definition(df, "venom_tissue")
 
     print(f"Loaded {sum(len(df) for df in datasets.values()):,} entries")
     create_combined_figure(datasets, output_dir)

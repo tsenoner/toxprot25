@@ -75,13 +75,12 @@ HABITAT_COLORS_DETAILED = {
 # Protein Evidence Colors
 # =============================================================================
 PROTEIN_EVIDENCE_COLORS = {
-    "PE1": "#2ecc71",  # Green - Protein level
-    "PE2": "#3498db",  # Blue - Transcript level
-    "PE3": "#9b59b6",  # Purple - Homology
-    "PE4": "#f39c12",  # Yellow - Predicted
-    "PE5": "#e74c3c",  # Red - Uncertain
-    "Removed": "#808080",  # Gray
-    "New": "#A0A0A0",  # Light gray
+    "Evidence at protein level": "#2E86AB",
+    "Evidence at transcript level": "#A23B72",
+    "Inferred from homology": "#F18F01",
+    "Predicted": "#C73E1D",
+    "Uncertain": "#592941",
+    "Removed": "#808080",
 }
 
 

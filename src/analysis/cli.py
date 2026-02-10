@@ -5,6 +5,7 @@ from pathlib import Path
 import click
 import pandas as pd
 
+from ..config import ALL_YEARS, COMPARISON_YEARS, DATA_DIR, FIGURES_DIR
 from .helpers import filter_by_definition
 from .protspace import protspace
 
@@ -33,7 +34,7 @@ analysis.add_command(protspace)
 @click.option(
     "--data-dir",
     type=click.Path(exists=True, path_type=Path),
-    default=Path("data/processed/toxprot"),
+    default=DATA_DIR,
     show_default=True,
     help="Directory containing processed CSV files.",
 )
@@ -41,7 +42,7 @@ analysis.add_command(protspace)
     "--output-dir",
     "-o",
     type=click.Path(path_type=Path),
-    default=Path("figures"),
+    default=FIGURES_DIR,
     show_default=True,
     help="Directory to save output figures.",
 )
@@ -73,7 +74,6 @@ def taxa(ctx, data_dir, output_dir, level, skip_trend):
         toxprot analysis -d all taxa
     """
     from .analyze_taxa import (
-        YEARS,
         plot_newcomers_alluvial,
         plot_top_taxa_trend,
     )
@@ -82,7 +82,7 @@ def taxa(ctx, data_dir, output_dir, level, skip_trend):
     definition = ctx.obj["definition"]
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    datasets = load_datasets(YEARS, data_dir=data_dir)
+    datasets = load_datasets(ALL_YEARS, data_dir=data_dir)
 
     if definition != "all":
         datasets = {year: filter_by_definition(df, definition) for year, df in datasets.items()}
@@ -116,7 +116,7 @@ def taxa(ctx, data_dir, output_dir, level, skip_trend):
 @click.option(
     "--data-dir",
     type=click.Path(exists=True, path_type=Path),
-    default=Path("data/processed/toxprot"),
+    default=DATA_DIR,
     show_default=True,
     help="Directory containing processed CSV files.",
 )
@@ -124,7 +124,7 @@ def taxa(ctx, data_dir, output_dir, level, skip_trend):
     "--output-dir",
     "-o",
     type=click.Path(path_type=Path),
-    default=Path("figures"),
+    default=FIGURES_DIR,
     show_default=True,
     help="Directory to save output figures.",
 )
@@ -147,7 +147,7 @@ def length(ctx, data_dir, output_dir):
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Load datasets
-    years = [2005, 2015, 2025]
+    years = COMPARISON_YEARS
     datasets = {}
     for year in years:
         filepath = data_dir / f"toxprot_{year}.csv"
@@ -170,7 +170,7 @@ def length(ctx, data_dir, output_dir):
 @click.option(
     "--data-dir",
     type=click.Path(exists=True, path_type=Path),
-    default=Path("data/processed/toxprot"),
+    default=DATA_DIR,
     show_default=True,
     help="Directory containing processed CSV files.",
 )
@@ -178,7 +178,7 @@ def length(ctx, data_dir, output_dir):
     "--output-dir",
     "-o",
     type=click.Path(path_type=Path),
-    default=Path("figures"),
+    default=FIGURES_DIR,
     show_default=True,
     help="Directory to save output figures.",
 )
@@ -210,7 +210,7 @@ def families(ctx, data_dir, output_dir, top_n):
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Load datasets for comparison (2005, 2015, 2025)
-    years = [2005, 2015, 2025]
+    years = COMPARISON_YEARS
     datasets = {}
     for year in years:
         filepath = data_dir / f"toxprot_{year}.csv"
@@ -234,7 +234,7 @@ def families(ctx, data_dir, output_dir, top_n):
 @click.option(
     "--data-dir",
     type=click.Path(exists=True, path_type=Path),
-    default=Path("data/processed/toxprot"),
+    default=DATA_DIR,
     show_default=True,
     help="Directory containing processed CSV files.",
 )
@@ -242,7 +242,7 @@ def families(ctx, data_dir, output_dir, top_n):
     "--output-dir",
     "-o",
     type=click.Path(path_type=Path),
-    default=Path("figures"),
+    default=FIGURES_DIR,
     show_default=True,
     help="Directory to save output figures.",
 )
@@ -265,7 +265,7 @@ def summary(ctx, data_dir, output_dir):
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Load datasets
-    years = [2005, 2015, 2025]
+    years = COMPARISON_YEARS
     datasets = {}
     for year in years:
         filepath = data_dir / f"toxprot_{year}.csv"
@@ -288,7 +288,7 @@ def summary(ctx, data_dir, output_dir):
 @click.option(
     "--data-dir",
     type=click.Path(exists=True, path_type=Path),
-    default=Path("data/processed/toxprot"),
+    default=DATA_DIR,
     show_default=True,
     help="Directory containing processed CSV files.",
 )
@@ -296,7 +296,7 @@ def summary(ctx, data_dir, output_dir):
     "--output-dir",
     "-o",
     type=click.Path(path_type=Path),
-    default=Path("figures"),
+    default=FIGURES_DIR,
     show_default=True,
     help="Directory to save output figures.",
 )
@@ -325,7 +325,6 @@ def go(ctx, data_dir, output_dir, top_n):
         toxprot analysis go --top-n 20
     """
     from .analyze_go_terms import (
-        ALL_YEARS,
         generate_all_figures,
         load_go_hierarchy,
     )
@@ -375,7 +374,7 @@ def go(ctx, data_dir, output_dir, top_n):
 @click.option(
     "--data-dir",
     type=click.Path(exists=True, path_type=Path),
-    default=Path("data/processed/toxprot"),
+    default=DATA_DIR,
     show_default=True,
     help="Directory containing processed CSV files.",
 )
@@ -383,7 +382,7 @@ def go(ctx, data_dir, output_dir, top_n):
     "--output-dir",
     "-o",
     type=click.Path(path_type=Path),
-    default=Path("figures"),
+    default=FIGURES_DIR,
     show_default=True,
     help="Directory to save output figures.",
 )
@@ -437,7 +436,7 @@ def ptm(ctx, data_dir, output_dir, years):
 @click.option(
     "--data-dir",
     type=click.Path(exists=True, path_type=Path),
-    default=Path("data/processed/toxprot"),
+    default=DATA_DIR,
     show_default=True,
     help="Directory containing processed CSV files.",
 )
@@ -445,7 +444,7 @@ def ptm(ctx, data_dir, output_dir, years):
     "--output-dir",
     "-o",
     type=click.Path(path_type=Path),
-    default=Path("figures"),
+    default=FIGURES_DIR,
     show_default=True,
     help="Directory to save output figures.",
 )
@@ -470,13 +469,13 @@ def habitat(ctx, data_dir, output_dir, top_n):
         toxprot analysis -d all habitat
         toxprot analysis habitat --top-n 20
     """
-    from .analyze_habitat import YEARS, plot_habitat_combined
+    from .analyze_habitat import plot_habitat_combined
     from .helpers import load_datasets
 
     definition = ctx.obj["definition"]
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    datasets = load_datasets(YEARS, data_dir)
+    datasets = load_datasets(COMPARISON_YEARS, data_dir)
 
     if definition != "all":
         datasets = {year: filter_by_definition(df, definition) for year, df in datasets.items()}
@@ -499,7 +498,7 @@ def habitat(ctx, data_dir, output_dir, top_n):
 @click.option(
     "--data-dir",
     type=click.Path(exists=True, path_type=Path),
-    default=Path("data/processed/toxprot"),
+    default=DATA_DIR,
     show_default=True,
     help="Directory containing processed CSV files.",
 )
@@ -507,7 +506,7 @@ def habitat(ctx, data_dir, output_dir, top_n):
     "--output-dir",
     "-o",
     type=click.Path(path_type=Path),
-    default=Path("figures"),
+    default=FIGURES_DIR,
     show_default=True,
     help="Directory to save output figures.",
 )
@@ -531,13 +530,13 @@ def source_tissue(ctx, data_dir, output_dir, top_n):
         toxprot analysis -d all source-tissue
         toxprot analysis source-tissue --top-n 5
     """
-    from .analyze_source_tissue import YEARS, plot_source_tissue_alluvial
+    from .analyze_source_tissue import plot_source_tissue_alluvial
     from .helpers import load_datasets
 
     definition = ctx.obj["definition"]
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    datasets = load_datasets(YEARS, data_dir=data_dir)
+    datasets = load_datasets(COMPARISON_YEARS, data_dir=data_dir)
 
     if definition != "all":
         datasets = {year: filter_by_definition(df, definition) for year, df in datasets.items()}
@@ -557,7 +556,7 @@ def source_tissue(ctx, data_dir, output_dir, top_n):
 @click.option(
     "--data-dir",
     type=click.Path(exists=True, path_type=Path),
-    default=Path("data/processed/toxprot"),
+    default=DATA_DIR,
     show_default=True,
     help="Directory containing processed CSV files.",
 )
@@ -565,7 +564,7 @@ def source_tissue(ctx, data_dir, output_dir, top_n):
     "--output-dir",
     "-o",
     type=click.Path(path_type=Path),
-    default=Path("figures"),
+    default=FIGURES_DIR,
     show_default=True,
     help="Directory to save output figures.",
 )
@@ -584,8 +583,8 @@ def protein_evidence(ctx, data_dir, output_dir):
         toxprot analysis -d all protein-evidence
         toxprot analysis protein-evidence -o figures/custom
     """
+    from ..config import PE_COMPARISON_YEARS
     from .analyze_protein_evidence import (
-        YEARS,
         plot_protein_evidence_alluvial,
     )
     from .helpers import load_datasets
@@ -593,7 +592,7 @@ def protein_evidence(ctx, data_dir, output_dir):
     definition = ctx.obj["definition"]
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    datasets = load_datasets(YEARS, data_dir=data_dir)
+    datasets = load_datasets(PE_COMPARISON_YEARS, data_dir=data_dir)
 
     if len(datasets) < 2:
         raise click.ClickException("Need at least 2 datasets")
@@ -606,7 +605,9 @@ def protein_evidence(ctx, data_dir, output_dir):
         click.echo(f"  {year}: {len(df):,} proteins")
 
     output_path = output_dir / "protein_evidence_sankey.png"
-    plot_protein_evidence_alluvial(datasets, output_path, years=YEARS, definition=definition)
+    plot_protein_evidence_alluvial(
+        datasets, output_path, years=PE_COMPARISON_YEARS, definition=definition
+    )
     click.echo(f"Saved {output_path}")
 
 
@@ -614,7 +615,7 @@ def protein_evidence(ctx, data_dir, output_dir):
 @click.option(
     "--data-dir",
     type=click.Path(exists=True, path_type=Path),
-    default=Path("data/processed/toxprot"),
+    default=DATA_DIR,
     show_default=True,
     help="Directory containing processed CSV files.",
 )
@@ -661,7 +662,7 @@ def pipeline(ctx, data_dir):
 @click.option(
     "--data-dir",
     type=click.Path(exists=True, path_type=Path),
-    default=Path("data/processed/toxprot"),
+    default=DATA_DIR,
     show_default=True,
     help="Directory containing processed CSV files.",
 )
@@ -669,7 +670,7 @@ def pipeline(ctx, data_dir):
     "--output-dir",
     "-o",
     type=click.Path(path_type=Path),
-    default=Path("figures"),
+    default=FIGURES_DIR,
     show_default=True,
     help="Directory to save output figures.",
 )

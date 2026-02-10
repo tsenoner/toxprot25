@@ -3,6 +3,8 @@
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from ..config import ALL_YEARS, DATA_DIR, INTERIM_DIR, MAX_YEAR, MIN_YEAR, RAW_DIR
+
 
 @dataclass
 class PipelineConfig:
@@ -19,10 +21,10 @@ class PipelineConfig:
         data_dir: Base data directory for auxiliary files (PTM vocabulary, habitat mappings)
     """
 
-    years: list[int] = field(default_factory=lambda: list(range(2005, 2026)))
-    raw_dir: Path = field(default_factory=lambda: Path("data/raw/uniprot_releases"))
-    interim_dir: Path = field(default_factory=lambda: Path("data/interim/toxprot_parsed"))
-    processed_dir: Path = field(default_factory=lambda: Path("data/processed/toxprot"))
+    years: list[int] = field(default_factory=lambda: list(ALL_YEARS))
+    raw_dir: Path = field(default_factory=lambda: Path(RAW_DIR))
+    interim_dir: Path = field(default_factory=lambda: Path(INTERIM_DIR))
+    processed_dir: Path = field(default_factory=lambda: Path(DATA_DIR))
     delete_raw_files: bool = True
     delete_tsv_files: bool = False
     skip_existing: bool = True
@@ -48,8 +50,8 @@ class PipelineConfig:
             errors.append("No years specified")
         else:
             for year in self.years:
-                if not isinstance(year, int) or year < 2005 or year > 2025:
-                    errors.append(f"Invalid year: {year} (must be 2005-2025)")
+                if not isinstance(year, int) or year < MIN_YEAR or year > MAX_YEAR:
+                    errors.append(f"Invalid year: {year} (must be {MIN_YEAR}-{MAX_YEAR})")
 
         # Check data directory exists
         if not self.data_dir.exists():

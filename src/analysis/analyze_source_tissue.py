@@ -12,12 +12,12 @@ import pandas as pd
 from matplotlib.patches import PathPatch, Rectangle
 from matplotlib.path import Path as MplPath
 
+from ..config import COMPARISON_YEARS, FIGURES_DIR
 from .colors import CATEGORICAL_PALETTE, OTHER_COLOR
 from .helpers import load_datasets
 
 # --- Configuration ---
-FIGURES_DIR = Path("figures")
-YEARS = [2005, 2015, 2025]
+YEARS = COMPARISON_YEARS
 
 
 def explode_source_tissues(df: pd.DataFrame) -> pd.Series:

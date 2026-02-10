@@ -19,21 +19,13 @@ import pandas as pd
 from matplotlib.patches import PathPatch, Rectangle
 from matplotlib.path import Path as MplPath
 
+from ..config import FIGURES_DIR, PE_COMPARISON_YEARS
+from .colors import PROTEIN_EVIDENCE_COLORS
 from .helpers import filter_by_definition, load_datasets
 
 # --- Configuration ---
-FIGURES_DIR = Path("figures")
-YEARS = [2008, 2015, 2025]
-
-# Protein existence category colors
-PE_COLORS = {
-    "Evidence at protein level": "#2E86AB",  # Blue
-    "Evidence at transcript level": "#A23B72",  # Purple
-    "Inferred from homology": "#F18F01",  # Orange
-    "Predicted": "#C73E1D",  # Red
-    "Uncertain": "#592941",  # Dark purple
-    "Removed": "#808080",  # Gray for removed entries
-}
+YEARS = PE_COMPARISON_YEARS
+PE_COLORS = PROTEIN_EVIDENCE_COLORS
 
 # Canonical order for PE categories (most certain to least certain)
 PE_CATEGORIES = [

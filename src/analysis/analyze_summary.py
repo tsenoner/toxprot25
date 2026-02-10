@@ -8,6 +8,7 @@ import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import pandas as pd
 
+from ..config import COMPARISON_YEARS, DATA_DIR, FIGURES_DIR
 from .colors import YEAR_COLORS
 
 # Transparency for column header colors
@@ -141,27 +142,30 @@ def main():
     parser.add_argument(
         "--data-dir",
         type=Path,
-        default=Path("data/processed/toxprot"),
+        default=DATA_DIR,
         help="Directory containing processed CSV files (default: data/processed/toxprot)",
     )
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=Path("figures"),
+        default=FIGURES_DIR,
         help="Directory to save output figure (default: figures)",
     )
 
     args = parser.parse_args()
 
-    # Load datasets
-    years = [2005, 2015, 2025]
+    # Load datasets (default: venom_tissue definition)
+    from .helpers import filter_by_definition
+
+    years = COMPARISON_YEARS
     print("Loading ToxProt datasets...")
     datasets = {}
     for year in years:
         filepath = args.data_dir / f"toxprot_{year}.csv"
         if filepath.exists():
-            datasets[year] = pd.read_csv(filepath)
-            print(f"  {year}: {len(datasets[year]):,} entries")
+            df = filter_by_definition(pd.read_csv(filepath), "venom_tissue")
+            datasets[year] = df
+            print(f"  {year}: {len(df):,} entries")
 
     if len(datasets) < 2:
         print("Error: Need at least 2 datasets")

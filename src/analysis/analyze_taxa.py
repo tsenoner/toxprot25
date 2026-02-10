@@ -10,6 +10,7 @@ from matplotlib.patches import PathPatch, Rectangle
 from matplotlib.path import Path as MplPath
 from PIL import Image
 
+from ..config import ALL_YEARS, COMPARISON_YEARS, FIGURES_DIR
 from .colors import (
     OTHER_COLOR,
     TAXA_ORDER_COLORS,
@@ -18,9 +19,8 @@ from .colors import (
 from .helpers import filter_by_definition, load_datasets
 
 # --- Configuration ---
-FIGURES_DIR = Path("figures")
 SILHOUETTE_DIR = Path("data/raw/PhyloPic/png")
-YEARS = list(range(2005, 2026))
+YEARS = ALL_YEARS
 
 # Silhouette mapping: taxa order -> image base name
 SILHOUETTE_MAP = {
@@ -243,7 +243,7 @@ def plot_newcomers_alluvial(
     definition: str | None = DEFAULT_DEFINITION,
 ):
     if years is None:
-        years = [2005, 2015, 2025]
+        years = list(COMPARISON_YEARS)
     """Create alluvial-style diagram showing taxa at decade steps.
 
     Style matches definition_comparison.png:

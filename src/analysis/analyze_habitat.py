@@ -13,11 +13,12 @@ import pandas as pd
 from matplotlib.patches import Patch, PathPatch
 from matplotlib.path import Path as MplPath
 
+from ..config import COMPARISON_YEARS
 from .analyze_protein_families import FAMILY_NAME_MAP
 
 # --- Configuration ---
 TOP_N_FAMILIES = 15
-YEARS = [2005, 2015, 2025]
+YEARS = COMPARISON_YEARS
 
 
 def normalize_family_name(name: str) -> str:

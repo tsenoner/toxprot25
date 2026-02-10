@@ -16,6 +16,7 @@ import numpy as np
 import obonet
 import pandas as pd
 
+from ..config import ALL_YEARS, DATA_DIR, FIGURES_DIR
 from .helpers import load_datasets
 
 # Configuration
@@ -27,12 +28,6 @@ DEFAULT_OBO_PATH = Path("data/external/go-basic.obo")
 
 # GO root terms (Molecular Function, Biological Process, Cellular Component)
 GO_ROOTS = {"GO:0003674", "GO:0008150", "GO:0005575"}
-
-# All available years in dataset
-ALL_YEARS = list(range(2005, 2026))
-
-# Key comparison years
-COMPARISON_YEARS = [2005, 2015, 2025]
 
 
 def load_go_hierarchy(obo_path: Path = DEFAULT_OBO_PATH) -> nx.DiGraph:
@@ -410,8 +405,10 @@ def generate_all_figures(
 
 def main():
     """Main function for standalone execution."""
-    data_dir = Path("data/processed/toxprot")
-    output_dir = Path("figures")
+    from .helpers import filter_by_definition
+
+    data_dir = DATA_DIR
+    output_dir = FIGURES_DIR
     output_dir.mkdir(parents=True, exist_ok=True)
 
     print("Loading GO hierarchy...")
@@ -419,6 +416,7 @@ def main():
 
     print("Loading ToxProt datasets...")
     datasets = load_datasets(ALL_YEARS, data_dir)
+    datasets = {year: filter_by_definition(df, "venom_tissue") for year, df in datasets.items()}
     print(f"  Loaded {len(datasets)} years")
 
     print("Generating figures...")

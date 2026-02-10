@@ -6,6 +6,7 @@ from pathlib import Path
 
 import click
 
+from ..config import ALL_YEARS, DATA_DIR, INTERIM_DIR, MAX_YEAR, MIN_YEAR, RAW_DIR
 from .config import PipelineConfig
 from .pipeline import run_pipeline, setup_logging
 
@@ -13,7 +14,7 @@ from .pipeline import run_pipeline, setup_logging
 def validate_years(ctx, param, value):
     """Validate and parse years argument."""
     if not value:
-        return list(range(2005, 2026))
+        return list(ALL_YEARS)
 
     years = []
     for item in value:
@@ -32,8 +33,8 @@ def validate_years(ctx, param, value):
 
     # Validate all years
     for year in years:
-        if year < 2005 or year > 2025:
-            raise click.BadParameter(f"Year {year} out of range (2005-2025)")
+        if year < MIN_YEAR or year > MAX_YEAR:
+            raise click.BadParameter(f"Year {year} out of range ({MIN_YEAR}-{MAX_YEAR})")
 
     return sorted(set(years))
 
@@ -56,21 +57,21 @@ def data():
 @click.option(
     "--raw-dir",
     type=click.Path(path_type=Path),
-    default=Path("data/raw/uniprot_releases"),
+    default=RAW_DIR,
     show_default=True,
     help="Directory for raw .dat files.",
 )
 @click.option(
     "--interim-dir",
     type=click.Path(path_type=Path),
-    default=Path("data/interim/toxprot_parsed"),
+    default=INTERIM_DIR,
     show_default=True,
     help="Directory for intermediate .tsv files.",
 )
 @click.option(
     "--processed-dir",
     type=click.Path(path_type=Path),
-    default=Path("data/processed/toxprot"),
+    default=DATA_DIR,
     show_default=True,
     help="Directory for final output files.",
 )
@@ -164,7 +165,7 @@ def pipeline(
     "--output-dir",
     "-o",
     type=click.Path(path_type=Path),
-    default=Path("data/raw/uniprot_releases"),
+    default=RAW_DIR,
     show_default=True,
     help="Directory to save downloaded files.",
 )
@@ -236,7 +237,7 @@ def download(years, output_dir, keep_archives, list_only):
     "--output-dir",
     "-o",
     type=click.Path(path_type=Path),
-    default=Path("data/interim/toxprot_parsed"),
+    default=INTERIM_DIR,
     show_default=True,
     help="Directory for output files.",
 )
@@ -283,9 +284,9 @@ def parse(input_files, input_dir, output_dir, years, delete_input):
     # Determine input files
     files_to_process = []
 
-    if years and years != list(range(2005, 2026)):
+    if years and years != ALL_YEARS:
         # Process specific years from input-dir
-        search_dir = input_dir or Path("data/raw/uniprot_releases")
+        search_dir = input_dir or RAW_DIR
         for year in years:
             input_path = search_dir / f"{year}_sprot.xml"
             if input_path.exists():
@@ -336,7 +337,7 @@ def parse(input_files, input_dir, output_dir, years, delete_input):
     "--input-dir",
     "-i",
     type=click.Path(exists=True, path_type=Path),
-    default=Path("data/interim/toxprot_parsed"),
+    default=INTERIM_DIR,
     show_default=True,
     help="Directory containing toxprot_*.tsv files.",
 )
@@ -344,7 +345,7 @@ def parse(input_files, input_dir, output_dir, years, delete_input):
     "--output-dir",
     "-o",
     type=click.Path(path_type=Path),
-    default=Path("data/processed/toxprot"),
+    default=DATA_DIR,
     show_default=True,
     help="Directory for output files.",
 )
@@ -401,7 +402,7 @@ def clean(input_dir, output_dir, years, data_dir):
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Find input files
-    if years and years != list(range(2005, 2026)):
+    if years and years != ALL_YEARS:
         input_files = [input_dir / f"toxprot_{year}.tsv" for year in years]
         input_files = [f for f in input_files if f.exists()]
     else:

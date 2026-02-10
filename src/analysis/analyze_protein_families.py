@@ -13,6 +13,7 @@ import pandas as pd
 from matplotlib.patches import PathPatch, Rectangle
 from matplotlib.path import Path as MplPath
 
+from ..config import COMPARISON_YEARS, DATA_DIR, FIGURES_DIR
 from .colors import CATEGORICAL_PALETTE, NAN_COLOR, OTHER_COLOR
 from .helpers import filter_by_definition
 
@@ -83,7 +84,7 @@ FAMILY_NAME_MAP = {
 }
 
 # Default years for comparison
-DEFAULT_YEARS = [2005, 2015, 2025]
+DEFAULT_YEARS = COMPARISON_YEARS
 
 # Default ToxProt definition filter
 DEFAULT_DEFINITION = "venom_tissue"
@@ -554,13 +555,13 @@ def main():
     parser.add_argument(
         "--data-dir",
         type=Path,
-        default=Path("data/processed/toxprot"),
+        default=DATA_DIR,
         help="Directory containing processed CSV files (default: data/processed/toxprot)",
     )
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=Path("figures"),
+        default=FIGURES_DIR,
         help="Directory to save output figures (default: figures)",
     )
     parser.add_argument(

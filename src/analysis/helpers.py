@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 
-DATA_DIR = Path("data/processed/toxprot")
+from ..config import DATA_DIR
 
 
 def load_datasets(years: list[int], data_dir: Path = DATA_DIR) -> dict[int, pd.DataFrame]:
