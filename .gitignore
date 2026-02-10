@@ -1,5 +1,6 @@
 # Project-specific
 docs/manuscript
+standalone/
 *.dat
 *.h5
 *.log
@@ -7,6 +8,8 @@ docs/manuscript
 # Data - ignore intermediate files (can be regenerated)
 data/interim/
 data/raw/uniprot_releases/
+data/processed/protspace_old/
+data/processed/protspace/colab/
 
 # Python
 __pycache__/

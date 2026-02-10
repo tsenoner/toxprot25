@@ -15,7 +15,7 @@ dependencies = [
     "pandas>=2.2.3",
     "pillow>=10.0.0",
     "plotly>=5.18.0",
-    "protspace[frontend]>=2.3.0",
+    "protspace[frontend] @ git+https://github.com/tsenoner/protspace.git@stage",
     "seaborn>=0.13.2",
     "taxopy>=0.14.0",
     "tqdm>=4.67.1",
@@ -49,6 +49,9 @@ ignore = [
 
 [tool.ruff.lint.isort]
 known-first-party = ["src"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.uv]
 package = true
