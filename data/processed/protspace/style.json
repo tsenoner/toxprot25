@@ -1,35 +1,31 @@
 {
   "Protein families": {
     "colors": {
-      "Arthropod phospholipase D family": "rgb(148, 103, 189)",
-      "Conotoxin A superfamily": "rgb(196, 156, 148)",
-      "Conotoxin M superfamily": "rgb(227, 119, 194)",
-      "Conotoxin O1 superfamily": "rgb(152, 223, 138)",
-      "Long (4 C-C) scorpion toxin superfamily": "rgb(255, 127, 14)",
-      "Neurotoxin 10 (Hwtx-1) family": "rgb(44, 160, 44)",
-      "Neurotoxin 19 (CSTX) family": "rgb(188, 189, 34)",
-      "Non-disulfide-bridged peptide (NDBP) superfamily": "rgb(219, 219, 141)",
-      "Other": "rgba(127, 127, 127, 0.5)",
-      "Peptidase S1 family": "rgb(197, 176, 213)",
-      "Phospholipase A2 family": "rgb(174, 199, 232)",
-      "Short scorpion toxin superfamily": "rgb(214, 39, 40)",
-      "Snaclec family": "rgb(140, 86, 75)",
-      "Snake three-finger toxin family": "rgb(31, 119, 180)",
-      "Venom Kunitz-type family": "rgb(255, 152, 150)",
-      "Venom metalloproteinase (M12B) family": "rgb(255, 187, 120)"
+      "Phospholipase A2 family": "rgba(31, 119, 180, 1.0)",
+      "Snake three-finger toxin family": "rgba(174, 199, 232, 1.0)",
+      "Long (4 C-C) scorpion toxin superfamily": "rgba(255, 127, 14, 1.0)",
+      "Neurotoxin 10 (Hwtx-1) family": "rgba(255, 187, 120, 1.0)",
+      "Venom metalloproteinase (M12B) family": "rgba(44, 160, 44, 1.0)",
+      "Conotoxin O1 superfamily": "rgba(152, 223, 138, 1.0)",
+      "Short scorpion toxin superfamily": "rgba(214, 39, 40, 1.0)",
+      "Peptidase S1 family": "rgba(255, 152, 150, 1.0)",
+      "Arthropod phospholipase D family": "rgba(148, 103, 189, 1.0)",
+      "Venom Kunitz-type family": "rgba(197, 176, 213, 1.0)",
+      "Other": "rgba(199, 199, 199, 0.5)",
+      "NaN": "rgba(224, 224, 224, 0.5)"
     }
   },
   "Phylum": {
     "colors": {
-      "Annelida": "rgb(228, 26, 28)",
-      "Arthropoda": "rgb(55, 126, 184)",
-      "Chordata": "rgb(77, 175, 74)",
-      "Cnidaria": "rgb(152, 78, 163)",
-      "Echinodermata": "rgb(255, 127, 0)",
-      "Mollusca": "rgb(255, 255, 51)",
-      "Nematoda": "rgb(166, 86, 40)",
-      "Nemertea": "rgb(247, 129, 191)",
-      "Porifera": "rgb(153, 153, 153)"
+      "Annelida": "rgba(228, 26, 28, 1.0)",
+      "Arthropoda": "rgba(55, 126, 184, 1.0)",
+      "Chordata": "rgba(77, 175, 74, 1.0)",
+      "Cnidaria": "rgba(152, 78, 163, 1.0)",
+      "Echinodermata": "rgba(255, 127, 0, 1.0)",
+      "Mollusca": "rgba(255, 255, 51, 1.0)",
+      "Nematoda": "rgba(166, 86, 40, 1.0)",
+      "Nemertea": "rgba(247, 129, 191, 1.0)",
+      "Porifera": "rgba(153, 153, 153, 1.0)"
     }
   },
   "has_fragment": {
