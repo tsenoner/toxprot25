@@ -22,7 +22,7 @@ YEAR_COLORS = {
 DEFINITION_COLORS = {
     "venom_tissue": "#4C78A8",  # Blue - venom tissue annotation
     "kw_toxin": "#F58518",  # Orange - toxin keyword
-    "both": "#54A24B",  # Green - both criteria
+    "both": "#7B5EA7",  # Muted violet - both criteria (intersection of warm + cool)
 }
 
 # Shorthand aliases
@@ -122,3 +122,38 @@ def get_categorical_color(index: int) -> str:
 OTHER_COLOR = "#c7c7c7"  # Light gray for "Other" categories
 NAN_COLOR = "#e0e0e0"  # Lighter gray for NaN/missing
 HIGHLIGHT_COLOR = "#e74c3c"  # Red for highlighting
+
+
+# =============================================================================
+# ProtSpace Color Helpers
+# =============================================================================
+def get_protspace_family_colors(
+    reference_families: list[str],
+    include_other: bool = True,
+    include_nan: bool = True,
+) -> dict[str, str]:
+    """Get color mapping for protein families for ProtSpace visualization.
+
+    Colors are assigned based on position in reference_families list,
+    using CATEGORICAL_PALETTE. This ensures consistency with protein
+    family analysis figures.
+
+    Args:
+        reference_families: Ordered list of family names (from get_reference_families)
+        include_other: Include "Other" category color
+        include_nan: Include "NaN" category color
+
+    Returns:
+        Dictionary mapping family names to hex colors
+    """
+    colors = {}
+
+    for i, family in enumerate(reference_families):
+        colors[family] = CATEGORICAL_PALETTE[i % len(CATEGORICAL_PALETTE)]
+
+    if include_other:
+        colors["Other"] = OTHER_COLOR
+    if include_nan:
+        colors["NaN"] = NAN_COLOR
+
+    return colors
