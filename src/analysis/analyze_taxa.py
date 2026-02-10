@@ -18,7 +18,7 @@ from .colors import (
 from .helpers import filter_by_definition, load_datasets
 
 # --- Configuration ---
-FIGURES_DIR = Path("figures/taxa")
+FIGURES_DIR = Path("figures")
 SILHOUETTE_DIR = Path("data/raw/PhyloPic/png")
 YEARS = list(range(2005, 2026))
 

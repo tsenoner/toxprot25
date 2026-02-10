@@ -22,7 +22,7 @@ from matplotlib.path import Path as MplPath
 from .helpers import filter_by_definition, load_datasets
 
 # --- Configuration ---
-FIGURES_DIR = Path("figures/protein_evidence")
+FIGURES_DIR = Path("figures")
 YEARS = [2008, 2015, 2025]
 
 # Protein existence category colors

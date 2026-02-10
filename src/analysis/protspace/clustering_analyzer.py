@@ -350,13 +350,13 @@ def run_silhouette_analysis(
     df_results = analyze_all_variants(protspace_dir, year=year, variants=variants, verbose=verbose)
 
     # Save CSV
-    csv_path = figures_dir / "silhouette_comparison.csv"
+    csv_path = figures_dir / "protspace_silhouette_comparison.csv"
     df_results.to_csv(csv_path, index=False)
     if verbose:
         print(f"\nResults saved to: {csv_path}")
 
     # Generate plot
-    plot_path = figures_dir / "silhouette_comparison.png"
+    plot_path = figures_dir / "protspace_silhouette_comparison.png"
     plot_silhouette_comparison(df_results, plot_path, verbose=verbose)
 
     # Print summary

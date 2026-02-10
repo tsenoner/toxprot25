@@ -411,7 +411,7 @@ def generate_all_figures(
 def main():
     """Main function for standalone execution."""
     data_dir = Path("data/processed/toxprot")
-    output_dir = Path("figures/go_terms")
+    output_dir = Path("figures")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     print("Loading GO hierarchy...")

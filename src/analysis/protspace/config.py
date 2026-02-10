@@ -102,8 +102,3 @@ def get_protspace_output_filename(year: str, variant: str) -> str:
 def get_protspace_styled_filename(year: str, variant: str) -> str:
     """Get protspace final (styled) parquetbundle filename."""
     return f"protspace_{year}_{variant}.parquetbundle"
-
-
-def get_plot_filename(year: str, variant: str) -> str:
-    """Get plot filename for a specific variant."""
-    return f"{year}_{variant}.png"

@@ -41,7 +41,7 @@ analysis.add_command(protspace)
     "--output-dir",
     "-o",
     type=click.Path(path_type=Path),
-    default=Path("figures/taxa"),
+    default=Path("figures"),
     show_default=True,
     help="Directory to save output figures.",
 )
@@ -208,8 +208,6 @@ def families(ctx, data_dir, output_dir, top_n):
 
     definition = ctx.obj["definition"]
     output_dir.mkdir(parents=True, exist_ok=True)
-    protein_families_dir = output_dir / "protein_families"
-    protein_families_dir.mkdir(parents=True, exist_ok=True)
 
     # Load datasets for comparison (2005, 2015, 2025)
     years = [2005, 2015, 2025]
@@ -227,7 +225,7 @@ def families(ctx, data_dir, output_dir, top_n):
         raise click.ClickException("Need at least 2 datasets for comparison")
 
     # Generate alluvial plot
-    alluvial_path = protein_families_dir / "top_families_alluvial.png"
+    alluvial_path = output_dir / "top_families_alluvial.png"
     plot_alluvial_protein_families(datasets, alluvial_path, top_n=top_n)
     click.echo(f"Saved {alluvial_path} (definition: {definition})")
 
@@ -298,7 +296,7 @@ def summary(ctx, data_dir, output_dir):
     "--output-dir",
     "-o",
     type=click.Path(path_type=Path),
-    default=Path("figures/go_terms"),
+    default=Path("figures"),
     show_default=True,
     help="Directory to save output figures.",
 )
@@ -329,9 +327,9 @@ def go(ctx, data_dir, output_dir, top_n):
     from .analyze_go_terms import (
         ALL_YEARS,
         generate_all_figures,
-        load_datasets,
         load_go_hierarchy,
     )
+    from .helpers import load_datasets
 
     definition = ctx.obj["definition"]
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -385,7 +383,7 @@ def go(ctx, data_dir, output_dir, top_n):
     "--output-dir",
     "-o",
     type=click.Path(path_type=Path),
-    default=Path("figures/ptm"),
+    default=Path("figures"),
     show_default=True,
     help="Directory to save output figures.",
 )
@@ -447,7 +445,7 @@ def ptm(ctx, data_dir, output_dir, years):
     "--output-dir",
     "-o",
     type=click.Path(path_type=Path),
-    default=Path("figures/habitat"),
+    default=Path("figures"),
     show_default=True,
     help="Directory to save output figures.",
 )
@@ -509,7 +507,7 @@ def habitat(ctx, data_dir, output_dir, top_n):
     "--output-dir",
     "-o",
     type=click.Path(path_type=Path),
-    default=Path("figures/source_tissue"),
+    default=Path("figures"),
     show_default=True,
     help="Directory to save output figures.",
 )
@@ -567,7 +565,7 @@ def source_tissue(ctx, data_dir, output_dir, top_n):
     "--output-dir",
     "-o",
     type=click.Path(path_type=Path),
-    default=Path("figures/protein_evidence"),
+    default=Path("figures"),
     show_default=True,
     help="Directory to save output figures.",
 )
@@ -671,7 +669,7 @@ def pipeline(ctx, data_dir):
     "--output-dir",
     "-o",
     type=click.Path(path_type=Path),
-    default=Path("figures/definitions"),
+    default=Path("figures"),
     show_default=True,
     help="Directory to save output figures.",
 )

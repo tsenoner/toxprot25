@@ -16,7 +16,7 @@ from .colors import CATEGORICAL_PALETTE, OTHER_COLOR
 from .helpers import load_datasets
 
 # --- Configuration ---
-FIGURES_DIR = Path("figures/source_tissue")
+FIGURES_DIR = Path("figures")
 YEARS = [2005, 2015, 2025]
 
 

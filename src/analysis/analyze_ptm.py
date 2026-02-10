@@ -197,7 +197,7 @@ def create_combined_figure(datasets: dict[int, pd.DataFrame], output_dir: Path, 
 def main():
     """Main analysis pipeline."""
     data_dir = Path("data/processed/toxprot")
-    output_dir = Path("figures/ptm")
+    output_dir = Path("figures")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     datasets = {}

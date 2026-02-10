@@ -1,4 +1,0 @@
-variant,n_proteins,n_families,silhouette_score,description
-full,7418,12,0.26236534118652344,"All proteins, full sequences (with signal peptides)"
-mature,7418,12,0.396533727645874,"All proteins, mature sequences (UniProt SP cleavage)"
-mature_clean,6183,12,0.47380805015563965,"All proteins, mature sequences, no fragments"

@@ -26,8 +26,7 @@ def protspace():
     2. [External]      - Generate H5 embeddings via Google Colab
     3. prepare         - Prepare metadata and filter H5 files
     4. run-umap        - Run ProtSpace UMAP dimensionality reduction
-    5. plot            - Generate visualization plots
-    6. silhouette      - Analyze clustering quality
+    5. silhouette      - Analyze clustering quality
 
     Or run all steps (except Colab) with: pipeline
     """
@@ -278,67 +277,6 @@ def run_umap(
         click.echo(f"\nWarning: Failed variants: {', '.join(failed)}")
 
 
-@protspace.command("plot")
-@click.option(
-    "--protspace-dir",
-    type=click.Path(exists=True, path_type=Path),
-    default=Path("data/processed/protspace"),
-    show_default=True,
-    help="Directory containing styled JSON files.",
-)
-@click.option(
-    "--output-dir",
-    "-o",
-    type=click.Path(path_type=Path),
-    default=Path("figures/protspace"),
-    show_default=True,
-    help="Directory to save plots.",
-)
-@click.option(
-    "--year",
-    type=str,
-    default=DEFAULT_YEAR,
-    show_default=True,
-    help="Dataset year.",
-)
-@click.option(
-    "--variant",
-    type=click.Choice(list(VARIANT_CONFIGS.keys())),
-    multiple=True,
-    help="Specific variant(s) to plot. Default: all variants.",
-)
-def plot(
-    protspace_dir: Path,
-    output_dir: Path,
-    year: str,
-    variant: tuple[str, ...],
-):
-    """Generate ProtSpace visualization plots.
-
-    Creates UMAP scatter plots colored by protein family.
-
-    \b
-    Examples:
-        toxprot analysis protspace plot
-        toxprot analysis protspace plot --variant top10_mature_clean
-        toxprot analysis protspace plot -o figures/custom
-    """
-    from .plot_generator import generate_all_plots
-
-    variants = list(variant) if variant else None
-
-    results = generate_all_plots(
-        protspace_dir=protspace_dir,
-        figures_dir=output_dir,
-        year=year,
-        variants=variants,
-    )
-
-    failed = [v for v, success in results.items() if not success]
-    if failed:
-        click.echo(f"\nWarning: Failed plots: {', '.join(failed)}")
-
-
 @protspace.command("silhouette")
 @click.option(
     "--protspace-dir",
@@ -351,7 +289,7 @@ def plot(
     "--output-dir",
     "-o",
     type=click.Path(path_type=Path),
-    default=Path("figures/protspace"),
+    default=Path("figures"),
     show_default=True,
     help="Directory to save analysis outputs.",
 )
@@ -364,9 +302,9 @@ def plot(
 )
 @click.option(
     "--variant",
-    type=click.Choice([v for v in VARIANT_CONFIGS.keys() if v != "all"]),
+    type=click.Choice(list(VARIANT_CONFIGS.keys())),
     multiple=True,
-    help="Specific variant(s) to analyze. Default: top10 variants.",
+    help="Specific variant(s) to analyze. Default: all variants.",
 )
 def silhouette(
     protspace_dir: Path,
@@ -378,9 +316,6 @@ def silhouette(
 
     Calculates silhouette scores for each variant and generates
     a comparison plot. Higher scores indicate better cluster separation.
-
-    Note: The 'all' variant is excluded by default as it includes
-    Other/NaN categories that don't represent real clusters.
 
     \b
     Examples:
@@ -427,7 +362,7 @@ def silhouette(
     "--output-dir",
     "-o",
     type=click.Path(path_type=Path),
-    default=Path("figures/protspace"),
+    default=Path("figures"),
     show_default=True,
     help="Directory to save output figures.",
 )
@@ -467,8 +402,7 @@ def pipeline(
     1. Generate FASTA files (unless --skip-fasta)
     2. Prepare metadata and filter H5 files
     3. Run UMAP dimensionality reduction
-    4. Generate visualization plots
-    5. Silhouette analysis
+    4. Silhouette analysis
 
     Note: H5 embedding files must already exist from Google Colab.
 
@@ -484,7 +418,7 @@ def pipeline(
 
     # Step 1: Generate FASTA
     if not skip_fasta:
-        click.echo("\n[1/5] Generating FASTA files...")
+        click.echo("\n[1/4] Generating FASTA files...")
         ctx.invoke(
             generate_fasta,
             data_dir=data_dir,
@@ -493,10 +427,10 @@ def pipeline(
             year=year,
         )
     else:
-        click.echo("\n[1/5] Skipping FASTA generation")
+        click.echo("\n[1/4] Skipping FASTA generation")
 
     # Step 2: Prepare metadata and H5
-    click.echo("\n[2/5] Preparing metadata and H5 variants...")
+    click.echo("\n[2/4] Preparing metadata and H5 variants...")
     ctx.invoke(
         prepare,
         data_dir=data_dir,
@@ -507,24 +441,15 @@ def pipeline(
     )
 
     # Step 3: Run UMAP
-    click.echo("\n[3/5] Running UMAP...")
+    click.echo("\n[3/4] Running UMAP...")
     ctx.invoke(
         run_umap,
         protspace_dir=protspace_dir,
         year=year,
     )
 
-    # Step 4: Generate plots
-    click.echo("\n[4/5] Generating plots...")
-    ctx.invoke(
-        plot,
-        protspace_dir=protspace_dir,
-        output_dir=output_dir,
-        year=year,
-    )
-
-    # Step 5: Silhouette analysis
-    click.echo("\n[5/5] Running silhouette analysis...")
+    # Step 4: Silhouette analysis
+    click.echo("\n[4/4] Running silhouette analysis...")
     ctx.invoke(
         silhouette,
         protspace_dir=protspace_dir,
