@@ -218,7 +218,7 @@ def length(ctx, data_dir, output_dir):
 def families(ctx, data_dir, output_dir, top_n):
     """Run protein family distribution analysis.
 
-    Generates stacked bar and alluvial charts comparing protein family
+    Generates alluvial chart comparing protein family
     distributions across 2005, 2015, and 2025.
 
     \b
@@ -229,7 +229,6 @@ def families(ctx, data_dir, output_dir, top_n):
     """
     from .analyze_protein_families import (
         plot_alluvial_protein_families,
-        plot_stacked_bar_protein_families,
     )
 
     definition = ctx.obj["definition"]
@@ -251,11 +250,6 @@ def families(ctx, data_dir, output_dir, top_n):
 
     if len(datasets) < 2:
         raise click.ClickException("Need at least 2 datasets for comparison")
-
-    # Generate stacked bar chart
-    families_bar_path = protein_families_dir / "top_families_stacked_bar.png"
-    plot_stacked_bar_protein_families(datasets, families_bar_path, top_n=top_n)
-    click.echo(f"Saved {families_bar_path} (definition: {definition})")
 
     # Generate alluvial plot
     alluvial_path = protein_families_dir / "top_families_alluvial.png"

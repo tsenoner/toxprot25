@@ -81,12 +81,6 @@ FAMILY_NAME_MAP = {
     "Spider wap-1 family": "Waprin family",
 }
 
-# Font sizes for consistent styling
-TITLE_FONTSIZE = 20
-AXIS_LABEL_FONTSIZE = 16
-TICK_LABEL_FONTSIZE = 12
-LEGEND_FONTSIZE = 14
-
 # Default years for comparison
 DEFAULT_YEARS = [2005, 2015, 2025]
 
@@ -151,45 +145,6 @@ def get_reference_families(
     return counts.nlargest(top_n).index.tolist()
 
 
-def get_family_counts_for_reference(
-    df: pd.DataFrame,
-    reference_families: list[str],
-    column: str = "Protein families",
-) -> pd.Series:
-    """Count entries for reference families, grouping everything else as 'Other'.
-
-    Args:
-        df: DataFrame containing protein data
-        reference_families: List of family names to track (from reference year)
-        column: Column name containing family information
-
-    Returns:
-        Series with counts for each reference family, 'Other', and 'Unassigned'
-    """
-    # Normalize all family names
-    family_col = df[column].apply(normalize_family_name)
-
-    # Count entries for each reference family
-    result = {}
-    for family in reference_families:
-        result[family] = (family_col == family).sum()
-
-    # Count "Other" (families not in reference list, excluding NaN)
-    non_nan_mask = family_col.notna()
-    in_reference_mask = family_col.isin(reference_families)
-    other_count = (~in_reference_mask & non_nan_mask).sum()
-
-    # Count "Unassigned" (NaN entries)
-    unassigned_count = family_col.isna().sum()
-
-    if other_count > 0:
-        result["Other"] = other_count
-    if unassigned_count > 0:
-        result["Unassigned"] = unassigned_count
-
-    return pd.Series(result)
-
-
 def _create_color_map(reference_families: list[str]) -> dict:
     """Create color mapping for protein families using centralized colors.
 
@@ -218,122 +173,6 @@ def _create_color_map(reference_families: list[str]) -> dict:
             color_map[old_name] = color_map[new_name]
 
     return color_map
-
-
-def plot_stacked_bar_protein_families(
-    datasets: dict[int, pd.DataFrame],
-    output_path: Path,
-    top_n: int = 15,
-):
-    """
-    Create 100% stacked bar chart of top protein families.
-
-    Uses the most recent year as the reference for which families to track.
-    Families are sorted with the largest (in reference year) at the bottom.
-
-    Args:
-        datasets: Dictionary mapping year (int) to DataFrame
-        output_path: Path to save the figure
-        top_n: Number of top families to display
-    """
-    years = sorted(datasets.keys())
-    reference_year = years[-1]  # Most recent year (e.g., 2025)
-
-    # Get reference families from the most recent year
-    reference_families = get_reference_families(
-        datasets[reference_year], "Protein families", top_n=top_n
-    )
-
-    # Get counts for each year using reference families
-    family_counts = {}
-    for year in years:
-        family_counts[year] = get_family_counts_for_reference(
-            datasets[year], reference_families, "Protein families"
-        )
-
-    # Create ordered family list: ALL categories sorted by 2025 count (largest at bottom)
-    # Get 2025 counts for sorting
-    counts_2025 = family_counts[reference_year]
-
-    # Build list of all families including Other and Unassigned
-    all_categories = list(reference_families)
-    if any("Other" in family_counts[y].index for y in years):
-        all_categories.append("Other")
-    if any("Unassigned" in family_counts[y].index for y in years):
-        all_categories.append("Unassigned")
-
-    # Sort by 2025 count descending (largest first = bottom of stack)
-    ordered_families = sorted(all_categories, key=lambda f: counts_2025.get(f, 0), reverse=True)
-
-    # Build data frame with counts and percentages
-    df_counts = pd.DataFrame(index=ordered_families)
-    for year in years:
-        df_counts[str(year)] = family_counts[year].reindex(ordered_families).fillna(0)
-
-    df_percentages = df_counts.div(df_counts.sum(axis=0), axis=1) * 100
-
-    # Create color mapping based on reference families
-    color_map = _create_color_map(reference_families)
-
-    # Create stacked bar chart
-    fig, ax = plt.subplots(figsize=(14, 9))
-
-    def create_stacked_bars(year_label: str, year_col: str) -> list[dict]:
-        """Create stacked bars for a single year column."""
-        bars_info = []
-        bottom = 0
-        for family in ordered_families:
-            pct = df_percentages.at[family, year_col]
-            cnt = df_counts.at[family, year_col]
-            bar = ax.bar(
-                year_label,
-                pct,
-                bottom=bottom,
-                color=color_map.get(family, "gray"),
-            )[0]
-            bars_info.append(
-                {
-                    "bar": bar,
-                    "family": family,
-                    "count": cnt,
-                    "percentage": pct,
-                }
-            )
-            bottom += pct
-        return bars_info
-
-    # Create bars for all years
-    all_bars = []
-    for year in years:
-        year_label = str(year)
-        bars = create_stacked_bars(year_label, str(year))
-        all_bars.extend(bars)
-
-    # Add labels to all bars (use smaller font for narrow bars)
-    for bar_info in all_bars:
-        bar = bar_info["bar"]
-        pct = bar_info["percentage"]
-        if pct > 0:
-            # Use smaller font for narrow bars
-            fontsize = 8 if pct > 3 else 6 if pct > 1.5 else 5
-            ax.text(
-                bar.get_x() + bar.get_width() / 2,
-                bar.get_y() + bar.get_height() / 2,
-                f"{bar_info['family']}, {int(bar_info['count'])} ({pct:.1f}%)",
-                ha="center",
-                va="center",
-                fontsize=fontsize,
-            )
-
-    # Styling
-    ax.set_ylabel("Percentage", fontsize=AXIS_LABEL_FONTSIZE)
-    ax.set_ylim(0, 100)
-    ax.tick_params(axis="x", labelsize=TICK_LABEL_FONTSIZE)
-    ax.tick_params(axis="y", labelsize=TICK_LABEL_FONTSIZE)
-
-    plt.tight_layout()
-    plt.savefig(output_path, dpi=300)
-    plt.close()
 
 
 def _get_original_family_counts(
@@ -799,11 +638,6 @@ def main():
     # Ensure output directory exists
     protein_families_dir = args.output_dir / "protein_families"
     protein_families_dir.mkdir(parents=True, exist_ok=True)
-
-    # Generate stacked bar chart
-    stacked_bar_path = protein_families_dir / "top_families_stacked_bar.png"
-    plot_stacked_bar_protein_families(datasets, stacked_bar_path, top_n=args.top_n)
-    print(f"Saved {stacked_bar_path}")
 
     # Generate alluvial plot
     alluvial_path = protein_families_dir / "top_families_alluvial.png"
