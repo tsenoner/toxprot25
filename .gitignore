@@ -1,53 +1,33 @@
 # Project-specific
 docs/manuscript
 standalone/
-*.dat
-*.log
 .playwright-mcp/
 
-# Data - ignore intermediate files (can be regenerated)
+# Data
 data/interim/
 data/raw/uniprot_releases/
-data/processed/protspace_old/
 data/processed/protspace/intermediates/
 
-# Python
+# Python / packaging
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
-
-# Distribution / packaging
+*.egg-info/
 build/
 dist/
-*.egg-info/
-*.egg
 
 # Environments
 .env
 .venv
-env/
-venv/
 
-# Jupyter Notebook
+# Tools
 .ipynb_checkpoints
+.pytest_cache/
+.coverage
+.mypy_cache/
+.ruff_cache/
 
-# IDE
+# IDE / OS
 .idea
 .vscode
 *.swp
-*.swo
-*~
-
-# OS
 .DS_Store
-Thumbs.db
-
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-
-# Type checking and linting
-.mypy_cache/
-.ruff_cache/
