@@ -1,7 +1,4 @@
-Variant,Description,N_proteins,N_families,Silhouette_score
-Top 15,"Top 15 families, full sequences",4254,15,0.2504702352933814
-"Top 15
-mature","Top 15 families, mature sequences",4254,15,0.44987600805066175
-"Top 15
-mature
-no fragments","Top 15 families, mature, no fragments",3399,15,0.4940634653933218
+variant,n_proteins,n_families,silhouette_score,description
+full,7418,12,0.26236534118652344,"All proteins, full sequences (with signal peptides)"
+mature,7418,12,0.396533727645874,"All proteins, mature sequences (UniProt SP cleavage)"
+mature_clean,6183,12,0.47380805015563965,"All proteins, mature sequences, no fragments"
