@@ -13,6 +13,7 @@ import pandas as pd
 from ..analyze_protein_families import get_reference_families, normalize_family_name
 from .config import (
     COLAB_SUBDIR,
+    INTERMEDIATES_SUBDIR,
     TOP_N,
     VARIANT_CONFIGS,
     get_h5_base_filename,
@@ -238,7 +239,10 @@ def prepare_all_variants(
         _print_h5_missing_error(h5_missing, year)
         raise FileNotFoundError("Required H5 embedding files not found")
 
-    # Create variants
+    # Create variants in intermediates subdirectory
+    intermediates_dir = protspace_dir / INTERMEDIATES_SUBDIR
+    intermediates_dir.mkdir(parents=True, exist_ok=True)
+
     if verbose:
         print("\nCreating metadata and H5 variants...")
 
@@ -262,13 +266,13 @@ def prepare_all_variants(
             continue
 
         # Create metadata
-        metadata_path = protspace_dir / get_metadata_filename(year, variant_name)
+        metadata_path = intermediates_dir / get_metadata_filename(year, variant_name)
         n_entries = create_metadata_csv(
             df, config, reference_families, metadata_path, verbose=verbose
         )
 
         # Filter H5
-        h5_variant = protspace_dir / get_h5_variant_filename(year, variant_name)
+        h5_variant = intermediates_dir / get_h5_variant_filename(year, variant_name)
         n_kept, n_total = filter_h5_by_metadata(h5_base, metadata_path, h5_variant, verbose=verbose)
 
         results[variant_name] = {

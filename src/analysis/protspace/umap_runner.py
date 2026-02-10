@@ -7,6 +7,7 @@ a settings parquet to the parquetbundle file.
 import io
 import json
 import re
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -16,6 +17,7 @@ import pyarrow.parquet as pq
 from .config import (
     DEFAULT_MIN_DIST,
     DEFAULT_N_NEIGHBORS,
+    INTERMEDIATES_SUBDIR,
     VARIANT_CONFIGS,
     get_h5_variant_filename,
     get_metadata_filename,
@@ -273,6 +275,8 @@ def run_umap_all_variants(
         print(f"Running UMAP (n_neighbors={n_neighbors}, min_dist={min_dist})")
         print("=" * 60)
 
+    intermediates_dir = protspace_dir / INTERMEDIATES_SUBDIR
+
     results = {}
     for variant_name in variants:
         if variant_name not in VARIANT_CONFIGS:
@@ -285,8 +289,8 @@ def run_umap_all_variants(
         if verbose:
             print(f"\n{config['description']}:")
 
-        h5_path = protspace_dir / get_h5_variant_filename(year, variant_name)
-        metadata_path = protspace_dir / get_metadata_filename(year, variant_name)
+        h5_path = intermediates_dir / get_h5_variant_filename(year, variant_name)
+        metadata_path = intermediates_dir / get_metadata_filename(year, variant_name)
         output_bundle = protspace_dir / get_protspace_output_filename(year, variant_name)
         styled_bundle = protspace_dir / get_protspace_styled_filename(year, variant_name)
 
@@ -302,6 +306,12 @@ def run_umap_all_variants(
         )
 
         results[variant_name] = success
+
+    # Clean up intermediates directory
+    if intermediates_dir.exists():
+        shutil.rmtree(intermediates_dir)
+        if verbose:
+            print(f"\n  Cleaned up {INTERMEDIATES_SUBDIR}/ directory")
 
     # Summary
     if verbose:

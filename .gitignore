@@ -2,7 +2,6 @@
 docs/manuscript
 standalone/
 *.dat
-*.h5
 *.log
 .playwright-mcp/
 
@@ -10,7 +9,7 @@ standalone/
 data/interim/
 data/raw/uniprot_releases/
 data/processed/protspace_old/
-data/processed/protspace/colab/
+data/processed/protspace/intermediates/
 
 # Python
 __pycache__/

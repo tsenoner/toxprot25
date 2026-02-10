@@ -10,6 +10,9 @@ TOP_N = 10
 # Colab exchange subdirectory
 COLAB_SUBDIR = "colab"
 
+# Intermediates subdirectory (metadata CSVs and variant H5 files)
+INTERMEDIATES_SUBDIR = "intermediates"
+
 # UMAP parameters
 DEFAULT_N_NEIGHBORS = 50
 DEFAULT_MIN_DIST = 0.5
