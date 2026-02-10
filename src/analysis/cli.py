@@ -472,7 +472,8 @@ def habitat(ctx, data_dir, output_dir, top_n):
         toxprot analysis -d all habitat
         toxprot analysis habitat --top-n 20
     """
-    from .analyze_habitat import YEARS, load_datasets, plot_habitat_combined
+    from .analyze_habitat import YEARS, plot_habitat_combined
+    from .helpers import load_datasets
 
     definition = ctx.obj["definition"]
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -532,7 +533,8 @@ def source_tissue(ctx, data_dir, output_dir, top_n):
         toxprot analysis -d all source-tissue
         toxprot analysis source-tissue --top-n 5
     """
-    from .analyze_source_tissue import YEARS, load_datasets, plot_source_tissue_alluvial
+    from .analyze_source_tissue import YEARS, plot_source_tissue_alluvial
+    from .helpers import load_datasets
 
     definition = ctx.obj["definition"]
     output_dir.mkdir(parents=True, exist_ok=True)
