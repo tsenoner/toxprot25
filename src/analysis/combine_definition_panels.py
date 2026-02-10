@@ -400,6 +400,24 @@ def plot_grouped_phylum_venn_flow(df: pd.DataFrame, ax: plt.Axes) -> None:
             zorder=6,
         )
 
+    # Name labels for orders with more than 100 entries
+    labeled_orders = orders[orders["count"] > 100]
+    for idx, row in labeled_orders.iterrows():
+        rx = radii_x[idx]
+        ry = radii_y[idx]
+        ax.text(
+            row["dot_x"] + rx * 0.8,
+            row["dot_y"] + ry - 0.85,
+            row["Order"],
+            ha="left",
+            va="bottom",
+            fontsize=7,
+            fontstyle="italic",
+            color="black",
+            bbox=dict(facecolor="white", alpha=0.7, edgecolor="none", pad=0.5),
+            zorder=7,
+        )
+
     # Column header — color-coded counts
     n_kw_orders = int((orders["exclusivity"] == "kw_toxin").sum())
     n_shared_orders = int((orders["exclusivity"] == "both").sum())
@@ -747,31 +765,13 @@ def plot_grouped_phylum_venn_flow(df: pd.DataFrame, ax: plt.Axes) -> None:
         active = [d for d in DEFINITION_ORDER if ct.loc[phylum, d] > 0]
         lbl_color = flow_colors[active[0]] if len(active) == 1 else DEFINITION_COLORS["both"]
 
-        # stacked coloured segments
-        seg_y = pos["bottom"]
-        for defn in stack_order:
-            sc = ct.loc[phylum, defn]
-            if sc == 0:
-                continue
-            sh = bar_h * sc / tot
-            ax.add_patch(
-                Rectangle(
-                    (x_left - box_w / 2, seg_y),
-                    box_w,
-                    sh,
-                    fc=flow_colors[defn],
-                    ec="none",
-                )
-            )
-            seg_y += sh
-
-        # border
+        # solid bar in the phylum's exclusivity colour
         ax.add_patch(
             Rectangle(
                 (x_left - box_w / 2, pos["bottom"]),
                 box_w,
                 bar_h,
-                fc="none",
+                fc=lbl_color,
                 ec="black",
                 lw=1,
             )
@@ -928,7 +928,7 @@ def plot_grouped_phylum_venn_flow(df: pd.DataFrame, ax: plt.Axes) -> None:
 
     # --- axis limits ------------------------------------------------------
     rx_max = max(rx_vt, rx_kw)
-    ax.set_xlim(x_venn - rx_max - 1.0, dot_x_max_global + 0.3)
+    ax.set_xlim(x_venn - rx_max - 1.0, dot_x_max_global + 0.8)
     ax.set_ylim(y_lo, y_hi)
     ax.axis("off")
 
