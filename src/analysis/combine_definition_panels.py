@@ -745,7 +745,7 @@ def plot_grouped_phylum_venn_flow(df: pd.DataFrame, ax: plt.Axes) -> None:
         tot = pos["count"]
 
         active = [d for d in DEFINITION_ORDER if ct.loc[phylum, d] > 0]
-        lbl_color = flow_colors[active[0]] if len(active) == 1 else "black"
+        lbl_color = flow_colors[active[0]] if len(active) == 1 else DEFINITION_COLORS["both"]
 
         # stacked coloured segments
         seg_y = pos["bottom"]
