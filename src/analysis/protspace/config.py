@@ -52,6 +52,7 @@ VARIANT_CONFIGS = {
     },
 }
 
+
 # File naming patterns
 def get_fasta_filename(year: str, is_mature: bool) -> str:
     """Get FASTA filename for a given year and sequence type.

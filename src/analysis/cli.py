@@ -5,33 +5,8 @@ from pathlib import Path
 import click
 import pandas as pd
 
+from .helpers import filter_by_definition
 from .protspace import protspace
-
-
-def filter_by_definition(df: pd.DataFrame, definition: str) -> pd.DataFrame:
-    """Filter DataFrame by ToxProt definition column.
-
-    Args:
-        df: DataFrame with a 'ToxProt definition' column.
-        definition: One of 'all', 'venom_tissue', 'kw_toxin', 'both_only'.
-
-    Returns:
-        Filtered DataFrame.
-    """
-    if definition == "all":
-        return df
-    if "ToxProt definition" not in df.columns:
-        click.echo("Warning: 'ToxProt definition' column not found, returning all data.")
-        return df
-
-    if definition == "venom_tissue":
-        return df[df["ToxProt definition"].isin(["venom_tissue", "both"])]
-    elif definition == "kw_toxin":
-        return df[df["ToxProt definition"].isin(["kw_toxin", "both"])]
-    elif definition == "both_only":
-        return df[df["ToxProt definition"] == "both"]
-    else:
-        return df
 
 
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
@@ -99,10 +74,10 @@ def taxa(ctx, data_dir, output_dir, level, skip_trend):
     """
     from .analyze_taxa import (
         YEARS,
-        load_datasets,
         plot_newcomers_alluvial,
         plot_top_taxa_trend,
     )
+    from .helpers import load_datasets
 
     definition = ctx.obj["definition"]
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -609,12 +584,11 @@ def protein_evidence(ctx, data_dir, output_dir):
         toxprot analysis -d all protein-evidence
         toxprot analysis protein-evidence -o figures/custom
     """
-    from .plot_protein_evidence_sankey import (
+    from .analyze_protein_evidence import (
         YEARS,
-        filter_by_definition,
-        load_datasets,
         plot_protein_evidence_alluvial,
     )
+    from .helpers import load_datasets
 
     definition = ctx.obj["definition"]
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -675,12 +649,12 @@ def pipeline(ctx, data_dir):
     click.echo(f"Running all analyses (definition: {ctx.obj['definition']})")
 
     for cmd_name in commands:
-        click.echo(f"\n{'='*60}")
+        click.echo(f"\n{'=' * 60}")
         click.echo(f"Running: {cmd_name}")
         click.echo("=" * 60)
         ctx.invoke(analysis.commands[cmd_name], data_dir=data_dir)
 
-    click.echo(f"\nAll analyses complete. Figures saved to figures/")
+    click.echo("\nAll analyses complete. Figures saved to figures/")
 
 
 @analysis.command()

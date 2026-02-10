@@ -197,7 +197,7 @@ def prepare(
             top_n=top_n,
         )
     except FileNotFoundError as e:
-        raise click.ClickException(str(e))
+        raise click.ClickException(str(e)) from e
 
     click.echo("\nPreparation complete.")
 
@@ -259,8 +259,7 @@ def run_umap(
     style_file = protspace_dir / "style.json"
     if not style_file.exists():
         raise click.ClickException(
-            f"Style file not found: {style_file}\n"
-            "Run 'toxprot analysis protspace prepare' first."
+            f"Style file not found: {style_file}\nRun 'toxprot analysis protspace prepare' first."
         )
 
     variants = list(variant) if variant else None

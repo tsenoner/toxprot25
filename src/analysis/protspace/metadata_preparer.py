@@ -210,12 +210,8 @@ def prepare_all_variants(
     df = df.rename(columns={"Entry": "identifier"})
 
     # Add helper columns
-    df["has_signal_peptide"] = df["Signal peptide (range)"].notna().map(
-        {True: "yes", False: "no"}
-    )
-    df["has_fragment"] = (df["Fragment"].astype(str) == "fragment").map(
-        {True: "yes", False: "no"}
-    )
+    df["has_signal_peptide"] = df["Signal peptide (range)"].notna().map({True: "yes", False: "no"})
+    df["has_fragment"] = (df["Fragment"].astype(str) == "fragment").map({True: "yes", False: "no"})
 
     # Process protein families to top N + Other
     df = process_protein_families(df, reference_families)
@@ -273,9 +269,7 @@ def prepare_all_variants(
 
         # Filter H5
         h5_variant = protspace_dir / get_h5_variant_filename(year, variant_name)
-        n_kept, n_total = filter_h5_by_metadata(
-            h5_base, metadata_path, h5_variant, verbose=verbose
-        )
+        n_kept, n_total = filter_h5_by_metadata(h5_base, metadata_path, h5_variant, verbose=verbose)
 
         results[variant_name] = {
             "metadata": metadata_path,
@@ -290,7 +284,9 @@ def prepare_all_variants(
         print("Summary:")
         print("=" * 60)
         for variant_name, info in results.items():
-            print(f"  {variant_name}: {info['n_entries']} entries, {info['n_embeddings']} embeddings")
+            print(
+                f"  {variant_name}: {info['n_entries']} entries, {info['n_embeddings']} embeddings"
+            )
 
     return results
 

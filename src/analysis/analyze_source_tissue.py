@@ -13,29 +13,11 @@ from matplotlib.patches import PathPatch, Rectangle
 from matplotlib.path import Path as MplPath
 
 from .colors import CATEGORICAL_PALETTE, OTHER_COLOR
+from .helpers import load_datasets
 
 # --- Configuration ---
-DATA_DIR = Path("data/processed/toxprot")
 FIGURES_DIR = Path("figures/source_tissue")
 YEARS = [2005, 2015, 2025]
-
-
-def load_datasets(years: list[int], data_dir: Path = DATA_DIR) -> dict[int, pd.DataFrame]:
-    """Load ToxProt datasets for specified years.
-
-    Args:
-        years: List of years to load.
-        data_dir: Directory containing CSV files.
-
-    Returns:
-        Dictionary mapping year to DataFrame.
-    """
-    datasets = {}
-    for year in years:
-        filepath = data_dir / f"toxprot_{year}.csv"
-        if filepath.exists():
-            datasets[year] = pd.read_csv(filepath)
-    return datasets
 
 
 def explode_source_tissues(df: pd.DataFrame) -> pd.Series:
@@ -365,7 +347,7 @@ def plot_source_tissue_alluvial(
 
 def main():
     """Main analysis pipeline."""
-    from .cli import filter_by_definition
+    from .helpers import filter_by_definition
 
     output_dir = FIGURES_DIR
     output_dir.mkdir(parents=True, exist_ok=True)

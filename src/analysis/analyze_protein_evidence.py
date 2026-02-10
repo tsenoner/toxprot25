@@ -19,8 +19,9 @@ import pandas as pd
 from matplotlib.patches import PathPatch, Rectangle
 from matplotlib.path import Path as MplPath
 
+from .helpers import filter_by_definition, load_datasets
+
 # --- Configuration ---
-DATA_DIR = Path("data/processed/toxprot")
 FIGURES_DIR = Path("figures/protein_evidence")
 YEARS = [2008, 2015, 2025]
 
@@ -81,42 +82,6 @@ def normalize_pe_category(category: str) -> str:
         return "Uncertain"
     else:
         return category
-
-
-def load_datasets(years: list[int], data_dir: Path = DATA_DIR) -> dict[int, pd.DataFrame]:
-    """Load ToxProt datasets for specified years."""
-    datasets = {}
-    for year in years:
-        filepath = data_dir / f"toxprot_{year}.csv"
-        if filepath.exists():
-            datasets[year] = pd.read_csv(filepath)
-    return datasets
-
-
-def filter_by_definition(df: pd.DataFrame, definition: str | None = None) -> pd.DataFrame:
-    """Filter dataset by ToxProt definition.
-
-    Args:
-        df: DataFrame containing protein data
-        definition: ToxProt definition filter ("venom_tissue", "kw_toxin", "both", or None for all)
-
-    Returns:
-        Filtered DataFrame
-    """
-    if definition is None or definition == "all":
-        return df
-
-    if "ToxProt definition" not in df.columns:
-        return df
-
-    if definition == "venom_tissue":
-        return df[df["ToxProt definition"].isin(["venom_tissue", "both"])]
-    elif definition == "kw_toxin":
-        return df[df["ToxProt definition"].isin(["kw_toxin", "both"])]
-    elif definition == "both_only":
-        return df[df["ToxProt definition"] == "both"]
-    else:
-        return df
 
 
 def plot_protein_evidence_alluvial(
@@ -583,7 +548,7 @@ def plot_protein_evidence_alluvial(
 
 def main():
     """Main function for standalone execution."""
-    datasets = load_datasets(YEARS, data_dir=DATA_DIR)
+    datasets = load_datasets(YEARS)
 
     if len(datasets) < 2:
         print("Error: Need at least 2 datasets to generate plot")

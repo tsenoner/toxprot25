@@ -14,6 +14,7 @@ from matplotlib.patches import PathPatch, Rectangle
 from matplotlib.path import Path as MplPath
 
 from .colors import CATEGORICAL_PALETTE, NAN_COLOR, OTHER_COLOR
+from .helpers import filter_by_definition
 
 # Comprehensive mapping of old family names to 2025 standardized names
 # This handles name changes from 2005, 2015, and 2017 datasets
@@ -86,38 +87,6 @@ DEFAULT_YEARS = [2005, 2015, 2025]
 
 # Default ToxProt definition filter
 DEFAULT_DEFINITION = "venom_tissue"
-
-
-def filter_by_definition(
-    df: pd.DataFrame,
-    definition: str | None = None,
-) -> pd.DataFrame:
-    """Filter dataset by ToxProt definition.
-
-    Args:
-        df: DataFrame containing protein data
-        definition: ToxProt definition to filter by ("venom_tissue", "kw_toxin", "both", or None for all)
-
-    Returns:
-        Filtered DataFrame
-    """
-    if definition is None:
-        return df
-
-    if "ToxProt definition" not in df.columns:
-        return df
-
-    if definition == "venom_tissue":
-        # Include entries with "venom_tissue" or "both"
-        return df[df["ToxProt definition"].isin(["venom_tissue", "both"])]
-    elif definition == "kw_toxin":
-        # Include entries with "kw_toxin" or "both"
-        return df[df["ToxProt definition"].isin(["kw_toxin", "both"])]
-    elif definition == "both":
-        # Only entries that match both criteria
-        return df[df["ToxProt definition"] == "both"]
-    else:
-        return df
 
 
 def normalize_family_name(name: str) -> str:

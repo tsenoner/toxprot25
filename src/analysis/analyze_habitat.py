@@ -27,19 +27,6 @@ def normalize_family_name(name: str) -> str:
     return FAMILY_NAME_MAP.get(name, name)
 
 
-def load_datasets(
-    years: list[int],
-    data_dir: Path = Path("data/processed/toxprot"),
-) -> dict[int, pd.DataFrame]:
-    """Load ToxProt datasets for specified years."""
-    datasets = {}
-    for year in years:
-        filepath = data_dir / f"toxprot_{year}.csv"
-        if filepath.exists():
-            datasets[year] = pd.read_csv(filepath)
-    return datasets
-
-
 def get_protein_family_by_habitat(df: pd.DataFrame, habitat_type: str) -> pd.Series:
     """Extract protein family counts for a specific habitat type."""
     habitat_data = df[df["Habitat"] == habitat_type].copy()

@@ -15,12 +15,12 @@ from .colors import (
     TAXA_ORDER_COLORS,
     TAXA_ORDER_COLORS_LIST,
 )
+from .helpers import filter_by_definition, load_datasets
 
 # --- Configuration ---
-DATA_DIR = Path("data/processed/toxprot")
 FIGURES_DIR = Path("figures/taxa")
 SILHOUETTE_DIR = Path("data/raw/PhyloPic/png")
-YEARS = [str(y) for y in range(2005, 2026)]
+YEARS = list(range(2005, 2026))
 
 # Silhouette mapping: taxa order -> image base name
 SILHOUETTE_MAP = {
@@ -73,48 +73,6 @@ def get_silhouette(order: str) -> Image.Image | None:
     return load_silhouette(SILHOUETTE_MAP[order])
 
 
-def load_datasets(years: list[str], data_dir: Path = DATA_DIR) -> dict[str, pd.DataFrame]:
-    """Load ToxProt datasets for specified years."""
-    datasets = {}
-    for year in years:
-        filepath = data_dir / f"toxprot_{year}.csv"
-        if filepath.exists():
-            datasets[year] = pd.read_csv(filepath)
-    return datasets
-
-
-def filter_by_definition(
-    df: pd.DataFrame,
-    definition: str | None = None,
-) -> pd.DataFrame:
-    """Filter dataset by ToxProt definition.
-
-    Args:
-        df: DataFrame containing protein data
-        definition: ToxProt definition to filter by ("venom_tissue", "kw_toxin", "both", or None for all)
-
-    Returns:
-        Filtered DataFrame
-    """
-    if definition is None:
-        return df
-
-    if "ToxProt definition" not in df.columns:
-        return df
-
-    if definition == "venom_tissue":
-        # Include entries with "venom_tissue" or "both"
-        return df[df["ToxProt definition"].isin(["venom_tissue", "both"])]
-    elif definition == "kw_toxin":
-        # Include entries with "kw_toxin" or "both"
-        return df[df["ToxProt definition"].isin(["kw_toxin", "both"])]
-    elif definition == "both":
-        # Only entries that match both criteria
-        return df[df["ToxProt definition"] == "both"]
-    else:
-        return df
-
-
 def get_taxa_newcomers(
     df_old: pd.DataFrame, df_new: pd.DataFrame, taxa_level: str = "Order"
 ) -> pd.Series:
@@ -126,9 +84,9 @@ def get_taxa_newcomers(
 
 
 def plot_top_taxa_trend(
-    datasets: dict[str, pd.DataFrame],
+    datasets: dict[int, pd.DataFrame],
     output_path: Path,
-    reference_year: str = "2025",
+    reference_year: int = 2025,
 ):
     """Create line plot showing taxa trends over time with silhouettes."""
     ref_df = datasets[reference_year]
@@ -278,7 +236,7 @@ def plot_taxa_newcomers(
 
 
 def plot_newcomers_alluvial(
-    datasets: dict[str, pd.DataFrame],
+    datasets: dict[int, pd.DataFrame],
     output_path: Path,
     taxa_level: str = "Phylum",
     years: list[int] | None = None,
@@ -328,10 +286,9 @@ def plot_newcomers_alluvial(
     # Get taxa counts for each year at specified level
     data_by_year = {}
     for year in years:
-        year_str = str(year)
-        if year_str not in datasets:
+        if year not in datasets:
             continue
-        df = filter_by_definition(datasets[year_str], definition)
+        df = filter_by_definition(datasets[year], definition)
         data_by_year[year] = df[taxa_level].value_counts().to_dict()
 
     # Get all unique taxa across all years, sorted by 2025 count

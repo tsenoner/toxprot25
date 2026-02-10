@@ -70,9 +70,7 @@ def generate_fasta_files(
     if processed_csv is not None and processed_csv.exists():
         if verbose:
             print(f"Loading definition filter from {processed_csv}...")
-        df_processed = pd.read_csv(
-            processed_csv, usecols=["Entry", "ToxProt definition"]
-        )
+        df_processed = pd.read_csv(processed_csv, usecols=["Entry", "ToxProt definition"])
         if "ToxProt definition" in df_processed.columns and definition == "venom_tissue":
             df_processed = df_processed[
                 df_processed["ToxProt definition"].isin(["venom_tissue", "both"])

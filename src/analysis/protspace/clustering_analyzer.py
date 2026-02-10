@@ -67,7 +67,9 @@ def _load_from_parquetbundle(bundle_path: Path) -> tuple[np.ndarray, np.ndarray]
     parts = content.split(PARQUET_BUNDLE_DELIMITER)
 
     if len(parts) < 3:
-        raise ValueError(f"Invalid parquetbundle format: expected at least 3 parts, got {len(parts)}")
+        raise ValueError(
+            f"Invalid parquetbundle format: expected at least 3 parts, got {len(parts)}"
+        )
 
     # Part 0: Annotations
     df_ann = pq.ParquetFile(io.BytesIO(parts[0])).read().to_pandas()
@@ -345,9 +347,7 @@ def run_silhouette_analysis(
     figures_dir.mkdir(parents=True, exist_ok=True)
 
     # Analyze variants
-    df_results = analyze_all_variants(
-        protspace_dir, year=year, variants=variants, verbose=verbose
-    )
+    df_results = analyze_all_variants(protspace_dir, year=year, variants=variants, verbose=verbose)
 
     # Save CSV
     csv_path = figures_dir / "silhouette_comparison.csv"
@@ -365,7 +365,9 @@ def run_silhouette_analysis(
         print("Summary")
         print("=" * 60)
         for _, row in df_results.iterrows():
-            score_str = f"{row['silhouette_score']:.3f}" if not np.isnan(row["silhouette_score"]) else "N/A"
+            score_str = (
+                f"{row['silhouette_score']:.3f}" if not np.isnan(row["silhouette_score"]) else "N/A"
+            )
             print(f"  {row['variant']}: {score_str} ({row['n_proteins']} proteins)")
 
     return df_results

@@ -16,6 +16,8 @@ import numpy as np
 import obonet
 import pandas as pd
 
+from .helpers import load_datasets
+
 # Configuration
 TOP_N_GO_TERMS = 15
 GO_COLUMN = "Gene Ontology (molecular function)"
@@ -130,16 +132,6 @@ def get_go_statistics(df: pd.DataFrame, go_graph: nx.DiGraph) -> dict:
         "average_depth": np.mean(depths) if depths else None,
         "depths": depths,
     }
-
-
-def load_datasets(years: list[int], data_dir: Path) -> dict[int, pd.DataFrame]:
-    """Load ToxProt datasets for specified years."""
-    datasets = {}
-    for year in years:
-        filepath = data_dir / f"toxprot_{year}.csv"
-        if filepath.exists():
-            datasets[year] = pd.read_csv(filepath)
-    return datasets
 
 
 def load_datasets_with_all_go(
