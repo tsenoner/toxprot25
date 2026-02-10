@@ -56,25 +56,28 @@ toxprot analysis -d kw_toxin taxa           # Only toxin keyword entries
 | Option         | Default                   | Description                   |
 | -------------- | ------------------------- | ----------------------------- |
 | `--data-dir`   | `data/processed/toxprot/` | Input directory with CSVs     |
-| `--output-dir` | varies by command         | Output directory for figures  |
+| `--output-dir` | `figures/`                | Output directory for figures  |
 
 ## Command Reference
 
 ### Quick Reference
 
-| Command            | Years            | Output Directory       | Description                      |
-| ------------------ | ---------------- | ---------------------- | -------------------------------- |
-| `pipeline`         | All              | `figures/`             | Run all analyses sequentially    |
-| `summary`          | 2005, 2015, 2025 | `figures/`             | Dataset statistics table         |
-| `taxa`             | 2005–2025        | `figures/taxa/`        | Taxonomic distribution trends    |
-| `families`         | 2005, 2015, 2025 | `figures/`             | Protein family distributions     |
-| `length`           | 2005, 2015, 2025 | `figures/`             | Sequence length histograms       |
-| `habitat`          | 2005, 2015, 2025 | `figures/habitat/`     | Terrestrial vs marine habitats   |
-| `source-tissue`    | 2005, 2015, 2025 | `figures/source_tissue/` | Tissue annotation evolution    |
-| `ptm`              | 2005, 2015, 2025 | `figures/ptm/`         | PTM frequency analysis           |
-| `go`               | 2005–2025        | `figures/go_terms/`    | GO term coverage and depth       |
-| `protein-evidence` | 2008, 2015, 2025 | `figures/protein_evidence/` | Evidence level transitions  |
-| `definitions`      | 2025             | `figures/definitions/` | Selection criteria comparison    |
+All commands output to `figures/`.
+
+| Command            | Years            | Description                      |
+| ------------------ | ---------------- | -------------------------------- |
+| `pipeline`         | All              | Run all analyses sequentially    |
+| `summary`          | 2005, 2015, 2025 | Dataset statistics table         |
+| `taxa`             | 2005–2025        | Taxonomic distribution trends    |
+| `families`         | 2005, 2015, 2025 | Protein family distributions     |
+| `length`           | 2005, 2015, 2025 | Sequence length histograms       |
+| `habitat`          | 2005, 2015, 2025 | Terrestrial vs marine habitats   |
+| `source-tissue`    | 2005, 2015, 2025 | Tissue annotation evolution      |
+| `ptm`              | 2005, 2015, 2025 | PTM frequency analysis           |
+| `go`               | 2005–2025        | GO term coverage and depth       |
+| `protein-evidence` | 2008, 2015, 2025 | Evidence level transitions       |
+| `definitions`      | 2025             | Selection criteria comparison    |
+| `protspace`        | 2025             | Protein embedding analysis       |
 
 ### Command Details
 
@@ -134,7 +137,7 @@ toxprot analysis taxa --skip-trend           # Skip trend plot, only alluvial
 | `--level`      | `Order` | Taxonomic level: Phylum, Class, Order, Family, or all |
 | `--skip-trend` | False   | Skip generating trend plot                            |
 
-**Output:** `figures/taxa/`
+**Output:** `figures/`
 - `top_taxa_trend.png` — Top 5 orders over all 21 years with silhouettes (Squamata/Cobra, Araneae/Spider, Neogastropoda/Conus, Scorpiones/Scorpion, Hymenoptera)
 - `taxa_newcomers_alluvial_{level}.png` — Decade-step flow diagram (2005→2015→2025)
 
@@ -160,9 +163,7 @@ toxprot analysis -d all families
 | --------- | ------- | ---------------------------------- |
 | `--top-n` | `10`    | Number of top families to display  |
 
-**Output:** `figures/protein_families/`
-- `top_families_stacked_bar.png` — Stacked bar chart of absolute counts
-- `top_families_alluvial.png` — Alluvial plot showing rank changes
+**Output:** `figures/top_families_alluvial.png` — Alluvial plot showing rank changes
 
 **Notes:**
 - Family names are normalized across years using 80+ mappings (e.g., "Snake toxin family" → "Snake three-finger toxin family")
@@ -205,7 +206,7 @@ toxprot analysis -d all habitat
 | --------- | ------- | ------------------------------------- |
 | `--top-n` | `15`    | Number of top families per habitat    |
 
-**Output:** `figures/habitat/habitat.png`
+**Output:** `figures/habitat.png`
 
 **Panel A (Taxa by Habitat):**
 - Left: Stacked bars for Entries, Species, Protein Families (terrestrial/marine/shared)
@@ -235,7 +236,7 @@ toxprot analysis -d all source-tissue
 | --------- | ------- | ------------------------------------ |
 | `--top-n` | `10`    | Number of top tissues to display     |
 
-**Output:** `figures/source_tissue/source_tissue_alluvial.png`
+**Output:** `figures/source_tissue_alluvial.png`
 
 **Notes:**
 - Tissues are exploded from semicolon-separated values in the source data
@@ -262,7 +263,7 @@ toxprot analysis -d all ptm
 - Feature types: `modified residue`, `glycosylation site`, `disulfide bond`, `cross-link`, `lipid moiety-binding region`
 - Descriptions resolved using UniProt's [ptmlist.txt](https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/docs/ptmlist.txt)
 
-**Output:** `figures/ptm/ptm_overview.png`
+**Output:** `figures/ptm_overview.png`
 
 **Panel A:** Horizontal bar chart showing PTM type frequency, sorted by 2025 count
 
@@ -288,7 +289,7 @@ toxprot analysis -d all go
 | --------- | ------- | --------------------------------- |
 | `--top-n` | `5`     | Number of top GO terms to display |
 
-**Output:** `figures/go_terms/go_terms_overview.png`
+**Output:** `figures/go_terms_overview.png`
 
 **Panels:**
 - **Panel A:** Total GO term annotations over time (3 lines: MF, BP, CC)
@@ -320,7 +321,7 @@ toxprot analysis protein-evidence -o figures/custom
 4. Predicted
 5. Uncertain
 
-**Output:** `figures/protein_evidence/protein_evidence_sankey.png`
+**Output:** `figures/protein_evidence_sankey.png`
 
 Alluvial diagram showing:
 - PE category bars at each time point
@@ -346,49 +347,55 @@ toxprot analysis definitions -o figures/custom
 | -------- | ------- | ------------------------ |
 | `--year` | `2025`  | Year of dataset to use   |
 
-**Output:** `figures/definitions/definition_comparison.png`
+**Output:** `figures/definition_comparison.png`
 
-**Panel A (Alluvial):** Taxonomic coverage at Phylum→Order→Family levels
-- Shows taxa that are Shared, Venom-only, or Keyword-only
-- Flow connections between taxonomic levels
-
-**Panel B (Venn):** Entry overlap between selection criteria
-- Circle sizes proportional to entry counts
-- Shows venom_tissue-only, kw_toxin-only, and both counts
+Single-panel Venn→phylum→order flow figure showing entry-level criteria (left), phyla (centre), and orders (right). The Venn diagram shows overlap between venom tissue specificity and toxin keyword criteria, with flows through taxonomic levels.
 
 ## Output Directory Structure
 
 ```
 figures/
 ├── dataset_summary_statistics.png
+├── definition_comparison.png
+├── go_terms_overview.png
+├── habitat.png
+├── protein_evidence_sankey.png
+├── protspace_silhouette_comparison.csv
+├── protspace_silhouette_comparison.png
+├── ptm_overview.png
 ├── sequence_length_distribution.png
-├── taxa/
-│   ├── top_taxa_trend.png
-│   └── taxa_newcomers_alluvial_*.png
-├── protein_families/
-│   ├── top_families_stacked_bar.png
-│   └── top_families_alluvial.png
-├── habitat/
-│   └── habitat.png
-├── source_tissue/
-│   └── source_tissue_alluvial.png
-├── ptm/
-│   └── ptm_overview.png
-├── go_terms/
-│   └── go_terms_overview.png
-├── protein_evidence/
-│   └── protein_evidence_sankey.png
-└── definitions/
-    └── definition_comparison.png
+├── source_tissue_alluvial.png
+├── taxa_newcomers_alluvial_order.png
+├── top_families_alluvial.png
+└── top_taxa_trend.png
 ```
 
 ## ProtSpace Embedding Analysis
 
-Protein language model (ProtT5) embeddings enable 2D visualization of toxin relationships. Removing signal peptides and fragments improves clustering (silhouette: 0.25 → 0.49).
+Protein language model (ProtT5) embeddings enable 2D visualization of toxin relationships. Three variants are compared:
 
-See [src/protspace/README.md](../src/protspace/README.md) for the full pipeline.
+| Variant        | Description                            | Silhouette Score |
+| -------------- | -------------------------------------- | ---------------- |
+| `full`         | Full-length sequences                  | 0.262            |
+| `mature`       | Signal peptides removed                | 0.397            |
+| `mature_clean` | Mature sequences, fragments excluded   | 0.474            |
+
+Removing signal peptides and fragments improves clustering quality (silhouette: 0.262 → 0.474).
+
+| Subcommand      | Description                                    |
+| ---------------- | ---------------------------------------------- |
+| `generate-fasta` | Create FASTA files for embedding generation    |
+| `prepare`        | Prepare metadata and filter H5 files           |
+| `run-umap`       | Run UMAP dimensionality reduction              |
+| `silhouette`     | Analyze clustering quality                     |
+| `pipeline`       | Run all steps (except Colab)                   |
+
+UMAP visualizations are created manually via [protspace.app](https://protspace.app/explore).
+
+See the [ProtSpace Guide](protspace.md) for the full pipeline and workflow.
 
 ## See Also
 
 - [Data Processing Guide](data_processing.md) — Download, parse, and clean pipeline
 - [UniProt Release History](uniprot_releases.md) — Swiss-Prot release versions
+- [ProtSpace Guide](protspace.md) — Protein embedding analysis pipeline

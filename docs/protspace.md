@@ -1,0 +1,132 @@
+# ProtSpace Guide
+
+Protein embedding analysis using ProtT5 embeddings and UMAP dimensionality reduction, visualized with [ProtSpace](https://github.com/tsenoner/protspace).
+
+## Overview
+
+ProtSpace generates 2D visualizations of protein relationships by:
+1. Generating per-residue embeddings with ProtT5
+2. Reducing dimensionality with UMAP
+3. Coloring by protein family to reveal functional clustering
+
+## Workflow
+
+```
+1. generate-fasta    Create FASTA files (full + mature sequences)
+2. [Google Colab]    Generate ProtT5 H5 embeddings
+3. prepare           Create metadata CSVs and filtered H5 files
+4. run-umap          Run UMAP dimensionality reduction
+5. silhouette        Analyze clustering quality
+```
+
+UMAP scatter plots are created manually via [protspace.app/explore](https://protspace.app/explore) by uploading the styled `.parquetbundle` files.
+
+## Variants
+
+Three sequence variants are compared to assess the impact of signal peptide removal and fragment exclusion on clustering:
+
+| Variant        | Description                                         | Silhouette Score |
+| -------------- | --------------------------------------------------- | ---------------- |
+| `full`         | All proteins, full sequences (with signal peptides) | 0.262            |
+| `mature`       | All proteins, mature sequences (SP removed)         | 0.397            |
+| `mature_clean` | All proteins, mature sequences, no fragments        | 0.474            |
+
+Signal peptides are removed based on UniProtKB feature annotations. The `mature_clean` variant provides the best clustering quality.
+
+## Subcommand Reference
+
+### `generate-fasta`
+
+Creates FASTA files for ProtT5 embedding generation. Produces full-length and mature (signal peptide removed) sequence files.
+
+```bash
+toxprot analysis protspace generate-fasta
+toxprot analysis protspace generate-fasta --year 2024
+```
+
+### `prepare`
+
+Prepares metadata CSVs and filters H5 embedding files for all variants. Requires H5 files from Google Colab.
+
+```bash
+toxprot analysis protspace prepare
+toxprot analysis protspace prepare --top-n 15
+```
+
+| Option           | Default                        | Description                        |
+| ---------------- | ------------------------------ | ---------------------------------- |
+| `--protspace-dir`| `data/processed/protspace`     | Directory for protspace files      |
+| `--top-n`        | `10`                           | Number of top protein families     |
+
+### `run-umap`
+
+Runs UMAP dimensionality reduction on prepared H5 files and applies styling.
+
+```bash
+toxprot analysis protspace run-umap
+toxprot analysis protspace run-umap --n-neighbors 30 --min-dist 0.3
+toxprot analysis protspace run-umap --variant mature_clean
+```
+
+| Option           | Default | Description                  |
+| ---------------- | ------- | ---------------------------- |
+| `--n-neighbors`  | `50`    | UMAP n_neighbors parameter   |
+| `--min-dist`     | `0.5`   | UMAP min_dist parameter      |
+| `--variant`      | all     | Specific variant(s) to process |
+
+### `silhouette`
+
+Calculates silhouette scores for clustering quality and generates a comparison plot.
+
+```bash
+toxprot analysis protspace silhouette
+toxprot analysis protspace silhouette --variant mature_clean
+```
+
+**Output:**
+- `figures/protspace_silhouette_comparison.csv` — Score data
+- `figures/protspace_silhouette_comparison.png` — Bar chart comparison
+
+### `pipeline`
+
+Runs all steps except Google Colab embedding generation.
+
+```bash
+toxprot analysis protspace pipeline
+toxprot analysis protspace pipeline --skip-fasta
+toxprot analysis protspace pipeline --top-n 15
+```
+
+## Google Colab Step
+
+After generating FASTA files, use the [bio_embeddings Colab notebook](https://colab.research.google.com/drive/1h8dDfYY0SIYlD9lEz6gxdNUX5PBrDmL5) to generate ProtT5 embeddings:
+
+1. Upload FASTA files from `data/processed/protspace/`
+2. Run the notebook to generate H5 embedding files
+3. Download H5 files back to `data/processed/protspace/colab/`
+
+Expected files: `toxprot_{year}_full.h5` and `toxprot_{year}_mature.h5`
+
+## File Organization
+
+```
+data/processed/protspace/
+├── toxprot_2025_full.fasta          # Full-length sequences
+├── toxprot_2025_mature.fasta        # Mature sequences (SP removed)
+├── style.json                       # Color scheme for visualization
+├── colab/
+│   ├── toxprot_2025_full.h5         # ProtT5 embeddings (from Colab)
+│   └── toxprot_2025_mature.h5
+├── metadata_2025_*.csv              # Per-variant metadata
+├── toxprot_2025_*.h5                # Per-variant filtered embeddings
+└── protspace_2025_*.parquetbundle   # Styled UMAP projections
+
+figures/
+├── protspace_silhouette_comparison.csv
+└── protspace_silhouette_comparison.png
+```
+
+## See Also
+
+- [Analysis Guide](analysis_summary.md) — All analysis commands
+- [ProtSpace web tool](https://protspace.app/explore) — Interactive UMAP visualization

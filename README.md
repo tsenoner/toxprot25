@@ -63,6 +63,7 @@ Generate figures and statistics from processed data.
 | `go`               | GO term distributions                   |
 | `protein-evidence` | Protein existence level evolution       |
 | `definitions`      | Compare selection criteria (2025 only)  |
+| `protspace`        | Protein embedding analysis (subcommand) |
 
 **Default filter:** `--definition venom_tissue`. Use `--definition all` for all entries.
 
@@ -88,7 +89,7 @@ The `--definition` flag filters outputs: `all`, `venom_tissue` (default), `kw_to
 - [Data Processing Guide](docs/data_processing.md) — Download, parse, and clean pipeline
 - [Analysis Guide](docs/analysis_summary.md) — Figure generation commands
 - [UniProt Release History](docs/uniprot_releases.md) — Swiss-Prot release versions (2005-2025)
-- [ProtSpace README](src/protspace/README.md) — Protein embedding analysis
+- [ProtSpace Guide](docs/protspace.md) — Protein embedding analysis
 
 ## Data Sources
 
