@@ -4,6 +4,7 @@ standalone/
 *.dat
 *.h5
 *.log
+.playwright-mcp/
 
 # Data - ignore intermediate files (can be regenerated)
 data/interim/
