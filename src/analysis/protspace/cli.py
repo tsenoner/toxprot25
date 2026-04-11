@@ -23,12 +23,12 @@ def protspace():
     \b
     Workflow:
     1. generate-fasta  - Create FASTA files for embedding generation
-    2. [External]      - Generate H5 embeddings via Google Colab
+    2. embed           - Generate H5 embeddings via Biocentral API
     3. prepare         - Prepare metadata and filter H5 files
     4. run-umap        - Run ProtSpace UMAP dimensionality reduction
     5. silhouette      - Analyze clustering quality
 
-    Or run all steps (except Colab) with: pipeline
+    Or run all steps (except embedding) with: pipeline
     """
     pass
 
@@ -102,6 +102,58 @@ def generate_fasta(
 
     print_next_steps(fasta_full, fasta_mature, fasta_active, year=year)
     click.echo("\nFASTA generation complete.")
+
+
+@protspace.command("embed")
+@click.argument(
+    "fasta_file",
+    type=click.Path(exists=True, path_type=Path),
+)
+@click.option(
+    "-o",
+    "--output",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Output H5 file (default: same name as FASTA with .h5 extension).",
+)
+@click.option(
+    "-m",
+    "--model",
+    default="prot_t5",
+    show_default=True,
+    help="Embedder model (prot_t5, prost_t5, esm2_8m, esm2_650m, esm2_3b).",
+)
+@click.option(
+    "-b",
+    "--batch-size",
+    type=int,
+    default=1000,
+    show_default=True,
+    help="Sequences per API request.",
+)
+@click.option("-v", "--verbose", is_flag=True, help="Verbose logging.")
+def embed(fasta_file, output, model, batch_size, verbose):
+    """Generate protein embeddings via Biocentral API.
+
+    Supports batching, deduplication, resume, and length-sorting.
+
+    \b
+    Examples:
+        toxprot analysis protspace embed data/processed/protspace/colab/toxprot_2025_active.fasta
+        toxprot analysis protspace embed input.fasta -o output.h5 -m prot_t5
+    """
+    import logging
+
+    from .embed_sequences import embed_fasta
+
+    logging.basicConfig(
+        level=logging.DEBUG if verbose else logging.INFO,
+        format="%(asctime)s %(levelname)s - %(message)s",
+        datefmt="%H:%M:%S",
+    )
+
+    h5_path = output or fasta_file.with_suffix(".h5")
+    embed_fasta(fasta_file, h5_path, embedder=model, batch_size=batch_size)
 
 
 @protspace.command("prepare")
