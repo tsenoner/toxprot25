@@ -81,6 +81,9 @@ class SwissProtXMLParser:
         "Signal peptide",
         "Signal peptide (range)",
         "Propeptide",
+        "Propeptide (range)",
+        "Chain (range)",
+        "Peptide (range)",
         "InterPro",
         "Pfam",
         "KEGG",
@@ -334,6 +337,50 @@ class SwissProtXMLParser:
             # Propeptide
             if ftype == "propeptide":
                 entry_data["Propeptide"] = "Yes"
+                loc = feature.find(self._tag("location"))
+                if loc is not None:
+                    begin = loc.find(self._tag("begin"))
+                    end = loc.find(self._tag("end"))
+                    if begin is not None and end is not None:
+                        b = begin.get("position", "?")
+                        e = end.get("position", "?")
+                        range_str = f"{b}-{e}"
+                        existing = entry_data["Propeptide (range)"]
+                        entry_data["Propeptide (range)"] = (
+                            f"{existing}; {range_str}" if existing else range_str
+                        )
+                continue
+
+            # Chain (mature protein)
+            if ftype == "chain":
+                loc = feature.find(self._tag("location"))
+                if loc is not None:
+                    begin = loc.find(self._tag("begin"))
+                    end = loc.find(self._tag("end"))
+                    if begin is not None and end is not None:
+                        b = begin.get("position", "?")
+                        e = end.get("position", "?")
+                        range_str = f"{b}-{e}"
+                        existing = entry_data["Chain (range)"]
+                        entry_data["Chain (range)"] = (
+                            f"{existing}; {range_str}" if existing else range_str
+                        )
+                continue
+
+            # Peptide (active peptide product)
+            if ftype == "peptide":
+                loc = feature.find(self._tag("location"))
+                if loc is not None:
+                    begin = loc.find(self._tag("begin"))
+                    end = loc.find(self._tag("end"))
+                    if begin is not None and end is not None:
+                        b = begin.get("position", "?")
+                        e = end.get("position", "?")
+                        range_str = f"{b}-{e}"
+                        existing = entry_data["Peptide (range)"]
+                        entry_data["Peptide (range)"] = (
+                            f"{existing}; {range_str}" if existing else range_str
+                        )
                 continue
 
             # PTM features

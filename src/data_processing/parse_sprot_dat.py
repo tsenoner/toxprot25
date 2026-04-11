@@ -151,6 +151,9 @@ class SwissProtParser:
         "Signal peptide",
         "Signal peptide (range)",
         "Propeptide",
+        "Propeptide (range)",
+        "Chain (range)",
+        "Peptide (range)",
         "InterPro",
         "Pfam",
         "KEGG",
@@ -442,6 +445,55 @@ class SwissProtParser:
 
                 elif feature_key == "PROPEP":
                     entry_data["Propeptide"] = "Yes"
+                    range_match = re.search(r"(\d+)\.\.(\d+)", content)
+                    if range_match:
+                        range_str = f"{range_match.group(1)}-{range_match.group(2)}"
+                        existing = entry_data["Propeptide (range)"]
+                        entry_data["Propeptide (range)"] = (
+                            f"{existing}; {range_str}" if existing else range_str
+                        )
+                    else:
+                        parts = content.split()
+                        if len(parts) >= 3 and parts[1].isdigit() and parts[2].isdigit():
+                            range_str = f"{parts[1]}-{parts[2]}"
+                            existing = entry_data["Propeptide (range)"]
+                            entry_data["Propeptide (range)"] = (
+                                f"{existing}; {range_str}" if existing else range_str
+                            )
+
+                elif feature_key == "CHAIN":
+                    range_match = re.search(r"(\d+)\.\.(\d+)", content)
+                    if range_match:
+                        range_str = f"{range_match.group(1)}-{range_match.group(2)}"
+                        existing = entry_data["Chain (range)"]
+                        entry_data["Chain (range)"] = (
+                            f"{existing}; {range_str}" if existing else range_str
+                        )
+                    else:
+                        parts = content.split()
+                        if len(parts) >= 3 and parts[1].isdigit() and parts[2].isdigit():
+                            range_str = f"{parts[1]}-{parts[2]}"
+                            existing = entry_data["Chain (range)"]
+                            entry_data["Chain (range)"] = (
+                                f"{existing}; {range_str}" if existing else range_str
+                            )
+
+                elif feature_key == "PEPTIDE":
+                    range_match = re.search(r"(\d+)\.\.(\d+)", content)
+                    if range_match:
+                        range_str = f"{range_match.group(1)}-{range_match.group(2)}"
+                        existing = entry_data["Peptide (range)"]
+                        entry_data["Peptide (range)"] = (
+                            f"{existing}; {range_str}" if existing else range_str
+                        )
+                    else:
+                        parts = content.split()
+                        if len(parts) >= 3 and parts[1].isdigit() and parts[2].isdigit():
+                            range_str = f"{parts[1]}-{parts[2]}"
+                            existing = entry_data["Peptide (range)"]
+                            entry_data["Peptide (range)"] = (
+                                f"{existing}; {range_str}" if existing else range_str
+                            )
 
                 # PTM features
                 elif feature_key in ptm_features:
