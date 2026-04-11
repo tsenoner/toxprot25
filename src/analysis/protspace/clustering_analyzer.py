@@ -287,8 +287,17 @@ def plot_silhouette_comparison(
     df_plot = df[df["silhouette_score"].notna()].copy()
     df_plot = df_plot.iloc[::-1]  # Reverse for horizontal bar chart
 
-    # Create display labels
-    df_plot["display_name"] = df_plot["variant"].str.replace("_", "\n")
+    # Create display labels with clearer descriptions
+    display_name_map = {
+        "full": "Full-length\n(with SP)",
+        "mature": "SP removed",
+        "mature_clean": "SP removed,\nno fragments",
+        "active": "SP + propeptide removed",
+        "active_clean": "SP + propeptide removed,\n no fragments",
+    }
+    df_plot["display_name"] = df_plot["variant"].map(
+        lambda v: display_name_map.get(v, v.replace("_", "\n"))
+    )
 
     # Create horizontal bar chart
     ax.barh(

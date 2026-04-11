@@ -14,6 +14,7 @@ from ..analyze_protein_families import get_reference_families, normalize_family_
 from .config import (
     COLAB_SUBDIR,
     INTERMEDIATES_SUBDIR,
+    SEQ_TYPES,
     TOP_N,
     VARIANT_CONFIGS,
     get_h5_base_filename,
@@ -89,15 +90,22 @@ def create_metadata_csv(
         "Phylum",
         "has_fragment",
         "has_signal_peptide",
+        "has_propeptide",
     ]
 
     # Remove has_fragment column if fragments are excluded (redundant)
     if variant_config["exclude_fragments"]:
         columns.remove("has_fragment")
 
-    # Remove has_signal_peptide for mature variants (signal peptide already cleaved)
-    if variant_config["uses_mature"] and "has_signal_peptide" in columns:
+    seq_type = variant_config["seq_type"]
+
+    # Remove has_signal_peptide for mature/active variants (already cleaved)
+    if seq_type in ("mature", "active") and "has_signal_peptide" in columns:
         columns.remove("has_signal_peptide")
+
+    # Remove has_propeptide for active variants (already cleaved)
+    if seq_type == "active" and "has_propeptide" in columns:
+        columns.remove("has_propeptide")
 
     df_variant[columns].to_csv(output_path, index=False)
 
@@ -195,16 +203,21 @@ def prepare_all_variants(
         for i, fam in enumerate(reference_families, 1):
             print(f"  {i:2d}. {fam}")
 
-    # Load signal peptide information from interim TSV
+    # Load signal peptide and propeptide information from interim TSV
     if verbose:
-        print(f"\nLoading signal peptide info from {interim_tsv}...")
-    df_interim = pd.read_csv(
-        interim_tsv,
-        sep="\t",
-        usecols=["Entry", "Signal peptide (range)"],
-    )
+        print(f"\nLoading signal peptide/propeptide info from {interim_tsv}...")
 
-    # Merge signal peptide information
+    # Determine available columns in interim TSV
+    with open(interim_tsv) as f:
+        tsv_header = f.readline().strip().split("\t")
+
+    interim_cols = ["Entry", "Signal peptide (range)"]
+    if "Propeptide (range)" in tsv_header:
+        interim_cols.append("Propeptide (range)")
+
+    df_interim = pd.read_csv(interim_tsv, sep="\t", usecols=interim_cols)
+
+    # Merge signal peptide/propeptide information
     df = df.merge(df_interim, on="Entry", how="left")
 
     # Rename Entry to identifier (required by protspace)
@@ -212,6 +225,10 @@ def prepare_all_variants(
 
     # Add helper columns
     df["has_signal_peptide"] = df["Signal peptide (range)"].notna().map({True: "yes", False: "no"})
+    if "Propeptide (range)" in df.columns:
+        df["has_propeptide"] = df["Propeptide (range)"].notna().map({True: "yes", False: "no"})
+    else:
+        df["has_propeptide"] = "no"
     df["has_fragment"] = (df["Fragment"].astype(str) == "fragment").map({True: "yes", False: "no"})
 
     # Process protein families to top N + Other
@@ -219,21 +236,18 @@ def prepare_all_variants(
 
     # Check for base H5 files (in colab/ subdirectory)
     colab_dir = protspace_dir / COLAB_SUBDIR
-    h5_full = colab_dir / get_h5_base_filename(year, is_mature=False)
-    h5_mature = colab_dir / get_h5_base_filename(year, is_mature=True)
 
     # Map sequence type to H5 file
     h5_files = {
-        "full": h5_full,
-        "mature": h5_mature,
+        seq_type: colab_dir / get_h5_base_filename(year, seq_type)
+        for seq_type in SEQ_TYPES
     }
 
-    # Check which H5 files are needed based on variant configs
-    h5_missing = []
-    if not h5_full.exists():
-        h5_missing.append(h5_full)
-    if not h5_mature.exists():
-        h5_missing.append(h5_mature)
+    # Determine which seq_types are actually needed by configured variants
+    needed_seq_types = {config["seq_type"] for config in VARIANT_CONFIGS.values()}
+    h5_missing = [
+        h5_files[st] for st in needed_seq_types if not h5_files[st].exists()
+    ]
 
     if h5_missing:
         _print_h5_missing_error(h5_missing, year)
@@ -252,12 +266,7 @@ def prepare_all_variants(
             print(f"\n{config['description']}:")
 
         # Determine which base H5 to use
-        if config["uses_mature"]:
-            h5_key = "mature"
-        else:
-            h5_key = "full"
-
-        h5_base = h5_files.get(h5_key)
+        h5_base = h5_files.get(config["seq_type"])
 
         # Skip variant if H5 not available
         if h5_base is None or not h5_base.exists():

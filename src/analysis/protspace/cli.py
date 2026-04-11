@@ -74,6 +74,7 @@ def generate_fasta(
     Creates FASTA files:
     - Full sequences (with signal peptides)
     - Mature sequences (signal peptides removed based on UniProt annotations)
+    - Active sequences (signal peptides + propeptides removed)
 
     Only includes proteins with ToxProt definition = "venom_tissue" or "both".
 
@@ -92,14 +93,14 @@ def generate_fasta(
     if not interim_tsv.exists():
         raise click.ClickException(f"Interim TSV not found: {interim_tsv}")
 
-    fasta_full, fasta_mature = generate_fasta_files(
+    fasta_full, fasta_mature, fasta_active = generate_fasta_files(
         interim_tsv=interim_tsv,
         output_dir=output_dir,
         year=year,
         processed_csv=processed_csv,
     )
 
-    print_next_steps(fasta_full, fasta_mature, year=year)
+    print_next_steps(fasta_full, fasta_mature, fasta_active, year=year)
     click.echo("\nFASTA generation complete.")
 
 
@@ -151,12 +152,14 @@ def prepare(
     Requires H5 embedding files from Google Colab:
     - toxprot_{year}_full.h5
     - toxprot_{year}_mature.h5
+    - toxprot_{year}_active.h5
 
-    Creates metadata CSV and filtered H5 files for 4 variants:
-    - all: All data with labels (top N + Other + NaN)
-    - top10_full: Top N families, full sequences
-    - top10_mature: Top N families, mature sequences
-    - top10_mature_clean: Top N families, mature, no fragments
+    Creates metadata CSV and filtered H5 files for variants:
+    - full: Full sequences (with signal peptides)
+    - mature: Mature sequences (SP removed)
+    - mature_clean: Mature sequences, no fragments
+    - active: Active sequences (SP + propeptide removed)
+    - active_clean: Active sequences, no fragments
 
     Also generates style.json from colors.py for color consistency.
 

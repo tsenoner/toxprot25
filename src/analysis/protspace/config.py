@@ -20,11 +20,17 @@ DEFAULT_MIN_DIST = 0.5
 # Default year for analysis
 DEFAULT_YEAR = "2025"
 
+# Sequence types for FASTA/H5 base files
+SEQ_TYPES = ("full", "mature", "active")
+
 # Variant configurations
 # Each variant defines:
 #   - name: variant identifier
 #   - description: human-readable description
-#   - uses_mature: whether to use mature (SP-cleaved) sequences
+#   - seq_type: sequence type ("full", "mature", or "active")
+#     - full: complete precursor sequences (with signal peptides)
+#     - mature: signal peptide removed
+#     - active: signal peptide + propeptide removed
 #   - exclude_other: exclude proteins not in top N families
 #   - exclude_nan: exclude proteins without family annotation
 #   - exclude_fragments: exclude fragment sequences
@@ -32,7 +38,7 @@ VARIANT_CONFIGS = {
     "full": {
         "name": "full",
         "description": "All proteins, full sequences (with signal peptides)",
-        "uses_mature": False,
+        "seq_type": "full",
         "exclude_other": False,
         "exclude_nan": False,
         "exclude_fragments": False,
@@ -40,7 +46,7 @@ VARIANT_CONFIGS = {
     "mature": {
         "name": "mature",
         "description": "All proteins, mature sequences (UniProt SP cleavage)",
-        "uses_mature": True,
+        "seq_type": "mature",
         "exclude_other": False,
         "exclude_nan": False,
         "exclude_fragments": False,
@@ -48,7 +54,23 @@ VARIANT_CONFIGS = {
     "mature_clean": {
         "name": "mature_clean",
         "description": "All proteins, mature sequences, no fragments",
-        "uses_mature": True,
+        "seq_type": "mature",
+        "exclude_other": False,
+        "exclude_nan": False,
+        "exclude_fragments": True,
+    },
+    "active": {
+        "name": "active",
+        "description": "All proteins, active sequences (SP + propeptide cleaved)",
+        "seq_type": "active",
+        "exclude_other": False,
+        "exclude_nan": False,
+        "exclude_fragments": False,
+    },
+    "active_clean": {
+        "name": "active_clean",
+        "description": "All proteins, active sequences, no fragments",
+        "seq_type": "active",
         "exclude_other": False,
         "exclude_nan": False,
         "exclude_fragments": True,
@@ -57,34 +79,30 @@ VARIANT_CONFIGS = {
 
 
 # File naming patterns
-def get_fasta_filename(year: str, is_mature: bool) -> str:
+def get_fasta_filename(year: str, seq_type: str) -> str:
     """Get FASTA filename for a given year and sequence type.
 
     Args:
         year: Dataset year
-        is_mature: Whether this is mature sequences (signal peptide removed)
+        seq_type: Sequence type ("full", "mature", or "active")
 
     Returns:
         FASTA filename string
     """
-    if not is_mature:
-        return f"toxprot_{year}_full.fasta"
-    return f"toxprot_{year}_mature.fasta"
+    return f"toxprot_{year}_{seq_type}.fasta"
 
 
-def get_h5_base_filename(year: str, is_mature: bool) -> str:
+def get_h5_base_filename(year: str, seq_type: str) -> str:
     """Get base H5 filename (from Colab embeddings).
 
     Args:
         year: Dataset year
-        is_mature: Whether this is mature sequences
+        seq_type: Sequence type ("full", "mature", or "active")
 
     Returns:
         H5 filename string
     """
-    if not is_mature:
-        return f"toxprot_{year}_full.h5"
-    return f"toxprot_{year}_mature.h5"
+    return f"toxprot_{year}_{seq_type}.h5"
 
 
 def get_h5_variant_filename(year: str, variant: str) -> str:
