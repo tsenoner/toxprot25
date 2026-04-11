@@ -132,8 +132,9 @@ def taxa(ctx, data_dir, output_dir, level, skip_trend):
 def length(ctx, data_dir, output_dir):
     """Run sequence length distribution analysis.
 
-    Generates a histogram comparing sequence lengths across ToxProt
-    time points (2005, 2015, 2025).
+    Generates histograms comparing sequence lengths across ToxProt
+    time points (2005, 2015, 2025). Produces three figures:
+    precursor, mature (SP removed), and active peptide (SP + propeptide removed).
 
     \b
     Examples:
@@ -141,7 +142,7 @@ def length(ctx, data_dir, output_dir):
         toxprot analysis -d all length
         toxprot analysis length -o figures/custom
     """
-    from .analyze_sequence_length import plot_sequence_length_histogram
+    from .analyze_sequence_length import generate_all_length_figures
 
     definition = ctx.obj["definition"]
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -161,9 +162,10 @@ def length(ctx, data_dir, output_dir):
     if len(datasets) < 2:
         raise click.ClickException("Need at least 2 datasets")
 
-    output_path = output_dir / "sequence_length_distribution.png"
-    plot_sequence_length_histogram(datasets, output_path)
-    click.echo(f"Saved {output_path} (definition: {definition})")
+    paths = generate_all_length_figures(datasets, output_dir)
+    for p in paths:
+        click.echo(f"Saved {p}")
+    click.echo(f"Generated {len(paths)} figures (definition: {definition})")
 
 
 @analysis.command()
