@@ -153,6 +153,95 @@ def create_fasta_file(
                 f_out.write(f"{sequence_to_write}\n")
 
 
+def _parse_range_length(range_str: str) -> int:
+    """Parse a range string like '1-21' and return its length (21 - 1 + 1 = 21)."""
+    try:
+        parts = range_str.strip().split("-")
+        return int(parts[1]) - int(parts[0]) + 1
+    except (ValueError, IndexError):
+        return 0
+
+
+def _compute_mature_length(row) -> int:
+    """Compute sequence length after signal peptide removal."""
+    seq = row.get("Sequence", "")
+    if not isinstance(seq, str) or not seq:
+        return row.get("Length", 0)
+
+    full_len = len(seq)
+    sp_range = row.get("Signal peptide (range)", "")
+    if isinstance(sp_range, str) and "-" in sp_range:
+        try:
+            sp_end = int(sp_range.split("-")[1])
+            if 0 < sp_end < full_len:
+                return full_len - sp_end
+        except (ValueError, IndexError):
+            pass
+    return full_len
+
+
+def _parse_ranges(range_str) -> list[tuple[int, int]]:
+    """Parse a semicolon-separated range string into list of (start, end) tuples."""
+    if not isinstance(range_str, str) or not range_str:
+        return []
+    ranges = []
+    for r in range_str.split(";"):
+        r = r.strip()
+        if "-" in r:
+            try:
+                parts = r.split("-")
+                ranges.append((int(parts[0]), int(parts[1])))
+            except (ValueError, IndexError):
+                pass
+    return ranges
+
+
+def _resolve_chain_ranges(ranges: list[tuple[int, int]]) -> list[tuple[int, int]]:
+    """Remove parent ranges that fully contain sub-chains."""
+    if len(ranges) <= 1:
+        return ranges
+    resolved = []
+    for i, (s1, e1) in enumerate(ranges):
+        is_parent = any(
+            s1 <= s2 and e1 >= e2 and (s1 != s2 or e1 != e2)
+            for j, (s2, e2) in enumerate(ranges) if i != j
+        )
+        if not is_parent:
+            resolved.append((s1, e1))
+    return resolved if resolved else ranges
+
+
+def _compute_active_length(row) -> int:
+    """Compute active peptide length using best available annotations.
+
+    Priority: PEPTIDE > CHAIN (resolved) > subtraction (SP + PP) > SP only > full.
+    """
+    seq = row.get("Sequence", "")
+    if not isinstance(seq, str) or not seq:
+        return row.get("Length", 0)
+
+    # Priority 1: PEPTIDE annotations
+    peptide_ranges = _parse_ranges(row.get("Peptide (range)", ""))
+    if peptide_ranges:
+        return sum(e - s + 1 for s, e in peptide_ranges)
+
+    # Priority 2: CHAIN annotations (resolve overlapping parent chains)
+    chain_ranges = _parse_ranges(row.get("Chain (range)", ""))
+    if chain_ranges:
+        resolved = _resolve_chain_ranges(chain_ranges)
+        return sum(e - s + 1 for s, e in resolved)
+
+    # Priority 3: Subtraction — full length minus SP minus propeptide
+    full_len = len(seq)
+    sp_ranges = _parse_ranges(row.get("Signal peptide (range)", ""))
+    pp_ranges = _parse_ranges(row.get("Propeptide (range)", ""))
+    remove_len = sum(e - s + 1 for s, e in sp_ranges) + sum(e - s + 1 for s, e in pp_ranges)
+    if remove_len > 0:
+        return max(full_len - remove_len, 1)
+
+    return full_len
+
+
 def process_toxprot_tsv(tsv_input_path: Path, update_protfams_func, create_fasta_func):
     """
     Process a ToxProt TSV file:
@@ -191,9 +280,17 @@ def process_toxprot_tsv(tsv_input_path: Path, update_protfams_func, create_fasta
         "PTM_Features",
         "PTM Keywords",
         "Sequence",
+        "Signal peptide",
         "Signal peptide (range)",
+        "Propeptide",
         "Protein existence",
         "ToxProt definition",
+    ]
+    # Optional columns for mature/active length computation
+    optional_cols = [
+        "Propeptide (range)",
+        "Chain (range)",
+        "Peptide (range)",
     ]
     # Optional GO columns
     go_cols = [
@@ -203,7 +300,7 @@ def process_toxprot_tsv(tsv_input_path: Path, update_protfams_func, create_fasta
         "Gene Ontology (molecular function)",
     ]
     # Only use columns that exist in the file
-    usecols = [col for col in required_cols + go_cols if col in header]
+    usecols = [col for col in required_cols + optional_cols + go_cols if col in header]
 
     df = pd.read_csv(tsv_input_path, sep="\t", usecols=usecols)
 
@@ -251,10 +348,18 @@ def process_toxprot_tsv(tsv_input_path: Path, update_protfams_func, create_fasta
         )
         create_fasta_func(df, "Entry", "Sequence", fasta_output_path, signal_peptide_col)
 
+    # Compute Mature_length (SP removed) and Active_length (SP + propeptide removed)
+    if "Sequence" in df.columns:
+        df["Mature_length"] = df.apply(_compute_mature_length, axis=1)
+        df["Active_length"] = df.apply(_compute_active_length, axis=1)
+
     # Prepare columns for CSV output: remove columns not needed in final CSV
     drop_cols = [
         "Sequence",
         "Signal peptide (range)",
+        "Propeptide (range)",
+        "Chain (range)",
+        "Peptide (range)",
         "PTM_Features",  # Full JSON not needed in final CSV
     ]
     columns_for_csv = [col for col in df.columns if col not in drop_cols]
