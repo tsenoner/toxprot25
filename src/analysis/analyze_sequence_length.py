@@ -22,6 +22,10 @@ AXIS_LABEL_FONTSIZE = 16
 TICK_LABEL_FONTSIZE = 12
 LEGEND_FONTSIZE = 16
 
+# Bin edges shared by histogram and binned-count CSV: 25 aa bins up to 300, then 301+
+BIN_EDGES = np.append(np.arange(1, 302, 25), np.inf)
+BIN_LABELS = [f"{int(BIN_EDGES[i])}-{int(BIN_EDGES[i + 1]) - 1}" for i in range(len(BIN_EDGES) - 2)] + ["301+"]
+
 
 def plot_sequence_length_histogram(
     datasets: dict[int, pd.DataFrame],
@@ -38,17 +42,10 @@ def plot_sequence_length_histogram(
         length_column: Column name to use for lengths.
         xlabel: Label for the x-axis.
     """
-    # Define bin edges: 25 AA bins up to 300, then 301+
-    bin_edges_up_to_300 = np.arange(1, 302, 25)
-    last_bin_edge = bin_edges_up_to_300[-1]  # 301
-    all_hist_bins = np.append(bin_edges_up_to_300, last_bin_edge + 25)
-
-    # Create bin labels
-    bin_labels = [
-        f"{start}-{end - 1}"
-        for start, end in zip(all_hist_bins[:-2], all_hist_bins[1:-1], strict=False)
-    ]
-    bin_labels.append(f"{all_hist_bins[-2]}+")  # "301+"
+    # Histogram needs finite bin edges; replace the open-ended +inf with 301 + 25
+    last_bin_edge = 301
+    all_hist_bins = np.append(BIN_EDGES[:-1], last_bin_edge + 25)
+    bin_labels = BIN_LABELS
 
     # Create figure
     fig, ax = plt.subplots(figsize=(12, 8))
@@ -90,6 +87,35 @@ def plot_sequence_length_histogram(
     plt.close()
 
 
+def write_length_bin_csv(
+    datasets: dict[int, pd.DataFrame],
+    output_path: Path,
+    length_column: str,
+) -> None:
+    """Write a binned length-distribution CSV matching Dataset S1's Fig5_Length sheet.
+
+    Columns: ``Length Categories``, one column per year, ``Percentual increase``
+    (rounded to int, computed earliest→latest year), ``Absolute increase``.
+    Bin edges are shared with the histogram via ``BIN_EDGES`` / ``BIN_LABELS``.
+    """
+    years = sorted(datasets.keys())
+    out = pd.DataFrame({"Length Categories": BIN_LABELS})
+    for year in years:
+        lengths = datasets[year][length_column].dropna()
+        binned = pd.cut(lengths, bins=BIN_EDGES, right=False, labels=BIN_LABELS, include_lowest=True)
+        out[year] = binned.value_counts().reindex(BIN_LABELS, fill_value=0).astype(int).values
+
+    if len(years) >= 2:
+        first, last = years[0], years[-1]
+        out["Percentual increase"] = (
+            (out[last] - out[first]) / out[first].replace(0, np.nan) * 100
+        ).round().astype("Int64")
+        out["Absolute increase"] = out[last] - out[first]
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    out.to_csv(output_path, index=False)
+
+
 def _filter_complete(df: pd.DataFrame) -> pd.DataFrame:
     """Filter to complete sequences (no fragments)."""
     return df[df["Fragment"] != "fragment"]
@@ -125,6 +151,9 @@ def generate_all_length_figures(
         List of paths to generated figures.
     """
     output_dir.mkdir(parents=True, exist_ok=True)
+    # Exploratory variants live in a subdir; the manuscript Fig 5 stays at top level
+    variants_dir = output_dir / "sequence_length_variants"
+    variants_dir.mkdir(parents=True, exist_ok=True)
     generated = []
 
     # Figure 1: Full-length sequences (complete, no fragments)
@@ -134,7 +163,7 @@ def generate_all_length_figures(
     }
     full_datasets = {y: df for y, df in full_datasets.items() if len(df) > 0}
     if len(full_datasets) >= 2:
-        path = output_dir / "sequence_length_full.png"
+        path = variants_dir / "sequence_length_full.png"
         plot_sequence_length_histogram(
             full_datasets, path,
             length_column="Length",
@@ -149,7 +178,7 @@ def generate_all_length_figures(
     }
     full_sp_datasets = {y: df for y, df in full_sp_datasets.items() if len(df) > 0}
     if len(full_sp_datasets) >= 2:
-        path = output_dir / "sequence_length_full_sp.png"
+        path = variants_dir / "sequence_length_full_sp.png"
         plot_sequence_length_histogram(
             full_sp_datasets, path,
             length_column="Length",
@@ -165,7 +194,7 @@ def generate_all_length_figures(
     mature_datasets = {y: df for y, df in mature_datasets.items() if len(df) > 0}
     has_mature = all("Mature_length" in df.columns for df in mature_datasets.values())
     if len(mature_datasets) >= 2 and has_mature:
-        path = output_dir / "sequence_length_mature.png"
+        path = variants_dir / "sequence_length_mature.png"
         plot_sequence_length_histogram(
             mature_datasets, path,
             length_column="Mature_length",
@@ -181,7 +210,7 @@ def generate_all_length_figures(
     active_datasets = {y: df for y, df in active_datasets.items() if len(df) > 0}
     has_active = all("Active_length" in df.columns for df in active_datasets.values())
     if len(active_datasets) >= 2 and has_active:
-        path = output_dir / "sequence_length_active.png"
+        path = variants_dir / "sequence_length_active.png"
         plot_sequence_length_histogram(
             active_datasets, path,
             length_column="Active_length",
@@ -198,7 +227,7 @@ def generate_all_length_figures(
     mature_pep_datasets = {y: df for y, df in mature_pep_datasets.items() if len(df) > 0}
     has_active = all("Active_length" in df.columns for df in mature_pep_datasets.values())
     if len(mature_pep_datasets) >= 2 and has_active:
-        path = output_dir / "sequence_length_mature_peptide.png"
+        path = variants_dir / "sequence_length_mature_peptide.png"
         plot_sequence_length_histogram(
             mature_pep_datasets, path,
             length_column="Active_length",
@@ -206,7 +235,7 @@ def generate_all_length_figures(
         )
         generated.append(path)
 
-    # Figure 6: Same as Figure 5 but including fragments
+    # Figure 6: Same as Figure 5 but including fragments — manuscript Fig 5
     all_datasets = {y: df for y, df in datasets.items() if len(df) > 0}
     has_active = all("Active_length" in df.columns for df in all_datasets.values())
     if len(all_datasets) >= 2 and has_active:
@@ -217,6 +246,11 @@ def generate_all_length_figures(
             xlabel="Mature Peptide Length (amino acids)",
         )
         generated.append(path)
+
+        # Dataset S1 supplementary table for the manuscript Fig 5
+        csv_path = output_dir / "dataset_s1_fig5_length_mature_peptide.csv"
+        write_length_bin_csv(all_datasets, csv_path, length_column="Active_length")
+        generated.append(csv_path)
 
     return generated
 
