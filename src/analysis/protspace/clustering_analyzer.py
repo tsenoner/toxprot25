@@ -18,6 +18,7 @@ import pyarrow.parquet as pq
 from sklearn.metrics import silhouette_score
 
 from .config import (
+    ANALYSIS_VARIANTS,
     VARIANT_CONFIGS,
     get_protspace_styled_filename,
 )
@@ -76,6 +77,14 @@ def _load_from_parquetbundle(bundle_path: Path) -> tuple[np.ndarray, np.ndarray]
 
     # Part 2: Coordinates
     df_coords = pq.ParquetFile(io.BytesIO(parts[2])).read().to_pandas()
+
+    # protspace v4 bundles can contain multiple projections (e.g. UMAP + PCA).
+    # Restrict to UMAP rows for silhouette scoring; the analysis was always
+    # defined on the UMAP projection in the manuscript.
+    if "projection_name" in df_coords.columns:
+        umap_rows = df_coords["projection_name"].str.contains("UMAP", case=False, na=False)
+        if umap_rows.any():
+            df_coords = df_coords[umap_rows].reset_index(drop=True)
 
     # Extract embeddings (x, y coordinates)
     embeddings = df_coords[["x", "y"]].values
@@ -154,7 +163,11 @@ def calculate_silhouette_score(
         Silhouette score, or NaN if calculation not possible
     """
     if exclude_labels is None:
-        exclude_labels = ["Unknown", "nan", "Other", "NaN"]
+        # `<NA>` is how pandas Arrow renders a null when cast to str; the
+        # original manuscript bundles store nulls as Arrow nulls, while
+        # protspace v4 serializes them as the string "nan". Both must be
+        # excluded so the silhouette score reflects only labeled clusters.
+        exclude_labels = ["Unknown", "nan", "Other", "NaN", "<NA>", "None"]
 
     # Filter out excluded labels
     valid_mask = ~np.isin(labels, exclude_labels)
@@ -238,9 +251,10 @@ def analyze_all_variants(
     Returns:
         DataFrame with analysis results
     """
-    # Default: analyze all variants
+    # Default to analysis variants only — demo variants don't share the
+    # top-N + Other grouping the comparison plot was designed for.
     if variants is None:
-        variants = list(VARIANT_CONFIGS.keys())
+        variants = list(ANALYSIS_VARIANTS)
 
     if verbose:
         print("=" * 60)

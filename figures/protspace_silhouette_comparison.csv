@@ -1,6 +1,6 @@
 variant,n_proteins,n_families,silhouette_score,description
-full,7418,12,0.26236534118652344,"All proteins, full sequences (with signal peptides)"
-mature,7418,12,0.396533727645874,"All proteins, mature sequences (UniProt SP cleavage)"
-mature_clean,6183,12,0.47380805015563965,"All proteins, mature sequences, no fragments"
-active,7418,12,0.3819103240966797,"All proteins, active sequences (SP + propeptide cleaved)"
-active_clean,6183,12,0.40080320835113525,"All proteins, active sequences, no fragments"
+full,7418,12,0.3225661516189575,"All proteins, full sequences (with signal peptides)"
+mature,7418,12,0.4741089344024658,"All proteins, mature sequences (UniProt SP cleavage)"
+mature_clean,6183,12,0.5720436573028564,"All proteins, mature sequences, no fragments"
+active,7418,12,0.4123493731021881,"All proteins, active sequences (SP + propeptide cleaved)"
+active_clean,6183,12,0.5637106895446777,"All proteins, active sequences, no fragments"

@@ -1,247 +1,253 @@
-"""Run ProtSpace UMAP dimensionality reduction.
+"""Run ProtSpace projections via the v4 unified CLI.
 
-Executes protspace-local and applies annotation styling by manually appending
-a settings parquet to the parquetbundle file.
+This module shells out to `protspace prepare` to build the parquetbundle and,
+for analysis variants, to `protspace style` to embed the curated palette.
+Demo variants ship without styling.
 """
 
 import io
 import json
-import re
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
-import pyarrow as pa
+import pandas as pd
 import pyarrow.parquet as pq
 
 from .config import (
     DEFAULT_MIN_DIST,
     DEFAULT_N_NEIGHBORS,
+    DEMO_SUBDIR,
     INTERMEDIATES_SUBDIR,
+    PROTSPACE_MODEL_NAME,
     VARIANT_CONFIGS,
     get_h5_variant_filename,
     get_metadata_filename,
-    get_protspace_output_filename,
     get_protspace_styled_filename,
 )
 
-# Delimiter used in parquetbundle files to separate parquet parts
+# protspace `prepare` always writes the bundle as data.parquetbundle.
+PROTSPACE_BUNDLE_NAME = "data.parquetbundle"
+
+# Delimiter that separates the parquet parts inside a .parquetbundle.
 PARQUET_BUNDLE_DELIMITER = b"---PARQUET_DELIMITER---"
 
+# Annotations the web UI hides from the dropdown (tooltip-only). The first
+# non-tooltip annotation column in Part 0 becomes the default selection.
+TOOLTIP_ONLY_ANNOTATIONS = ("protein_name", "uniprot_kb_id", "gene_name")
 
-def run_command(cmd: str, verbose: bool = True) -> tuple[bool, str]:
-    """Run a shell command and return success status.
 
-    Args:
-        cmd: Command to execute
-        verbose: Print command being run
+def _reorder_bundle_annotations(bundle_path: Path, primary_annotation: str) -> None:
+    """Move ``primary_annotation`` to the very front of the annotation parquet.
 
-    Returns:
-        Tuple of (success, error_message)
+    The control-bar dropdown filters out tooltip-only fields and then defaults
+    to its ``annotations[0]``, but the scatter-plot component reads the raw
+    ``Object.keys(data.annotations)`` (unfiltered) for its initial coloring,
+    so a tooltip-only column that happens to come first ends up driving the
+    plot. Placing ``primary_annotation`` ahead of the tooltip-only fields
+    makes both code paths agree on the same default.
     """
+    with open(bundle_path, "rb") as f:
+        parts = f.read().split(PARQUET_BUNDLE_DELIMITER)
+    if not parts:
+        return
+
+    table = pq.read_table(io.BytesIO(parts[0]))
+    columns = list(table.column_names)
+    if primary_annotation not in columns:
+        return
+
+    id_columns = [c for c in columns if c == "protein_id"]
+    tooltip = [c for c in columns if c in TOOLTIP_ONLY_ANNOTATIONS and c not in id_columns]
+    rest = [
+        c
+        for c in columns
+        if c != primary_annotation and c not in id_columns and c not in tooltip
+    ]
+    new_order = id_columns + [primary_annotation] + tooltip + rest
+    new_table = table.select(new_order)
+
+    buf = io.BytesIO()
+    pq.write_table(new_table, buf)
+    parts[0] = buf.getvalue()
+
+    with open(bundle_path, "wb") as f:
+        f.write(PARQUET_BUNDLE_DELIMITER.join(parts))
+
+
+def _filter_style_to_variant(
+    style_file: Path,
+    metadata_path: Path,
+) -> dict:
+    """Build a variant-specific style dict by intersecting with metadata values.
+
+    `protspace style` (v4) rejects styles that reference values not present in
+    the data. Each variant has a different subset of categorical values (e.g.
+    `mature_clean` removes fragments so `has_fragment` has only `"no"`), so we
+    must trim the shared style.json down to values that actually appear.
+    """
+    with open(style_file) as f:
+        style = json.load(f)
+    df = pd.read_csv(metadata_path)
+
+    filtered: dict = {}
+    for column, cfg in style.items():
+        if column not in df.columns:
+            continue
+        present = {str(v) for v in df[column].dropna().unique()}
+        if df[column].isna().any():
+            present.add("nan")
+        new_cfg = dict(cfg)
+        if "colors" in new_cfg:
+            new_cfg["colors"] = {k: v for k, v in new_cfg["colors"].items() if k in present}
+            if not new_cfg["colors"]:
+                continue
+        filtered[column] = new_cfg
+    return filtered
+
+
+def _run(cmd: list[str], verbose: bool = True) -> tuple[bool, str]:
+    """Run a shell command via subprocess and return (success, stderr)."""
     if verbose:
-        print(f"  Running: {cmd}")
-
-    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-
+        print(f"  Running: {' '.join(cmd)}")
+    result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
-        return False, result.stderr
+        return False, result.stderr or result.stdout
     return True, ""
 
 
+def _output_bundle_path(
+    variant_config: dict,
+    protspace_dir: Path,
+    year: str,
+) -> Path:
+    """Return the final on-disk parquetbundle path for a variant."""
+    filename = get_protspace_styled_filename(year, variant_config["name"])
+    if variant_config["bundle_kind"] == "demo":
+        return protspace_dir / DEMO_SUBDIR / filename
+    return protspace_dir / filename
+
+
 def process_variant(
+    variant_config: dict,
     h5_path: Path,
     metadata_path: Path,
-    output_bundle: Path,
-    styled_bundle: Path,
-    style_file: Path,
+    final_bundle: Path,
+    style_file: Path | None,
     n_neighbors: int = DEFAULT_N_NEIGHBORS,
     min_dist: float = DEFAULT_MIN_DIST,
     verbose: bool = True,
 ) -> bool:
-    """Process a single variant: generate UMAP parquetbundle and apply styling.
+    """Build one variant: prepare → (optionally style) → write to final path.
 
     Args:
-        h5_path: Path to H5 embedding file
-        metadata_path: Path to metadata CSV
-        output_bundle: Path for intermediate output parquetbundle
-        styled_bundle: Path for final styled output parquetbundle
-        style_file: Path to style.json
-        n_neighbors: UMAP n_neighbors parameter
-        min_dist: UMAP min_dist parameter
-        verbose: Print progress messages
-
-    Returns:
-        True if successful, False otherwise
+        variant_config: Config dict from ``VARIANT_CONFIGS``.
+        h5_path: Filtered H5 embedding file for this variant.
+        metadata_path: Annotation CSV for this variant.
+        final_bundle: Final parquetbundle output path.
+        style_file: Path to style JSON. Required for analysis variants;
+            ignored for demo variants (which ship unstyled).
+        n_neighbors: UMAP n_neighbors.
+        min_dist: UMAP min_dist.
+        verbose: Print progress messages.
     """
-    # Check input files
     if not h5_path.exists():
         if verbose:
             print(f"  H5 file not found: {h5_path}")
         return False
-
     if not metadata_path.exists():
         if verbose:
             print(f"  Metadata file not found: {metadata_path}")
         return False
 
-    if not style_file.exists():
-        if verbose:
-            print(f"  Style file not found: {style_file}")
-        return False
+    final_bundle.parent.mkdir(parents=True, exist_ok=True)
+    bundle_kind = variant_config["bundle_kind"]
 
-    if verbose:
-        print("  Input files found")
+    # Demo bundles use a persistent output directory so the protspace `tmp/`
+    # cache (UniProt fetches) is reused across re-runs. Analysis bundles use a
+    # throw-away temp dir because they don't fetch UniProt annotations.
+    if bundle_kind == "demo":
+        work_dir_ctx = None
+        work_dir = final_bundle.parent / f".{variant_config['name']}_workdir"
+        work_dir.mkdir(parents=True, exist_ok=True)
+    else:
+        work_dir_ctx = tempfile.TemporaryDirectory(prefix="protspace_")
+        work_dir = Path(work_dir_ctx.name)
 
-    # Generate protspace parquetbundle with UMAP (new v3.1.1 syntax)
-    cmd_bundle = (
-        f"protspace-local -i {h5_path} -a {metadata_path} -o {output_bundle} "
-        f"-m umap2 --n_neighbors {n_neighbors} --min_dist {min_dist}"
-    )
-
-    success, error = run_command(cmd_bundle, verbose=verbose)
-    if not success:
-        if verbose:
-            print(f"  Error generating parquetbundle: {error}")
-        return False
-
-    if not output_bundle.exists():
-        if verbose:
-            print(f"  Failed to create parquetbundle: {output_bundle}")
-        return False
-
-    if verbose:
-        print(f"  Parquetbundle created: {output_bundle.name}")
-
-    # Apply styling by appending settings parquet
-    success = apply_annotation_styles(output_bundle, style_file, styled_bundle, verbose=verbose)
-    if not success:
-        return False
-
-    # Remove intermediate parquetbundle
     try:
-        output_bundle.unlink()
-        if verbose:
-            print("  Removed intermediate parquetbundle")
-    except Exception:
-        pass
+        cmd_prepare = [
+            "protspace",
+            "prepare",
+            "-i",
+            f"{h5_path}:{PROTSPACE_MODEL_NAME}",
+            "-a",
+            str(metadata_path),
+        ]
+        if bundle_kind == "demo":
+            # Fetch the UniProt annotations the web UI needs for its default
+            # entry chip (protein name, mnemonic, etc.). `reviewed` is omitted
+            # because every ToxProt entry is Swiss-Prot by construction.
+            for ann in ("protein_name", "uniprot_kb_id", "gene_name", "keyword", "ec"):
+                cmd_prepare += ["-a", ann]
+        cmd_prepare += [
+            "-o",
+            str(work_dir),
+            "-m",
+            f"umap2:n_neighbors={n_neighbors};min_dist={min_dist},pca2",
+            "--bundled",
+            "--no-log",
+        ]
+        # Keep the protspace tmp/ cache for demo runs to avoid re-fetching
+        # UniProt annotations every time.
+        cmd_prepare += ["--keep-tmp"] if bundle_kind == "demo" else ["--no-keep-tmp"]
+        success, error = _run(cmd_prepare, verbose=verbose)
+        if not success:
+            if verbose:
+                print(f"  Error running `protspace prepare`: {error}")
+            return False
 
-    return True
+        prepared_bundle = work_dir / PROTSPACE_BUNDLE_NAME
+        if not prepared_bundle.exists():
+            if verbose:
+                print(f"  Expected bundle not found: {prepared_bundle}")
+            return False
 
+        if bundle_kind == "analysis":
+            if style_file is None or not style_file.exists():
+                if verbose:
+                    print(f"  Style file required for analysis variant: {style_file}")
+                return False
+            variant_style = _filter_style_to_variant(style_file, metadata_path)
+            variant_style_file = work_dir / "style.json"
+            with open(variant_style_file, "w") as f:
+                json.dump(variant_style, f, indent=2)
 
-def _rgba_to_hex(rgba_str: str) -> str:
-    """Convert 'rgba(r, g, b, a)' to '#RRGGBB'."""
-    match = re.match(r"rgba?\((\d+),\s*(\d+),\s*(\d+)", rgba_str)
-    if match:
-        r, g, b = int(match.group(1)), int(match.group(2)), int(match.group(3))
-        return f"#{r:02x}{g:02x}{b:02x}"
-    return rgba_str
-
-
-def _create_settings_parquet(
-    style_json: dict,
-    annotation_name: str = "Protein families",
-) -> bytes:
-    """Create a settings parquet from style.json format.
-
-    Args:
-        style_json: Style configuration with rgba colors
-        annotation_name: Name of the annotation to style
-
-    Returns:
-        Bytes of the settings parquet file
-    """
-    colors = style_json.get(annotation_name, {}).get("colors", {})
-
-    categories = {}
-    for i, (name, rgba_color) in enumerate(colors.items()):
-        # Skip categories not present in top10 variants
-        if name not in ("Other", "NaN"):
-            categories[name] = {
-                "zOrder": i,
-                "color": _rgba_to_hex(rgba_color),
-                "shape": "circle",
-            }
-
-    settings = {
-        annotation_name: {
-            "maxVisibleValues": 10,
-            "includeShapes": False,
-            "shapeSize": 30,
-            "sortMode": "size-desc",
-            "hiddenValues": [],
-            "categories": categories,
-            "enableDuplicateStackUI": False,
-            "selectedPaletteId": "custom",
-        }
-    }
-
-    settings_json = json.dumps(settings)
-    table = pa.table({"settings_json": [settings_json]})
-
-    buf = io.BytesIO()
-    pq.write_table(table, buf)
-    return buf.getvalue()
-
-
-def apply_annotation_styles(
-    input_bundle: Path,
-    style_file: Path,
-    output_bundle: Path,
-    verbose: bool = True,
-) -> bool:
-    """Apply annotation styles (colors, shapes) to a parquetbundle.
-
-    Manually appends a settings parquet to the parquetbundle file,
-    as the protspace API has compatibility issues with single-file bundles.
-
-    Args:
-        input_bundle: Path to input parquetbundle file
-        style_file: Path to style.json with color/shape definitions
-        output_bundle: Path for output styled parquetbundle
-        verbose: Print progress messages
-
-    Returns:
-        True if successful, False otherwise
-    """
-    try:
-        # Load style configuration
-        with open(style_file) as f:
-            style_json = json.load(f)
-
-        if verbose:
-            print(f"  Applying styles from {style_file.name}")
-
-        # Read existing bundle
-        with open(input_bundle, "rb") as f:
-            content = f.read()
-
-        # Split by delimiter
-        parts = content.split(PARQUET_BUNDLE_DELIMITER)
-
-        # Create settings parquet
-        settings_parquet = _create_settings_parquet(style_json)
-
-        # Append or replace settings (4th part)
-        if len(parts) >= 4:
-            parts[3] = settings_parquet
-            new_content = PARQUET_BUNDLE_DELIMITER.join(parts)
+            cmd_style = [
+                "protspace",
+                "style",
+                str(prepared_bundle),
+                str(final_bundle),
+                "--annotation-styles",
+                str(variant_style_file),
+            ]
+            success, error = _run(cmd_style, verbose=verbose)
+            if not success:
+                if verbose:
+                    print(f"  Error running `protspace style`: {error}")
+                return False
         else:
-            new_content = content + PARQUET_BUNDLE_DELIMITER + settings_parquet
+            # Demo bundles ship unstyled.
+            shutil.copy2(prepared_bundle, final_bundle)
+            # Make `protein_families` the default colouring in the web UI.
+            _reorder_bundle_annotations(final_bundle, "protein_families")
+    finally:
+        if work_dir_ctx is not None:
+            work_dir_ctx.cleanup()
 
-        # Write output
-        with open(output_bundle, "wb") as f:
-            f.write(new_content)
-
-        if verbose:
-            print(f"  Styled parquetbundle created: {output_bundle.name}")
-
-        return True
-
-    except Exception as e:
-        if verbose:
-            print(f"  Error applying styles: {e}")
-        return False
+    if verbose:
+        print(f"  Wrote: {final_bundle}")
+    return True
 
 
 def run_umap_all_variants(
@@ -252,32 +258,20 @@ def run_umap_all_variants(
     min_dist: float = DEFAULT_MIN_DIST,
     variants: list[str] | None = None,
     verbose: bool = True,
+    cleanup_intermediates: bool = True,
 ) -> dict[str, bool]:
-    """Run UMAP for all specified variants.
-
-    Args:
-        protspace_dir: Directory containing H5 and metadata files
-        style_file: Path to style.json
-        year: Dataset year
-        n_neighbors: UMAP n_neighbors parameter
-        min_dist: UMAP min_dist parameter
-        variants: List of variant names to process (None = all)
-        verbose: Print progress messages
-
-    Returns:
-        Dictionary mapping variant names to success status
-    """
+    """Build the requested variants. Returns ``{variant: success}``."""
     if variants is None:
         variants = list(VARIANT_CONFIGS.keys())
 
     if verbose:
         print("=" * 60)
-        print(f"Running UMAP (n_neighbors={n_neighbors}, min_dist={min_dist})")
+        print(f"Running UMAP+PCA (n_neighbors={n_neighbors}, min_dist={min_dist})")
         print("=" * 60)
 
     intermediates_dir = protspace_dir / INTERMEDIATES_SUBDIR
 
-    results = {}
+    results: dict[str, bool] = {}
     for variant_name in variants:
         if variant_name not in VARIANT_CONFIGS:
             if verbose:
@@ -291,33 +285,28 @@ def run_umap_all_variants(
 
         h5_path = intermediates_dir / get_h5_variant_filename(year, variant_name)
         metadata_path = intermediates_dir / get_metadata_filename(year, variant_name)
-        output_bundle = protspace_dir / get_protspace_output_filename(year, variant_name)
-        styled_bundle = protspace_dir / get_protspace_styled_filename(year, variant_name)
+        final_bundle = _output_bundle_path(config, protspace_dir, year)
 
-        success = process_variant(
+        results[variant_name] = process_variant(
+            variant_config=config,
             h5_path=h5_path,
             metadata_path=metadata_path,
-            output_bundle=output_bundle,
-            styled_bundle=styled_bundle,
-            style_file=style_file,
+            final_bundle=final_bundle,
+            style_file=style_file if config["bundle_kind"] == "analysis" else None,
             n_neighbors=n_neighbors,
             min_dist=min_dist,
             verbose=verbose,
         )
 
-        results[variant_name] = success
-
-    # Clean up intermediates directory
-    if intermediates_dir.exists():
+    if cleanup_intermediates and intermediates_dir.exists():
         shutil.rmtree(intermediates_dir)
         if verbose:
             print(f"\n  Cleaned up {INTERMEDIATES_SUBDIR}/ directory")
 
-    # Summary
     if verbose:
         success_count = sum(results.values())
         print("\n" + "=" * 60)
-        print(f"UMAP Complete: {success_count}/{len(results)} variants successful")
+        print(f"Complete: {success_count}/{len(results)} variants successful")
         print("=" * 60)
 
     return results

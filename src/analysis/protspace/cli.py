@@ -6,9 +6,11 @@ import click
 import pandas as pd
 
 from .config import (
+    ANALYSIS_VARIANTS,
     DEFAULT_MIN_DIST,
     DEFAULT_N_NEIGHBORS,
     DEFAULT_YEAR,
+    DEMO_VARIANTS,
     TOP_N,
     VARIANT_CONFIGS,
 )
@@ -241,7 +243,7 @@ def prepare(
     click.echo("Generating style.json...")
     generate_style_json(df_ref, style_path, top_n=top_n)
 
-    # Prepare all variants
+    # Prepare analysis variants (default for `prepare` command)
     try:
         prepare_all_variants(
             processed_csv=processed_csv,
@@ -249,6 +251,7 @@ def prepare(
             protspace_dir=protspace_dir,
             year=year,
             top_n=top_n,
+            variants=list(ANALYSIS_VARIANTS),
         )
     except FileNotFoundError as e:
         raise click.ClickException(str(e)) from e
@@ -316,7 +319,7 @@ def run_umap(
             f"Style file not found: {style_file}\nRun 'toxprot analysis protspace prepare' first."
         )
 
-    variants = list(variant) if variant else None
+    variants = list(variant) if variant else list(ANALYSIS_VARIANTS)
 
     results = run_umap_all_variants(
         protspace_dir=protspace_dir,
@@ -516,3 +519,125 @@ def pipeline(
     click.echo("Pipeline complete!")
     click.echo("=" * 60)
     click.echo(f"Figures saved to: {output_dir}")
+
+
+@protspace.command("demo")
+@click.option(
+    "--data-dir",
+    type=click.Path(exists=True, path_type=Path),
+    default=Path("data/processed/toxprot"),
+    show_default=True,
+    help="Directory containing processed CSV files.",
+)
+@click.option(
+    "--interim-dir",
+    type=click.Path(exists=True, path_type=Path),
+    default=Path("data/interim/toxprot_parsed"),
+    show_default=True,
+    help="Directory containing interim TSV files.",
+)
+@click.option(
+    "--protspace-dir",
+    type=click.Path(path_type=Path),
+    default=Path("data/processed/protspace"),
+    show_default=True,
+    help="Directory for protspace files.",
+)
+@click.option(
+    "--year",
+    type=str,
+    default=DEFAULT_YEAR,
+    show_default=True,
+    help="Dataset year.",
+)
+@click.option(
+    "--n-neighbors",
+    type=int,
+    default=DEFAULT_N_NEIGHBORS,
+    show_default=True,
+    help="UMAP n_neighbors parameter.",
+)
+@click.option(
+    "--min-dist",
+    type=float,
+    default=DEFAULT_MIN_DIST,
+    show_default=True,
+    help="UMAP min_dist parameter.",
+)
+def demo(
+    data_dir: Path,
+    interim_dir: Path,
+    protspace_dir: Path,
+    year: str,
+    n_neighbors: int,
+    min_dist: float,
+):
+    """Build the curated demo parquet bundles for the ProtSpace web demo.
+
+    Produces two bundles in `data/processed/protspace/demo/`:
+
+    \b
+    - protspace_{year}_demo_mature.parquetbundle
+      Mature sequences (SP removed), fragments included.
+    - protspace_{year}_demo_mature_clean.parquetbundle
+      Mature sequences (SP removed), fragments excluded.
+
+    Both ship the expanded manuscript annotation set with full protein-family
+    names (no top-N collapse) and both UMAP + PCA projections.
+
+    Requires the base mature H5 embeddings from Colab to exist at
+    data/processed/protspace/colab/toxprot_{year}_mature.h5.
+
+    \b
+    Examples:
+        toxprot analysis protspace demo
+        toxprot analysis protspace demo --year 2024
+    """
+    from .metadata_preparer import prepare_all_variants
+    from .umap_runner import run_umap_all_variants
+
+    processed_csv = data_dir / f"toxprot_{year}.csv"
+    interim_tsv = interim_dir / f"toxprot_{year}.tsv"
+
+    if not processed_csv.exists():
+        raise click.ClickException(f"Processed CSV not found: {processed_csv}")
+    if not interim_tsv.exists():
+        raise click.ClickException(f"Interim TSV not found: {interim_tsv}")
+
+    demo_variants = list(DEMO_VARIANTS)
+
+    click.echo("=" * 60)
+    click.echo("Building demo parquet bundles")
+    click.echo("=" * 60)
+
+    try:
+        prepare_all_variants(
+            processed_csv=processed_csv,
+            interim_tsv=interim_tsv,
+            protspace_dir=protspace_dir,
+            year=year,
+            variants=demo_variants,
+        )
+    except FileNotFoundError as e:
+        raise click.ClickException(str(e)) from e
+
+    results = run_umap_all_variants(
+        protspace_dir=protspace_dir,
+        style_file=protspace_dir / "style.json",  # unused for demo bundles
+        year=year,
+        n_neighbors=n_neighbors,
+        min_dist=min_dist,
+        variants=demo_variants,
+    )
+
+    failed = [v for v, success in results.items() if not success]
+    if failed:
+        click.echo(f"\nWarning: Failed demo variants: {', '.join(failed)}")
+        return
+
+    demo_dir = protspace_dir / "demo"
+    click.echo("\n" + "=" * 60)
+    click.echo(f"Demo bundles written to: {demo_dir}")
+    click.echo("=" * 60)
+    for v in demo_variants:
+        click.echo(f"  - protspace_{year}_{v}.parquetbundle")

@@ -67,9 +67,10 @@ def generate_protein_family_colors(
     for i, family in enumerate(reference_families):
         colors[family] = hex_to_rgba(CATEGORICAL_PALETTE[i % len(CATEGORICAL_PALETTE)], alpha=1.0)
 
-    # Add special categories (semi-transparent)
+    # Add special categories (semi-transparent). Pandas serializes NaN as "nan"
+    # in the annotation parquet, so the style key must match exactly.
     colors["Other"] = hex_to_rgba(OTHER_COLOR, 0.5)
-    colors["NaN"] = hex_to_rgba(NAN_COLOR, 0.5)
+    colors["nan"] = hex_to_rgba(NAN_COLOR, 0.5)
 
     return colors
 

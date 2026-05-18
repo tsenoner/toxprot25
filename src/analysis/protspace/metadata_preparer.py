@@ -1,8 +1,10 @@
 """Prepare metadata and H5 file variants for ProtSpace visualization.
 
 This module handles:
-1. Creating metadata CSV files for each variant (all, top10_full, top10_mature, top10_mature_clean)
-2. Filtering H5 embedding files to match metadata variants
+1. Creating metadata CSV files for each variant. Analysis variants ship a lean
+   schema with top-N + Other family grouping; demo variants ship an expanded
+   schema with full family names and additional biological columns.
+2. Filtering H5 embedding files to match metadata variants.
 """
 
 from pathlib import Path
@@ -13,6 +15,7 @@ import pandas as pd
 from ..analyze_protein_families import get_reference_families, normalize_family_name
 from .config import (
     COLAB_SUBDIR,
+    DEMO_ANNOTATION_COLUMNS,
     INTERMEDIATES_SUBDIR,
     SEQ_TYPES,
     TOP_N,
@@ -22,27 +25,32 @@ from .config import (
     get_metadata_filename,
 )
 
+# Analysis-variant annotation columns (lean schema with top-N + Other grouping).
+ANALYSIS_BASE_COLUMNS = [
+    "identifier",
+    "Protein families",
+    "Phylum",
+    "has_fragment",
+    "has_signal_peptide",
+    "has_propeptide",
+]
+
 
 def process_protein_families(
     df: pd.DataFrame,
     reference_families: list[str],
     column: str = "Protein families",
 ) -> pd.DataFrame:
-    """Process protein families column to use top N + Other + NaN.
+    """Collapse protein-family values to the top-N reference set + "Other".
 
-    Args:
-        df: Input DataFrame
-        reference_families: List of top N family names to keep
-        column: Column name containing family information
-
-    Returns:
-        DataFrame with processed Protein families column
+    NaN values are preserved as-is (the protspace UI surfaces them as a
+    distinct category).
     """
     df = df.copy()
 
     def categorize(value):
         if pd.isna(value):
-            return value  # Keep NaN as is
+            return value
         normalized = normalize_family_name(value)
         if normalized in reference_families:
             return normalized
@@ -52,6 +60,41 @@ def process_protein_families(
     return df
 
 
+def normalize_family_names_full(df: pd.DataFrame, column: str = "Protein families") -> pd.DataFrame:
+    """Normalize family names without collapsing the long tail to "Other"."""
+    df = df.copy()
+    df[column] = df[column].apply(lambda v: v if pd.isna(v) else normalize_family_name(v))
+    return df
+
+
+def _select_columns(variant_config: dict) -> list[str]:
+    """Return the annotation source-column list for a variant.
+
+    The returned names are CSV-source names. For demo variants the caller
+    renames them to canonical UI names via ``DEMO_ANNOTATION_COLUMNS``.
+
+    Drops columns that become meaningless after filtering:
+    - mature/active variants: drop ``has_signal_peptide`` (SP already cleaved)
+    - active variants: also drop ``has_propeptide`` (propeptide already cleaved)
+    - variants with ``exclude_fragments``: drop ``has_fragment`` (now constant)
+    """
+    if variant_config["bundle_kind"] == "demo":
+        columns = list(DEMO_ANNOTATION_COLUMNS.keys())
+    else:
+        columns = list(ANALYSIS_BASE_COLUMNS)
+
+    seq_type = variant_config["seq_type"]
+
+    if variant_config["exclude_fragments"] and "has_fragment" in columns:
+        columns.remove("has_fragment")
+    if seq_type in ("mature", "active") and "has_signal_peptide" in columns:
+        columns.remove("has_signal_peptide")
+    if seq_type == "active" and "has_propeptide" in columns:
+        columns.remove("has_propeptide")
+
+    return columns
+
+
 def create_metadata_csv(
     df: pd.DataFrame,
     variant_config: dict,
@@ -59,55 +102,38 @@ def create_metadata_csv(
     output_path: Path,
     verbose: bool = True,
 ) -> int:
-    """Create metadata CSV for a specific variant.
+    """Create the metadata CSV for a single variant.
 
-    Args:
-        df: Base DataFrame with all data
-        variant_config: Configuration for this variant
-        reference_families: List of top N family names
-        output_path: Path to save metadata CSV
-        verbose: Print progress messages
-
-    Returns:
-        Number of entries in the metadata file
+    For analysis variants the families are collapsed to top-N + Other; for
+    demo variants the full curated family names are kept.
     """
     df_variant = df.copy()
 
-    # Apply filters based on variant configuration
     if variant_config["exclude_nan"]:
         df_variant = df_variant[df_variant["Protein families"].notna()]
-
     if variant_config["exclude_other"]:
         df_variant = df_variant[df_variant["Protein families"] != "Other"]
-
     if variant_config["exclude_fragments"]:
         df_variant = df_variant[df_variant["has_fragment"] == "no"]
 
-    # Select columns for output
-    columns = [
-        "identifier",
-        "Protein families",
-        "Phylum",
-        "has_fragment",
-        "has_signal_peptide",
-        "has_propeptide",
-    ]
+    if variant_config["bundle_kind"] == "demo":
+        df_variant = normalize_family_names_full(df_variant)
+    else:
+        df_variant = process_protein_families(df_variant, reference_families)
 
-    # Remove has_fragment column if fragments are excluded (redundant)
-    if variant_config["exclude_fragments"]:
-        columns.remove("has_fragment")
+    columns = _select_columns(variant_config)
+    missing = [c for c in columns if c not in df_variant.columns]
+    if missing:
+        raise KeyError(
+            f"Variant {variant_config['name']} expects columns {missing} "
+            f"but they are not present in the input frame."
+        )
 
-    seq_type = variant_config["seq_type"]
+    df_out = df_variant[columns]
+    if variant_config["bundle_kind"] == "demo":
+        df_out = df_out.rename(columns={k: DEMO_ANNOTATION_COLUMNS[k] for k in columns})
 
-    # Remove has_signal_peptide for mature/active variants (already cleaved)
-    if seq_type in ("mature", "active") and "has_signal_peptide" in columns:
-        columns.remove("has_signal_peptide")
-
-    # Remove has_propeptide for active variants (already cleaved)
-    if seq_type == "active" and "has_propeptide" in columns:
-        columns.remove("has_propeptide")
-
-    df_variant[columns].to_csv(output_path, index=False)
+    df_out.to_csv(output_path, index=False)
 
     if verbose:
         print(f"  {variant_config['name']}: {len(df_variant)} entries -> {output_path.name}")
@@ -123,26 +149,17 @@ def filter_h5_by_metadata(
 ) -> tuple[int, int]:
     """Filter H5 file to include only identifiers present in metadata.
 
-    Args:
-        h5_input: Path to input H5 file (base embeddings)
-        metadata_csv: Path to metadata CSV with identifiers to keep
-        h5_output: Path to output filtered H5 file
-        verbose: Print progress messages
-
-    Returns:
-        Tuple of (entries_kept, total_in_h5)
+    Also writes a ``model_name`` attribute (``prot_t5``) to the output file
+    because protspace v4 requires it.
     """
     if not h5_input.exists():
         raise FileNotFoundError(f"H5 file not found: {h5_input}")
-
     if not metadata_csv.exists():
         raise FileNotFoundError(f"Metadata file not found: {metadata_csv}")
 
-    # Read identifiers from metadata
     df = pd.read_csv(metadata_csv)
     identifiers_to_keep = set(df["identifier"].tolist())
 
-    # Filter H5 file
     with h5py.File(h5_input, "r") as input_file:
         h5_keys = set(input_file.keys())
         proteins_to_keep = identifiers_to_keep.intersection(h5_keys)
@@ -151,6 +168,9 @@ def filter_h5_by_metadata(
         with h5py.File(h5_output, "w") as output_file:
             for protein_id in proteins_to_keep:
                 input_file.copy(protein_id, output_file)
+            # protspace v4 requires a model_name attribute on the H5 file
+            # so it can name projections (e.g. "ProtT5 — UMAP 2").
+            output_file.attrs["model_name"] = "prot_t5"
 
     if verbose:
         print(f"    H5: {len(proteins_to_keep)}/{len(h5_keys)} embeddings -> {h5_output.name}")
@@ -165,65 +185,53 @@ def prepare_all_variants(
     year: str = "2025",
     top_n: int = TOP_N,
     definition: str = "venom_tissue",
+    variants: list[str] | None = None,
     verbose: bool = True,
 ) -> dict[str, dict]:
-    """Prepare metadata and H5 files for all variants.
+    """Prepare metadata and H5 files for the requested variants.
 
     Args:
-        processed_csv: Path to processed CSV (e.g., toxprot_2025.csv)
-        interim_tsv: Path to interim TSV with signal peptide info
-        protspace_dir: Directory for protspace files
-        year: Dataset year
-        top_n: Number of top families to track
-        definition: ToxProt definition filter
-        verbose: Print progress messages
-
-    Returns:
-        Dictionary with results for each variant
+        processed_csv: Path to the processed CSV (e.g., toxprot_2025.csv).
+        interim_tsv: Path to interim TSV with SP/propeptide annotations.
+        protspace_dir: Root directory for protspace files.
+        year: Dataset year.
+        top_n: Number of top families for analysis variants.
+        definition: ToxProt definition filter.
+        variants: Subset of variant names to prepare (default: all).
+        verbose: Print progress messages.
     """
     protspace_dir.mkdir(parents=True, exist_ok=True)
 
-    # Load processed CSV
     if verbose:
         print(f"Loading {processed_csv}...")
     df = pd.read_csv(processed_csv)
 
-    # Apply ToxProt definition filter
     if "ToxProt definition" in df.columns and definition == "venom_tissue":
         df = df[df["ToxProt definition"].isin(["venom_tissue", "both"])]
 
     if verbose:
         print(f"Loaded {len(df)} entries (definition: {definition})")
 
-    # Get reference families (same order as protein family analysis)
     reference_families = get_reference_families(df, top_n=top_n)
-
     if verbose:
         print(f"\nTop {top_n} protein families:")
         for i, fam in enumerate(reference_families, 1):
             print(f"  {i:2d}. {fam}")
 
-    # Load signal peptide and propeptide information from interim TSV
+    # Merge in signal-peptide and propeptide range info from the interim TSV.
     if verbose:
         print(f"\nLoading signal peptide/propeptide info from {interim_tsv}...")
-
-    # Determine available columns in interim TSV
     with open(interim_tsv) as f:
         tsv_header = f.readline().strip().split("\t")
-
     interim_cols = ["Entry", "Signal peptide (range)"]
     if "Propeptide (range)" in tsv_header:
         interim_cols.append("Propeptide (range)")
-
     df_interim = pd.read_csv(interim_tsv, sep="\t", usecols=interim_cols)
-
-    # Merge signal peptide/propeptide information
     df = df.merge(df_interim, on="Entry", how="left")
 
-    # Rename Entry to identifier (required by protspace)
+    # protspace conventionally calls the identifier column `identifier`.
     df = df.rename(columns={"Entry": "identifier"})
 
-    # Add helper columns
     df["has_signal_peptide"] = df["Signal peptide (range)"].notna().map({True: "yes", False: "no"})
     if "Propeptide (range)" in df.columns:
         df["has_propeptide"] = df["Propeptide (range)"].notna().map({True: "yes", False: "no"})
@@ -231,29 +239,17 @@ def prepare_all_variants(
         df["has_propeptide"] = "no"
     df["has_fragment"] = (df["Fragment"].astype(str) == "fragment").map({True: "yes", False: "no"})
 
-    # Process protein families to top N + Other
-    df = process_protein_families(df, reference_families)
-
-    # Check for base H5 files (in colab/ subdirectory)
+    # Resolve which base H5 files we need.
     colab_dir = protspace_dir / COLAB_SUBDIR
+    h5_files = {st: colab_dir / get_h5_base_filename(year, st) for st in SEQ_TYPES}
 
-    # Map sequence type to H5 file
-    h5_files = {
-        seq_type: colab_dir / get_h5_base_filename(year, seq_type)
-        for seq_type in SEQ_TYPES
-    }
-
-    # Determine which seq_types are actually needed by configured variants
-    needed_seq_types = {config["seq_type"] for config in VARIANT_CONFIGS.values()}
-    h5_missing = [
-        h5_files[st] for st in needed_seq_types if not h5_files[st].exists()
-    ]
-
+    selected = list(variants) if variants else list(VARIANT_CONFIGS.keys())
+    needed_seq_types = {VARIANT_CONFIGS[v]["seq_type"] for v in selected if v in VARIANT_CONFIGS}
+    h5_missing = [h5_files[st] for st in needed_seq_types if not h5_files[st].exists()]
     if h5_missing:
         _print_h5_missing_error(h5_missing, year)
         raise FileNotFoundError("Required H5 embedding files not found")
 
-    # Create variants in intermediates subdirectory
     intermediates_dir = protspace_dir / INTERMEDIATES_SUBDIR
     intermediates_dir.mkdir(parents=True, exist_ok=True)
 
@@ -261,28 +257,29 @@ def prepare_all_variants(
         print("\nCreating metadata and H5 variants...")
 
     results = {}
-    for variant_name, config in VARIANT_CONFIGS.items():
+    for variant_name in selected:
+        if variant_name not in VARIANT_CONFIGS:
+            if verbose:
+                print(f"\nUnknown variant: {variant_name}")
+            continue
+
+        config = VARIANT_CONFIGS[variant_name]
         if verbose:
             print(f"\n{config['description']}:")
 
-        # Determine which base H5 to use
         h5_base = h5_files.get(config["seq_type"])
-
-        # Skip variant if H5 not available
         if h5_base is None or not h5_base.exists():
             if verbose:
                 print(f"  Skipping: H5 file not found ({h5_base})")
             continue
 
-        # Create metadata
         metadata_path = intermediates_dir / get_metadata_filename(year, variant_name)
         n_entries = create_metadata_csv(
             df, config, reference_families, metadata_path, verbose=verbose
         )
 
-        # Filter H5
         h5_variant = intermediates_dir / get_h5_variant_filename(year, variant_name)
-        n_kept, n_total = filter_h5_by_metadata(h5_base, metadata_path, h5_variant, verbose=verbose)
+        n_kept, _ = filter_h5_by_metadata(h5_base, metadata_path, h5_variant, verbose=verbose)
 
         results[variant_name] = {
             "metadata": metadata_path,
@@ -291,21 +288,20 @@ def prepare_all_variants(
             "n_embeddings": n_kept,
         }
 
-    # Print summary
     if verbose:
         print("\n" + "=" * 60)
         print("Summary:")
         print("=" * 60)
         for variant_name, info in results.items():
             print(
-                f"  {variant_name}: {info['n_entries']} entries, {info['n_embeddings']} embeddings"
+                f"  {variant_name}: {info['n_entries']} entries, "
+                f"{info['n_embeddings']} embeddings"
             )
 
     return results
 
 
 def _print_h5_missing_error(missing_files: list[Path], year: str) -> None:
-    """Print helpful error message when H5 files are missing."""
     print("\n" + "=" * 60)
     print("ERROR: Embedding files not found:")
     print("=" * 60)

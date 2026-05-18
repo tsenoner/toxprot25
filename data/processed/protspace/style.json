@@ -12,7 +12,7 @@
       "Arthropod phospholipase D family": "rgba(148, 103, 189, 1.0)",
       "Venom Kunitz-type family": "rgba(197, 176, 213, 1.0)",
       "Other": "rgba(199, 199, 199, 0.5)",
-      "NaN": "rgba(224, 224, 224, 0.5)"
+      "nan": "rgba(224, 224, 224, 0.5)"
     }
   },
   "Phylum": {

@@ -97,13 +97,15 @@ ProtSpace visualizes protein embeddings (ProtT5) in 2D using UMAP, colored by pr
 
 | Variant | seq_type | Description | Silhouette |
 |---------|----------|-------------|------------|
-| `full` | full | Complete precursor (with SP) | 0.262 |
-| `mature` | mature | Signal peptide removed | 0.397 |
-| `mature_clean` | mature | SP removed, no fragments | 0.474 |
-| `active` | active | SP + propeptide removed | 0.382 |
-| `active_clean` | active | SP + PP removed, no fragments | 0.401 |
+| `full` | full | Complete precursor (with SP) | 0.323 |
+| `mature` | mature | Signal peptide removed | 0.474 |
+| `mature_clean` | mature | SP removed, no fragments | 0.572 |
+| `active` | active | SP + propeptide removed | 0.412 |
+| `active_clean` | active | SP + PP removed, no fragments | 0.564 |
 
-**Key finding**: Removing signal peptides significantly improves clustering (0.262 -> 0.397). Additional propeptide removal slightly *decreases* clustering quality (0.397 -> 0.382), suggesting propeptide regions carry family-discriminative information.
+**Key finding**: Removing signal peptides significantly improves clustering (0.323 -> 0.474). Additional propeptide removal slightly *decreases* clustering quality (0.474 -> 0.412), suggesting propeptide regions carry family-discriminative information.
+
+Earlier drafts of this table reported lower values (0.262/0.397/0.474/0.382/0.401). Those were computed with a `clustering_analyzer.py` exclude list that didn't cover pandas' `<NA>` literal, so the ~400 proteins without a family annotation were silently counted as their own cluster. The fix (commit adding `<NA>`/`None` to the exclude list) restores the intended semantics; UMAP coordinates and family labels are unchanged.
 
 ### Embedding generation
 
